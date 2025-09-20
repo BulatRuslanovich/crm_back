@@ -1,7 +1,7 @@
 namespace CrmBack.Core.Utils.Mapper;
 
 using CrmBack.Core.Models.Entities;
-using CrmBack.Core.Models.Payload;
+using CrmBack.Core.Models.Payload.User;
 
 public static class UserMapper
 {
@@ -10,7 +10,9 @@ public static class UserMapper
     {
         return new ReadUserPayload(
             Id: entity.usr_id,
-            Name: entity.name,
+            FirstName: entity.first_name,
+            LastName: entity.last_name,
+            MiddleName: entity.middle_name,
             Login: entity.login
         );
     }
@@ -26,8 +28,11 @@ public static class UserMapper
     {
         return new UserEntity(
             usr_id: 0,
-            name: payload.Name,
-            login: payload.Login
+            first_name: payload.FirstName,
+            last_name: payload.LastName,
+            middle_name: payload.MiddleName,
+            login: payload.Login,
+            password_hash: payload.Password
         );
     }
 
@@ -36,8 +41,11 @@ public static class UserMapper
     {
         return new UserEntity(
             usr_id: id,
-            name: payload.Name,
-            login: payload.Login
+            first_name: payload.FirstName,
+            last_name: payload.LastName,
+            middle_name: payload.MiddleName,
+            login: payload.Login,
+            password_hash: payload.Password
         );
     }
 }

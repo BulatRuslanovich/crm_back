@@ -1,7 +1,7 @@
 namespace CrmBack.Services;
 
 using System.Collections.Generic;
-using CrmBack.Core.Models.Payload;
+using CrmBack.Core.Models.Payload.User;
 using CrmBack.Core.Repositories;
 using CrmBack.Core.Services;
 using CrmBack.Core.Utils.Mapper;

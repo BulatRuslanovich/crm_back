@@ -1,6 +1,6 @@
 namespace CrmBack.Api.Controllers;
 
-using CrmBack.Core.Models.Payload;
+using CrmBack.Core.Models.Payload.User;
 using CrmBack.Core.Services;
 using Microsoft.AspNetCore.Mvc;
 

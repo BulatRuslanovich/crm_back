@@ -1,6 +1,6 @@
 namespace CrmBack.Core.Services;
 
-using CrmBack.Core.Models.Payload;
+using CrmBack.Core.Models.Payload.User;
 
 public interface IUserService
 {
