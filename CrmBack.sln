@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CrmBack", "CrmBack.csproj", "{76102E07-E3AD-6037-6B21-6419E6840048}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{76102E07-E3AD-6037-6B21-6419E6840048}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{76102E07-E3AD-6037-6B21-6419E6840048}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{76102E07-E3AD-6037-6B21-6419E6840048}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{76102E07-E3AD-6037-6B21-6419E6840048}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {BCFD0CB7-CFEB-425B-8886-32F61586321C}
+	EndGlobalSection
+EndGlobal
