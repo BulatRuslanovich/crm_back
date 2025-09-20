@@ -27,23 +27,17 @@ public static class UserMapper
         return new UserEntity(
             usr_id: 0,
             name: payload.Name,
-            login: payload.Login,
-            created_at: DateTime.UtcNow,
-            updated_at: DateTime.UtcNow,
-            is_deleted: false
+            login: payload.Login
         );
     }
 
     // UpdateUserPayload -> UserEntity (для создания нового Entity)
-    public static UserEntity ToEntity(this UpdateUserPayload payload)
+    public static UserEntity ToEntity(this UpdateUserPayload payload, int id)
     {
         return new UserEntity(
-            usr_id: 0,
+            usr_id: id,
             name: payload.Name,
-            login: payload.Login,
-            created_at: DateTime.UtcNow,
-            updated_at: DateTime.UtcNow,
-            is_deleted: false
+            login: payload.Login
         );
     }
 }

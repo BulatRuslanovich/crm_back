@@ -10,13 +10,13 @@ using System.Collections.Generic;
 
 public class UserRepository(IDbConnection dbConnection) : IUserRepository
 {
-    public async Task<int> CreateAsync(CreateUserPayload user)
+    public async Task<int> CreateAsync(UserEntity user)
     {
         const string sql = @"
             INSERT INTO usr (name, login) 
             VALUES (@Name, @Login) 
             RETURNING usr_id";
-        
+
         return await dbConnection.ExecuteScalarAsync<int>(sql, user).ConfigureAwait(false);
     }
 
@@ -43,28 +43,43 @@ public class UserRepository(IDbConnection dbConnection) : IUserRepository
         return await dbConnection.QuerySingleOrDefaultAsync<UserEntity>(sql, new { usrId = id }).ConfigureAwait(false);
     }
 
-    public Task<UserEntity?> GetByLoginAsync(string login)
+    public async Task<UserEntity?> GetByLoginAsync(string login)
     {
-        throw new NotImplementedException();
+        var sql = @"SELECT usr_id, name, login, created_at, updated_at, is_deleted
+                    FROM usr
+                    WHERE login = @Login AND NOT is_deleted
+                    LIMIT 1";
+        return await dbConnection.QuerySingleOrDefaultAsync<UserEntity>(sql, new { Login = login }).ConfigureAwait(false);
     }
 
-    public Task<bool> HardDeleteAsync(int id)
+    public async Task<bool> HardDeleteAsync(int id)
     {
-        throw new NotImplementedException();
+         const string sql = "DELETE FROM usr WHERE usr_id = @Id";
+
+        var affectedRows = await dbConnection.ExecuteAsync(sql, new { Id = id }).ConfigureAwait(false);
+        return affectedRows > 0;
     }
 
-    public Task<bool> SoftDeleteAsync(int id)
+    public async Task<bool> SoftDeleteAsync(int id)
     {
-        throw new NotImplementedException();
+        var sql = @"
+            UPDATE usr 
+            SET is_deleted = true
+            WHERE usr_id = @Id";
+
+        var affectedRows = await dbConnection.ExecuteAsync(sql, new { Id = id }).ConfigureAwait(false);
+        return affectedRows > 0;
     }
 
-    public Task<bool> UpdateAsync(UpdateUserPayload user)
+    public async Task<bool> UpdateAsync(UserEntity user)
     {
-        throw new NotImplementedException();
-    }
 
-    public Task<bool> UpdateEntityAsync(UserEntity user)
-    {
-        throw new NotImplementedException();
+        var sql = @"
+            UPDATE usr 
+            SET name = @name, login = @login
+            WHERE usr_id = @usr_id";
+
+        var affectedRows = await dbConnection.ExecuteAsync(sql, user).ConfigureAwait(false);
+        return affectedRows > 0;
     }
 }

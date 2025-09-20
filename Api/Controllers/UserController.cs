@@ -2,7 +2,6 @@ namespace CrmBack.Api.Controllers;
 
 using CrmBack.Core.Models.Payload;
 using CrmBack.Core.Services;
-using CrmBack.Core.Utils.Mapper;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
@@ -53,8 +52,6 @@ public class UserController(IUserService userService) : ControllerBase
         }
     }
 
-
-
     // create
     [HttpPost]
     [ProducesResponseType(typeof(ReadUserPayload), StatusCodes.Status201Created)]
@@ -63,9 +60,8 @@ public class UserController(IUserService userService) : ControllerBase
     {
         try
         {
-            var userDTO = await userService.CreateUser(user).ConfigureAwait(false);
-            var payload = userDTO.ToReadPayload();
-           
+            var payload = await userService.CreateUser(user).ConfigureAwait(false);
+
             return CreatedAtAction(nameof(GetById), new { id = payload.Id }, payload);
         }
         catch (Exception ex)
@@ -74,5 +70,30 @@ public class UserController(IUserService userService) : ControllerBase
         }
     }
 
-
+    // update
+    [HttpPut("{id:int}")]
+    [ProducesResponseType(typeof(ReadUserPayload), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<bool>> UpdateUser(int id, [FromBody] UpdateUserPayload payload)
+    {
+        try
+        {
+            var updated = await userService.UpdateUser(id, payload).ConfigureAwait(true);
+            return updated ? Ok(updated) : NotFound();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+    
+    // delete
+    [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteUser(int id)
+    {
+        var deleted = await userService.DeleteUser(id).ConfigureAwait(true);
+        return deleted ? NoContent() : NotFound();
+    }
 }
