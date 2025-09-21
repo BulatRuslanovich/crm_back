@@ -1,4 +1,3 @@
--- Пользователи системы
 CREATE TABLE usr
 (
     usr_id        INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -14,7 +13,6 @@ CREATE TABLE usr
     is_deleted    BOOLEAN   DEFAULT FALSE
 );
 
--- Роли/политики
 CREATE TABLE policy
 (
     policy_id   INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -26,7 +24,6 @@ CREATE TABLE policy
     is_deleted  BOOLEAN   DEFAULT FALSE
 );
 
--- Связь многие-ко-многим между пользователями и политиками
 CREATE TABLE usr_policy
 (
     usr_policy_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -37,7 +34,6 @@ CREATE TABLE usr_policy
     UNIQUE (usr_id, policy_id)
 );
 
--- Организации
 CREATE TABLE org
 (
     org_id     INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -53,7 +49,6 @@ CREATE TABLE org
     is_deleted BOOLEAN   DEFAULT FALSE
 );
 
--- Статусы активностей
 CREATE TABLE status
 (
     status_id  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -65,7 +60,6 @@ CREATE TABLE status
     is_deleted BOOLEAN   DEFAULT FALSE
 );
 
--- Активности (визиты к организациям)
 CREATE TABLE activ
 (
     activ_id    INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -83,7 +77,6 @@ CREATE TABLE activ
     is_deleted  BOOLEAN   DEFAULT FALSE
 );
 
--- Планы на период
 CREATE TABLE plan
 (
     plan_id    INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -99,10 +92,8 @@ CREATE TABLE plan
     CHECK (end_date >= start_date)
 );
 
--- Индексы для ускорения запросов
 CREATE INDEX idx_usr_login ON usr (login);
 
--- Триггеры для автоматического обновления updated_at
 CREATE OR REPLACE FUNCTION update_updated_at()
     RETURNS TRIGGER AS
 $$
