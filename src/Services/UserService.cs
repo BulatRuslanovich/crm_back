@@ -8,24 +8,24 @@ using CrmBack.Core.Utils.Mapper;
 
 public class UserService(IUserRepository userRepository) : IUserService
 {
-    public async Task<ReadUserPayload> GetUserById(int id)
+    public async Task<ReadUserPayload?> GetUserById(int id)
     {
-        var user = await userRepository.GetByIdAsync(id).ConfigureAwait(false) ?? throw new NullReferenceException("User not exist");
-        return user.ToReadPayload();
+        var user = await userRepository.GetByIdAsync(id).ConfigureAwait(false);
+        return user?.ToReadPayload();
     }
 
     public async Task<IEnumerable<ReadUserPayload>> GetAllUsers()
     {
-        var users = await userRepository.GetAllAsync().ConfigureAwait(false) ?? throw new NullReferenceException("User not exist");
+        var users = await userRepository.GetAllAsync().ConfigureAwait(false);
 
         return users.Select(u => u.ToReadPayload());
     }
 
-    public async Task<ReadUserPayload> CreateUser(CreateUserPayload payload)
+    public async Task<ReadUserPayload?> CreateUser(CreateUserPayload payload)
     {
         var userId = await userRepository.CreateAsync(payload.ToEntity()).ConfigureAwait(false);
         var userDto = await userRepository.GetByIdAsync(userId).ConfigureAwait(false);
-        return userDto?.ToReadPayload() ?? throw new InvalidOperationException("User was created but cannot be retrieved"); ;
+        return userDto?.ToReadPayload() ;
     }
 
     public async Task<bool> UpdateUser(int id, UpdateUserPayload payload)

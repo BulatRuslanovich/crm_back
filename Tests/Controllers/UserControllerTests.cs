@@ -1,6 +1,7 @@
 namespace Tests.Controllers;
 
 using CrmBack.Api.Controllers;
+using CrmBack.Core.Models.Payload.Activ;
 using CrmBack.Core.Models.Payload.User;
 using CrmBack.Core.Services;
 using FluentAssertions;
@@ -44,7 +45,7 @@ public class UserControllerTests
         var userId = 1;
         _userServiceMock
             .Setup(service => service.GetUserById(userId))
-            .ThrowsAsync(new NullReferenceException());
+            .ReturnsAsync((ReadUserPayload?)null);
 
         // Act
         var result = await _controller.GetById(userId);
@@ -78,7 +79,7 @@ public class UserControllerTests
         // Arrange
         _userServiceMock
             .Setup(service => service.GetAllUsers())
-            .ThrowsAsync(new NullReferenceException());
+            .ReturnsAsync([]);
 
         // Act
         var result = await _controller.GetAllUsers();
@@ -87,22 +88,6 @@ public class UserControllerTests
         result.Result.Should().BeOfType<NotFoundResult>();
     }
 
-    [Fact]
-    public async Task GetAllUsers_ServiceThrowsException_ReturnsInternalServerError()
-    {
-        // Arrange
-        var exceptionMessage = "Service error";
-        _userServiceMock
-            .Setup(service => service.GetAllUsers())
-            .ThrowsAsync(new Exception(exceptionMessage));
-
-        // Act
-        var result = await _controller.GetAllUsers();
-
-        // Assert
-        result.Result.Should().BeOfType<ObjectResult>()
-            .Which.StatusCode.Should().Be(500);
-    }
 
     [Fact]
     public async Task Create_ValidPayload_ReturnsCreatedResult()

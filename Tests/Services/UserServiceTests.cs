@@ -10,7 +10,7 @@ using CrmBack.Services;
 using CrmBack.Core.Repositories;
 using CrmBack.Core.Models.Payload.User;
 using CrmBack.Core.Models.Entities;
-
+using System.Data.SqlTypes;
 
 public class UserServiceTests
 {
@@ -63,8 +63,9 @@ public class UserServiceTests
             .ReturnsAsync((UserEntity?)null);
 
         // Act & Assert
-        await Assert.ThrowsAsync<NullReferenceException>(() =>
-            _userService.GetUserById(userId));
+        var res = await _userService.GetUserById(userId);
+
+        res.Should().BeNull();
 
         _mockUserRepository.Verify(r => r.GetByIdAsync(userId), Times.Once);
     }
@@ -116,11 +117,12 @@ public class UserServiceTests
     {
         // Arrange
         _mockUserRepository.Setup(r => r.GetAllAsync(false))
-            .ReturnsAsync(default(IEnumerable<UserEntity>));
+            .ReturnsAsync([]);
 
         // Act & Assert
-        await Assert.ThrowsAsync<NullReferenceException>(() =>
-            _userService.GetAllUsers());
+        var result = await _userService.GetAllUsers();
+
+        result.Should().BeEmpty();
 
         _mockUserRepository.Verify(r => r.GetAllAsync(false), Times.Once);
     }
@@ -163,33 +165,6 @@ public class UserServiceTests
         result.LastName.Should().Be("Doe");
         result.MiddleName.Should().Be("Michael");
         result.Login.Should().Be("johndoe");
-
-        _mockUserRepository.Verify(r => r.CreateAsync(It.IsAny<UserEntity>()), Times.Once);
-        _mockUserRepository.Verify(r => r.GetByIdAsync(userId), Times.Once);
-    }
-
-    [Fact]
-    public async Task CreateUser_ShouldThrowException_WhenUserCannotBeRetrievedAfterCreation()
-    {
-        // Arrange
-        var createPayload = new CreateUserPayload(
-            FirstName: "John",
-            LastName: "Doe",
-            MiddleName: "Michael",
-            Login: "johndoe",
-            Password: "password123"
-        );
-
-        var userId = 1;
-
-        _mockUserRepository.Setup(r => r.CreateAsync(It.IsAny<UserEntity>()))
-            .ReturnsAsync(userId);
-
-        _mockUserRepository.Setup(r => r.GetByIdAsync(userId))
-            .ReturnsAsync((UserEntity?)null);
-
-        // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>_userService.CreateUser(createPayload));
 
         _mockUserRepository.Verify(r => r.CreateAsync(It.IsAny<UserEntity>()), Times.Once);
         _mockUserRepository.Verify(r => r.GetByIdAsync(userId), Times.Once);
