@@ -6,7 +6,7 @@ public record CreateActivPayload(
     int UsrId,
     int OrgId,
     DateTime VisitDate,
-    TimeOnly StartTime,
-    TimeOnly EndTime,
+    TimeSpan StartTime,
+    TimeSpan EndTime,
     string Description
 );

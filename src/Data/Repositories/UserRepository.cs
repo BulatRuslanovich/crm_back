@@ -46,7 +46,13 @@ public class UserRepository(IDbConnection dbConnection) : IUserRepository
     public async Task<int> CreateAsync(UserEntity user)
     {
         const string sql = @"INSERT INTO usr (first_name, middle_name, last_name, login, password_hash, created_by, updated_by)
-                            VALUES (@first_name, @middle_name, @last_name, @login, @password_hash, 'system', 'system')
+                            VALUES (@first_name,
+                            @middle_name,
+                            @last_name,
+                            @login,
+                            @password_hash,
+                            'system',
+                            'system')
                             RETURNING usr_id";
 
         return await dbConnection.ExecuteScalarAsync<int>(sql, user).ConfigureAwait(false);
@@ -54,11 +60,30 @@ public class UserRepository(IDbConnection dbConnection) : IUserRepository
 
     public async Task<bool> UpdateAsync(UserEntity user)
     {
+        var usrFromDb = await GetByIdAsync(user.usr_id);
+
+        if (usrFromDb == null) {
+            return false;
+        }
+
+        var result = new UserEntity(
+            usr_id: usrFromDb.usr_id,
+            first_name: user.first_name ?? usrFromDb.first_name,
+            last_name: user.last_name ?? usrFromDb.last_name,
+            middle_name: user.middle_name ?? usrFromDb.middle_name,
+            login: user.login ?? usrFromDb.login,
+            password_hash: user.password_hash ?? usrFromDb.password_hash
+        );
+
         var sql = @"UPDATE usr
-                    SET first_name = @first_name, middle_name = @middle_name, last_name = @last_name, login = @login, password_hash = @password_hash
+                    SET first_name = @first_name,
+                    middle_name = @middle_name,
+                    last_name = @last_name,
+                    login = @login,
+                    password_hash = @password_hash
                     WHERE usr_id = @usr_id";
 
-        var affectedRows = await dbConnection.ExecuteAsync(sql, user).ConfigureAwait(false);
+        var affectedRows = await dbConnection.ExecuteAsync(sql, result).ConfigureAwait(false);
         return affectedRows > 0;
     }
 

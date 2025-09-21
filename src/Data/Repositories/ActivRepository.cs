@@ -33,7 +33,7 @@ public class ActivRepository(IDbConnection dbConnection) : IActivRepository
 
     public async Task<int> CreateAsync(ActivEntity activ)
     {
-        const string sql = @"INSERT INTO activ (usr_id, org_id, status_id, visit_date, start_time, end_time, description, created_at, updated_at) VALUES 
+        const string sql = @"INSERT INTO activ (usr_id, org_id, status_id, visit_date, start_time, end_time, description, created_by, updated_by) VALUES 
                             (@usr_id, 
                             @org_id, 
                             @status_id, 
@@ -42,7 +42,7 @@ public class ActivRepository(IDbConnection dbConnection) : IActivRepository
                             @end_time, 
                             @description, 
                             'system', 
-                            'system');
+                            'system')
                             RETURNING activ_id";
 
         return await dbConnection.ExecuteScalarAsync<int>(sql, activ).ConfigureAwait(false);
@@ -50,6 +50,24 @@ public class ActivRepository(IDbConnection dbConnection) : IActivRepository
 
     public async Task<bool> UpdateAsync(ActivEntity activ)
     {
+        var oldActiv = await GetByIdAsync(activ.activ_id);
+
+        if (oldActiv == null) {
+            return false;
+        }
+
+        var result = new ActivEntity(
+            activ_id: activ.activ_id,
+            usr_id: activ.usr_id ?? oldActiv.usr_id,
+            org_id: activ.org_id ?? oldActiv.org_id,
+            status_id: activ.status_id ?? oldActiv.status_id,
+            visit_date: activ.visit_date ?? oldActiv.visit_date,
+            start_time: activ.start_time ?? oldActiv.start_time,
+            end_time: activ.end_time ?? activ.end_time,
+            description: activ.description == "-" ? oldActiv.description : activ.description
+        );
+
+
         var sql = @"UPDATE activ
                     SET usr_id = @usr_id, 
                         org_id = @org_id, 
@@ -58,10 +76,9 @@ public class ActivRepository(IDbConnection dbConnection) : IActivRepository
                         start_time = @start_time,
                         end_time = @end_time,
                         description = @description
-                        updated_at = @updated_at
                     WHERE activ_id = @activ_id";
 
-        var affectedRows = await dbConnection.ExecuteAsync(sql, activ).ConfigureAwait(false);
+        var affectedRows = await dbConnection.ExecuteAsync(sql, result).ConfigureAwait(false);
         return affectedRows > 0;
     }
 

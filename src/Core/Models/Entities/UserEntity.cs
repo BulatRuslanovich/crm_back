@@ -1,15 +1,15 @@
 namespace CrmBack.Core.Models.Entities;
 
 public record UserEntity(
-    int usr_id = 0,
-    string first_name = "-",
-    string middle_name = "-",
-    string last_name = "-",
-    string login = "-",
-    string password_hash = "-",
-    DateTime created_at = default,
-    DateTime updated_at = default,
-    string created_by = "system",
-    string updated_by = "system",
-    bool is_deleted = false
+    int usr_id,
+    string? first_name = null,
+    string? middle_name = null,
+    string? last_name = null,
+    string? login = null,
+    string? password_hash = null,
+    DateTime? created_at = null,
+    DateTime? updated_at = null,
+    string? created_by = null,
+    string? updated_by = null,
+    bool? is_deleted = null
 );

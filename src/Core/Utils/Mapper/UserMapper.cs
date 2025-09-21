@@ -9,10 +9,10 @@ public static class UserMapper
     {
         return new ReadUserPayload(
             Id: entity.usr_id,
-            FirstName: entity.first_name,
-            LastName: entity.last_name,
-            MiddleName: entity.middle_name,
-            Login: entity.login
+            FirstName: entity.first_name ?? "-",
+            LastName: entity.last_name ?? "-",
+            MiddleName: entity.middle_name ?? "-",
+            Login: entity.login ?? "-"
         );
     }
 
@@ -24,6 +24,7 @@ public static class UserMapper
     public static UserEntity ToEntity(this CreateUserPayload payload)
     {
         return new UserEntity(
+            usr_id: 0,
             first_name: payload.FirstName,
             last_name: payload.LastName,
             middle_name: payload.MiddleName,

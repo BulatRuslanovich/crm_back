@@ -10,13 +10,13 @@ public static class ActivMapper
     {
         return new ReadActivPayload(
             ActivId: entity.activ_id,
-            UsrId: entity.usr_id,
-            OrgId: entity.org_id,
-            StatusId: entity.status_id,
-            VisitDate: entity.visit_date,
-            StartTime: entity.start_time,
-            EndTime: entity.end_time,
-            Description: entity.description
+            UsrId: entity.usr_id ?? 0,
+            OrgId: entity.org_id ?? 0,
+            StatusId: entity.status_id ?? 0,
+            VisitDate: entity.visit_date ?? default,
+            StartTime: entity.start_time ?? default,
+            EndTime: entity.end_time ?? default,
+            Description: entity.description ?? "-"
         );
     }
 
@@ -28,8 +28,10 @@ public static class ActivMapper
     public static ActivEntity ToEntity(this CreateActivPayload payload)
     {
         return new ActivEntity(
+            activ_id: 0,
             usr_id: payload.UsrId,
             org_id: payload.OrgId,
+            status_id: 1,
             visit_date: payload.VisitDate,
             start_time: payload.StartTime,
             end_time: payload.EndTime,
@@ -45,7 +47,7 @@ public static class ActivMapper
             visit_date: payload.VisitDate,
             start_time: payload.StartTime,
             end_time: payload.EndTime,
-            description: payload.Description 
+            description: payload.Description
         );
     }
 }

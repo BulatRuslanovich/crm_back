@@ -8,7 +8,7 @@ public record ReadActivPayload(
     int OrgId,
     int StatusId,
     DateTime VisitDate,
-    TimeOnly StartTime,
-    TimeOnly EndTime,
+    TimeSpan StartTime,
+    TimeSpan EndTime,
     string Description
 );
