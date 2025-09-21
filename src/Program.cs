@@ -16,7 +16,7 @@ builder.Services.AddSwaggerGen(static option =>
     {
         Title = "Crm API",
         Version = "v1",
-        Description = "Описание моего CRM API"
+        Description = "CRM API"
     });
 });
 
@@ -38,6 +38,8 @@ builder.Services.AddScoped<IDbConnection>(sp =>
 
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IActivRepository, ActivRepository>();
+
 builder.Services.AddScoped<IUserService, UserService>();
 
 builder.Services.AddControllers();
