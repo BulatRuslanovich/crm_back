@@ -10,8 +10,8 @@ namespace CrmBack.Core.Models.Entities;
 //     is_deleted  BOOLEAN DEFAULT FALSE
 // );
 public record StatusEntity(
-    int status_id,
-    string name,
+    int status_id = 0,
+    string name = "-",
     DateTime created_at = default,
     DateTime updated_at = default,
     string created_by = "system",

@@ -8,9 +8,9 @@ public interface IUserService
 
     public Task<IEnumerable<ReadUserPayload>> GetAllUsers();
 
-    public Task<ReadUserPayload> CreateUser(CreateUserPayload user);
+    public Task<ReadUserPayload> CreateUser(CreateUserPayload payload);
 
-    public Task<bool> UpdateUser(int id, UpdateUserPayload user);
+    public Task<bool> UpdateUser(int id, UpdateUserPayload payload);
 
     public Task<bool> DeleteUser(int id); 
 }

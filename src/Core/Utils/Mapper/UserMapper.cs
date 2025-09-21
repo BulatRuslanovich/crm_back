@@ -5,7 +5,6 @@ using CrmBack.Core.Models.Payload.User;
 
 public static class UserMapper
 {
-    // UserEntity -> ReadUserPayload
     public static ReadUserPayload ToReadPayload(this UserEntity entity)
     {
         return new ReadUserPayload(
@@ -17,17 +16,14 @@ public static class UserMapper
         );
     }
 
-    // IEnumerable<UserEntity> -> IEnumerable<ReadUserPayload>
     public static IEnumerable<ReadUserPayload> ToReadPayloads(this IEnumerable<UserEntity> entities)
     {
         return entities.Select(ToReadPayload);
     }
 
-    // CreateUserPayload -> UserEntity
     public static UserEntity ToEntity(this CreateUserPayload payload)
     {
         return new UserEntity(
-            usr_id: 0,
             first_name: payload.FirstName,
             last_name: payload.LastName,
             middle_name: payload.MiddleName,
@@ -36,7 +32,6 @@ public static class UserMapper
         );
     }
 
-    // UpdateUserPayload -> UserEntity (для создания нового Entity)
     public static UserEntity ToEntity(this UpdateUserPayload payload, int id)
     {
         return new UserEntity(

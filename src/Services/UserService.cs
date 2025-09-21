@@ -8,16 +8,10 @@ using CrmBack.Core.Utils.Mapper;
 
 public class UserService(IUserRepository userRepository) : IUserService
 {
-    public async Task<ReadUserPayload> CreateUser(CreateUserPayload user)
+    public async Task<ReadUserPayload> GetUserById(int id)
     {
-        var userId = await userRepository.CreateAsync(user.ToEntity()).ConfigureAwait(false);
-        var userDto = await userRepository.GetByIdAsync(userId).ConfigureAwait(false);
-        return userDto?.ToReadPayload() ?? throw new InvalidOperationException("User was created but cannot be retrieved"); ;
-    }
-
-    public async Task<bool> DeleteUser(int id)
-    {
-        return await userRepository.SoftDeleteAsync(id).ConfigureAwait(false);
+        var user = await userRepository.GetByIdAsync(id).ConfigureAwait(false) ?? throw new NullReferenceException("User not exist");
+        return user.ToReadPayload();
     }
 
     public async Task<IEnumerable<ReadUserPayload>> GetAllUsers()
@@ -27,14 +21,20 @@ public class UserService(IUserRepository userRepository) : IUserService
         return users.Select(u => u.ToReadPayload());
     }
 
-    public async Task<ReadUserPayload> GetUserById(int id)
+    public async Task<ReadUserPayload> CreateUser(CreateUserPayload payload)
     {
-        var user = await userRepository.GetByIdAsync(id).ConfigureAwait(false) ?? throw new NullReferenceException("User not exist");
-        return user.ToReadPayload();
+        var userId = await userRepository.CreateAsync(payload.ToEntity()).ConfigureAwait(false);
+        var userDto = await userRepository.GetByIdAsync(userId).ConfigureAwait(false);
+        return userDto?.ToReadPayload() ?? throw new InvalidOperationException("User was created but cannot be retrieved"); ;
     }
 
-    public async Task<bool> UpdateUser(int id, UpdateUserPayload user)
+    public async Task<bool> UpdateUser(int id, UpdateUserPayload payload)
     {
-        return await userRepository.UpdateAsync(user.ToEntity(id)).ConfigureAwait(false);
+        return await userRepository.UpdateAsync(payload.ToEntity(id)).ConfigureAwait(false);
+    }
+
+    public async Task<bool> DeleteUser(int id)
+    {
+        return await userRepository.SoftDeleteAsync(id).ConfigureAwait(false);
     }
 }
