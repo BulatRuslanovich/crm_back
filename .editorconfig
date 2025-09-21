@@ -49,7 +49,8 @@ csharp_space_around_declaration_statements = do_not_ignore
 csharp_using_directive_placement = inside_namespace:suggestion
 
 # Анализаторы
-dotnet_diagnostic.CA2007.severity = warning
+dotnet_diagnostic.CA2007.severity = none
+dotnet_diagnostic.CS8620.severity = none
 dotnet_diagnostic.CA1822.severity = warning
 dotnet_diagnostic.CA1051.severity = warning
 

@@ -116,7 +116,7 @@ public class UserServiceTests
     {
         // Arrange
         _mockUserRepository.Setup(r => r.GetAllAsync(false))
-            .ReturnsAsync((IEnumerable<UserEntity>?)null);
+            .ReturnsAsync(default(IEnumerable<UserEntity>));
 
         // Act & Assert
         await Assert.ThrowsAsync<NullReferenceException>(() =>
