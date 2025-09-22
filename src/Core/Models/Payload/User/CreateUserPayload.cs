@@ -9,7 +9,7 @@ public record CreateUserPayload
     [MaxLength(20, ErrorMessage = "First name cannot be over 20 character")]
     string FirstName,
     [Required]
-    [MinLength(4, ErrorMessage = "Last name cannot be less 2 character")]
+    [MinLength(2, ErrorMessage = "Last name cannot be less 2 character")]
     [MaxLength(20, ErrorMessage = "Last name cannot be over 20 character")]
     string LastName,
     [Required]

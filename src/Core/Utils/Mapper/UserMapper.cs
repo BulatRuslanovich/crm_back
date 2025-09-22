@@ -29,7 +29,7 @@ public static class UserMapper
             last_name: payload.LastName,
             middle_name: payload.MiddleName,
             login: payload.Login,
-            password_hash: payload.Password
+            password_hash: BCrypt.Net.BCrypt.HashPassword(payload.Password)
         );
     }
 

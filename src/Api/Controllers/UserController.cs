@@ -2,12 +2,14 @@ namespace CrmBack.Api.Controllers;
 
 using CrmBack.Core.Models.Payload.User;
 using CrmBack.Core.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
 [Route("api/user")]
 public class UserController(IUserService userService) : ControllerBase
 {
+    [Authorize]
     [HttpGet("{id:int}")]
     [ProducesResponseType(typeof(ReadUserPayload), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -25,6 +27,7 @@ public class UserController(IUserService userService) : ControllerBase
         }
     }
 
+    [Authorize]
     [HttpGet]
     [ProducesResponseType(typeof(List<ReadUserPayload>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -66,6 +69,7 @@ public class UserController(IUserService userService) : ControllerBase
         }
     }
 
+    [Authorize]
     [HttpPut("{id:int}")]
     [ProducesResponseType(typeof(ReadUserPayload), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -86,6 +90,7 @@ public class UserController(IUserService userService) : ControllerBase
     }
 
     // delete
+    [Authorize]
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -93,5 +98,29 @@ public class UserController(IUserService userService) : ControllerBase
     {
         var deleted = await userService.DeleteUser(id).ConfigureAwait(true);
         return deleted ? NoContent() : NotFound();
+    }
+
+    /// <summary>
+    /// Аутентификация пользователя и получение JWT-токена
+    /// </summary>
+    /// <param name="payload">Данные для входа</param>
+    /// <returns>JWT-токен для авторизации</returns>
+    [HttpPost("login")]
+    [ProducesResponseType(typeof(LoginResponsePayload), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<LoginResponsePayload>> Login([FromBody] LoginUserPayload payload)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        try
+        {
+            var response = await userService.LoginUser(payload);
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            return Unauthorized(new { error = ex.Message });
+        }
     }
 }
