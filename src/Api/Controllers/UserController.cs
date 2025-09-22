@@ -12,6 +12,7 @@ public class UserController(IUserService userService) : ControllerBase
     [Authorize]
     [HttpGet("{id:int}")]
     [ProducesResponseType(typeof(ReadUserPayload), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ReadUserPayload>> GetById(int id)
     {
@@ -30,6 +31,7 @@ public class UserController(IUserService userService) : ControllerBase
     [Authorize]
     [HttpGet]
     [ProducesResponseType(typeof(List<ReadUserPayload>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<List<ReadUserPayload>>> GetAllUsers()
     {
@@ -53,6 +55,7 @@ public class UserController(IUserService userService) : ControllerBase
     [HttpPost]
     [ProducesResponseType(typeof(ReadUserPayload), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<ReadUserPayload>> Create([FromBody] CreateUserPayload user)
     {
         if (!ModelState.IsValid)
@@ -72,6 +75,7 @@ public class UserController(IUserService userService) : ControllerBase
     [Authorize]
     [HttpPut("{id:int}")]
     [ProducesResponseType(typeof(ReadUserPayload), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<bool>> UpdateUser(int id, [FromBody] UpdateUserPayload payload)
     {
@@ -93,6 +97,7 @@ public class UserController(IUserService userService) : ControllerBase
     [Authorize]
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteUser(int id)
     {
