@@ -10,13 +10,27 @@ using Dapper;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-public class UserRepository(IDbConnection dbConnection, ILogger<UserRepository> logger, IOptions<DatabaseLoggingOptions> loggingOptions) : IUserRepository
+public class UserRepository(
+    IDbConnection dbConnection,
+    ILogger<UserRepository> logger,
+    IOptions<DatabaseLoggingOptions> loggingOptions) : BaseRepository<UserEntity>(dbConnection, logger, loggingOptions), IUserRepository
 {
-    private const string BaseSelectQuery = @"SELECT usr_id, first_name, middle_name, last_name, login, password_hash, created_at, updated_at, created_by, updated_by, is_deleted
+    private readonly IDbConnection dbConnection = dbConnection;
+    private readonly bool enableDbLog = loggingOptions.Value.EnableDatabaseLogging;
+    private const string BaseSelectQuery = @"SELECT usr_id,
+                                                    first_name,
+                                                    middle_name,
+                                                    last_name,
+                                                    login,
+                                                    password_hash,
+                                                    created_at,
+                                                    updated_at,
+                                                    created_by,
+                                                    updated_by,
+                                                    is_deleted
                                         FROM usr
                                         WHERE {0} AND NOT is_deleted
                                         LIMIT 1";
-    private readonly bool enableDbLog = loggingOptions.Value.EnableDatabaseLogging;
 
     public async Task<UserEntity?> GetByIdAsync(int id)
     {
@@ -25,39 +39,14 @@ public class UserRepository(IDbConnection dbConnection, ILogger<UserRepository> 
 
     private async Task<UserEntity?> GetByIdAsync(int id, IDbTransaction? transaction = null)
     {
-        var sql = string.Format(BaseSelectQuery, "usr_id = @usr_id");
-        var parameters = new { usr_id = id };
-
-        if (enableDbLog)
-        {
-            logger.LogDebug(new EventId(1, "SQL"), "[SQL] Executing query: {Sql} with parameters: {@Parameters}", sql, parameters);
-        }
-
-        var res = await dbConnection.QuerySingleOrDefaultAsync<UserEntity>(sql, parameters, transaction).ConfigureAwait(false);
-
-        if (enableDbLog && res == null)
-        {
-            logger.LogDebug("No user found with ID: {Id}", id);
-        }
-
-        return res;
+        var sql = string.Format(BaseSelectQuery, "usr_id = @id");
+       return await GetByIdAsync(sql, id, transaction).ConfigureAwait(false);
     }
 
     public async Task<UserEntity?> GetByLoginAsync(string _login)
     {
-        var sql = string.Format(BaseSelectQuery, "login = @login");
-        var parameters = new { login = _login };
-
-        LogSql(sql, parameters);
-
-        var res = await dbConnection.QuerySingleOrDefaultAsync<UserEntity>(sql, parameters).ConfigureAwait(false);
-
-        if (enableDbLog && res == null)
-        {
-            logger.LogDebug("No user found with login: {Login}", _login);
-        }
-
-        return res;
+        var sql = string.Format(BaseSelectQuery, "login = @id");
+        return await GetByIdAsync(sql, _login).ConfigureAwait(false);
     }
 
     public async Task<IEnumerable<UserEntity>> GetAllAsync(bool includeDeleted = false, int page = 1, int pageSize = 10)
@@ -80,20 +69,9 @@ public class UserRepository(IDbConnection dbConnection, ILogger<UserRepository> 
             sql += " WHERE NOT is_deleted";
         }
 
-        var parameters = new { PageSize = pageSize, Offset = (page - 1) * pageSize };
-
         sql += " LIMIT @PageSize OFFSET @Offset";
 
-        LogSql(sql, parameters);
-
-        var res = await dbConnection.QueryAsync<UserEntity>(sql, parameters).ConfigureAwait(false);
-
-        if (enableDbLog && !res.Any())
-        {
-            logger.LogDebug("No users found for GetAllAsync with includeDeleted={IncludeDeleted}, page={Page}, pageSize={PageSize}", includeDeleted, page, pageSize);
-        }
-
-        return res;
+        return await GetAllAsync(sql, new { PageSize = pageSize, Offset = (page - 1) * pageSize }).ConfigureAwait(false);
     }
 
     public async Task<int> CreateAsync(UserEntity user)
@@ -102,16 +80,7 @@ public class UserRepository(IDbConnection dbConnection, ILogger<UserRepository> 
                             VALUES (@first_name, @middle_name, @last_name, @login, @password_hash, 'system', 'system')
                             RETURNING usr_id";
 
-        LogSql(sql, user);
-
-        var res = await dbConnection.ExecuteScalarAsync<int>(sql, user).ConfigureAwait(false);
-
-        if (enableDbLog)
-        {
-            logger.LogDebug("Created user with ID {Id}", res);
-        }
-
-        return res;
+        return await CreateAsync(sql, user).ConfigureAwait(false);
     }
 
     public async Task<bool> UpdateAsync(UserEntity user)
@@ -171,18 +140,7 @@ public class UserRepository(IDbConnection dbConnection, ILogger<UserRepository> 
     public async Task<bool> HardDeleteAsync(int id)
     {
         const string sql = "DELETE FROM usr WHERE usr_id = @Id";
-        var parameters = new { Id = id };
-
-        LogSql(sql, parameters);
-
-        var affectedRows = await dbConnection.ExecuteAsync(sql, parameters).ConfigureAwait(false);
-
-        if (enableDbLog)
-        {
-            logger.LogDebug("Hard deleted user with ID {Id}, affected rows: {AffectedRows}", id, affectedRows);
-        }
-
-        return affectedRows > 0;
+        return await DeleteAsync(sql, new { Id = id }, isHardDelete: true).ConfigureAwait(false);
     }
 
     public async Task<bool> SoftDeleteAsync(int id)
@@ -190,25 +148,6 @@ public class UserRepository(IDbConnection dbConnection, ILogger<UserRepository> 
         var sql = @"UPDATE usr 
                     SET is_deleted = true
                     WHERE usr_id = @Id";
-        var parameters = new { Id = id };
-
-        LogSql(sql, parameters);
-
-        var affectedRows = await dbConnection.ExecuteAsync(sql, parameters).ConfigureAwait(false);
-
-        if (enableDbLog)
-        {
-            logger.LogDebug("Soft deleted user with ID {Id}, affected rows: {AffectedRows}", id, affectedRows);
-        }
-
-        return affectedRows > 0;
-    }
-
-    private void LogSql(string sql, object parameters)
-    {
-        if (enableDbLog)
-        {
-            logger.LogDebug(new EventId(99, "SQL"), "[SQL] Executing SQL: {Sql} with parameters: {@Parameters}", sql, parameters);
-        }
+        return await DeleteAsync(sql, new { Id = id }, isHardDelete: false).ConfigureAwait(false);
     }
 }
