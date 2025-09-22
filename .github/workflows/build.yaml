@@ -66,14 +66,22 @@ jobs:
         dotnet --info
     - name: Run unit tests with coverage
       run: dotnet test --no-restore --verbosity normal /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:CoverletOutput=./coverage/ --logger "trx;LogFileName=test-results.trx"
-    - name: Debug test results and coverage
-      run: ls -R
     - name: Upload test results
       if: always()
       uses: actions/upload-artifact@v4
       with:
         name: test-results
         path: ./**/test-results.trx
+    - name: Install ReportGenerator
+      run: dotnet tool install -g dotnet-reportgenerator-globaltool
+    - name: Generate coverage badge
+      run: reportgenerator -reports:./coverage/coverage.opencover.xml -targetdir:./coverage-report -reporttypes:Badges
+    - name: Upload coverage badge
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-badge
+        path: ./coverage-report/badge.svg
     - name: Upload coverage to Codecov
       if: success()
       uses: codecov/codecov-action@v4
