@@ -6,21 +6,34 @@ using CrmBack.Core.Repositories;
 using System.Threading.Tasks;
 using CrmBack.Core.Models.Entities;
 using System.Collections.Generic;
+using System.Transactions;
 
 public class UserRepository(IDbConnection dbConnection) : IUserRepository
 {
+    private const string BaseSelectQuery = @"SELECT usr_id, first_name, middle_name, last_name, login, password_hash, created_at, updated_at, created_by, updated_by, is_deleted
+                                        FROM usr
+                                        WHERE {0} AND NOT is_deleted
+                                        LIMIT 1";
+
     public async Task<UserEntity?> GetByIdAsync(int id)
     {
-
-        var sql = @"SELECT usr_id, first_name, middle_name, last_name, login, password_hash, created_at, updated_at, created_by, updated_by, is_deleted
-                    FROM usr
-                    WHERE usr_id = @usr_id AND NOT is_deleted
-                    LIMIT 1";
-
-        return await dbConnection.QuerySingleOrDefaultAsync<UserEntity>(sql, new { usr_id = id }).ConfigureAwait(false);
+        return await GetByIdAsync(id, null);
     }
 
-    public async Task<IEnumerable<UserEntity>> GetAllAsync(bool includeDeleted = false)
+    private async Task<UserEntity?> GetByIdAsync(int id, IDbTransaction? transaction = null)
+    {
+
+        var sql = string.Format(BaseSelectQuery, "usr_id = @usr_id");
+        return await dbConnection.QuerySingleOrDefaultAsync<UserEntity>(sql, new { usr_id = id }, transaction).ConfigureAwait(false);
+    }
+
+    public async Task<UserEntity?> GetByLoginAsync(string _login)
+    {
+        var sql = string.Format(BaseSelectQuery, "login = @login");
+        return await dbConnection.QuerySingleOrDefaultAsync<UserEntity>(sql, new { login = _login }).ConfigureAwait(false);
+    }
+
+    public async Task<IEnumerable<UserEntity>> GetAllAsync(bool includeDeleted = false, int page = 1, int pageSize = 10)
     {
         var sql = @"SELECT usr_id, first_name, middle_name, last_name, login, password_hash, created_at, updated_at, created_by, updated_by, is_deleted
                     FROM usr";
@@ -30,17 +43,9 @@ public class UserRepository(IDbConnection dbConnection) : IUserRepository
             sql += " WHERE NOT is_deleted";
         }
 
-        return await dbConnection.QueryAsync<UserEntity>(sql).ConfigureAwait(false);
-    }
+        sql += " LIMIT @PageSize OFFSET @Offset";
 
-    public async Task<UserEntity?> GetByLoginAsync(string _login)
-    {
-        var sql = @"SELECT usr_id, first_name, middle_name, last_name, login, password_hash, created_at, updated_at, created_by, updated_by, is_deleted
-                    FROM usr
-                    WHERE login = @login AND NOT is_deleted
-                    LIMIT 1";
-
-        return await dbConnection.QuerySingleOrDefaultAsync<UserEntity>(sql, new { login = _login }).ConfigureAwait(false);
+        return await dbConnection.QueryAsync<UserEntity>(sql, new { PageSize = pageSize, Offset = (page - 1) * pageSize }).ConfigureAwait(false);
     }
 
     public async Task<int> CreateAsync(UserEntity user)
@@ -60,22 +65,27 @@ public class UserRepository(IDbConnection dbConnection) : IUserRepository
 
     public async Task<bool> UpdateAsync(UserEntity user)
     {
-        var usrFromDb = await GetByIdAsync(user.usr_id);
+        using var tran = dbConnection.BeginTransaction();
 
-        if (usrFromDb == null) {
-            return false;
-        }
+        try
+        {
+            var usrFromDb = await GetByIdAsync(user.usr_id, tran);
 
-        var result = new UserEntity(
-            usr_id: usrFromDb.usr_id,
-            first_name: user.first_name ?? usrFromDb.first_name,
-            last_name: user.last_name ?? usrFromDb.last_name,
-            middle_name: user.middle_name ?? usrFromDb.middle_name,
-            login: user.login ?? usrFromDb.login,
-            password_hash: user.password_hash ?? usrFromDb.password_hash
-        );
+            if (usrFromDb == null)
+            {
+                return false;
+            }
 
-        var sql = @"UPDATE usr
+            var result = new UserEntity(
+                usr_id: usrFromDb.usr_id,
+                first_name: user.first_name ?? usrFromDb.first_name,
+                last_name: user.last_name ?? usrFromDb.last_name,
+                middle_name: user.middle_name ?? usrFromDb.middle_name,
+                login: user.login ?? usrFromDb.login,
+                password_hash: user.password_hash ?? usrFromDb.password_hash
+            );
+
+            var sql = @"UPDATE usr
                     SET first_name = @first_name,
                     middle_name = @middle_name,
                     last_name = @last_name,
@@ -83,8 +93,14 @@ public class UserRepository(IDbConnection dbConnection) : IUserRepository
                     password_hash = @password_hash
                     WHERE usr_id = @usr_id";
 
-        var affectedRows = await dbConnection.ExecuteAsync(sql, result).ConfigureAwait(false);
-        return affectedRows > 0;
+            var affectedRows = await dbConnection.ExecuteAsync(sql, result, tran).ConfigureAwait(false);
+            return affectedRows > 0;
+        }
+        catch
+        {
+            tran.Rollback();
+            throw;
+        }
     }
 
     public async Task<bool> HardDeleteAsync(int id)

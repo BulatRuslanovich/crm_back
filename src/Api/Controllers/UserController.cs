@@ -55,7 +55,6 @@ public class UserController(IUserService userService) : ControllerBase
     [HttpPost]
     [ProducesResponseType(typeof(ReadUserPayload), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<ReadUserPayload>> Create([FromBody] CreateUserPayload user)
     {
         if (!ModelState.IsValid)
@@ -93,7 +92,6 @@ public class UserController(IUserService userService) : ControllerBase
         }
     }
 
-    // delete
     [Authorize]
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

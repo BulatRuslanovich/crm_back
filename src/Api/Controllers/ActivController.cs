@@ -9,7 +9,9 @@ using Microsoft.AspNetCore.Mvc;
 public class ActivController(IActivService activService) : ControllerBase
 {
     [HttpGet("{id:int}")]
+    [Authorize]
     [ProducesResponseType(typeof(ReadActivPayload), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ReadActivPayload>> GetById(int id)
     {
@@ -26,7 +28,9 @@ public class ActivController(IActivService activService) : ControllerBase
     }
 
     [HttpGet]
+    [Authorize]
     [ProducesResponseType(typeof(List<ReadActivPayload>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<List<ReadActivPayload>>> GetAllUsers()
     {
@@ -48,7 +52,9 @@ public class ActivController(IActivService activService) : ControllerBase
     }
 
     [HttpPost]
+    [Authorize]
     [ProducesResponseType(typeof(ReadActivPayload), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<ReadActivPayload>> Create([FromBody] CreateActivPayload activ)
     {
@@ -67,7 +73,9 @@ public class ActivController(IActivService activService) : ControllerBase
     }
 
     [HttpPut("{id:int}")]
+    [Authorize]
     [ProducesResponseType(typeof(ReadActivPayload), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<bool>> UpdateUser(int id, [FromBody] UpdateActivPayload payload)
     {
@@ -85,9 +93,10 @@ public class ActivController(IActivService activService) : ControllerBase
         }
     }
 
-    // delete
     [HttpDelete("{id:int}")]
+    [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteUser(int id)
     {
