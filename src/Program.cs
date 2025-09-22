@@ -8,12 +8,32 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Npgsql;
+using Serilog;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
 
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(static option =>
+builder.Host.UseSerilog((context, config) =>
+{
+    config.WriteTo.Console();
+    config.WriteTo.Debug();
+    config.MinimumLevel.Information();
+    config.MinimumLevel.Override("Microsoft.AspNetCore", Serilog.Events.LogEventLevel.Warning);
+});
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowSwagger", policy =>
+    {
+        policy.WithOrigins("http://localhost:4040", "https://localhost:4041")
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
+    });
+});
+
+builder.Services.AddSwaggerGen(option =>
 {
     option.SwaggerDoc("v1", new OpenApiInfo
     {
@@ -21,6 +41,10 @@ builder.Services.AddSwaggerGen(static option =>
         Version = "v1",
         Description = "CRM API"
     });
+
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    option.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
 
     option.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
@@ -52,8 +76,7 @@ builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
+}).AddJwtBearer(options =>
 {
     options.TokenValidationParameters = new TokenValidationParameters
     {
@@ -63,54 +86,52 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = builder.Configuration["Jwt:Issuer"],
         ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? "lol"))
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key is not configured"))
+        ),
+        ClockSkew = TimeSpan.FromSeconds(30)
     };
 });
 
+builder.Services.AddMemoryCache();
 
-builder.Services.AddLogging(loggingBuilder =>
-{
-    loggingBuilder.AddConsole();
-    loggingBuilder.AddDebug();
-});
-
-// connect to db
 builder.Services.AddScoped<IDbConnection>(sp =>
 {
     var configuration = sp.GetRequiredService<IConfiguration>();
     var connectionString = configuration.GetConnectionString("DbConnectionString");
-
     return new NpgsqlConnection(connectionString);
 });
 
 
-
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IActivRepository, ActivRepository>();
-
+builder.Services.AddScoped<IOrgRepository, OrgRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IActivService, ActivService>();
+builder.Services.AddScoped<IOrgService, OrgService>();
 
 builder.Services.AddControllers();
-
+builder.Services.AddEndpointsApiExplorer();
 
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
+app.UseExceptionHandler(errorApp =>
 {
-    try
+    errorApp.Run(async context =>
     {
-        var connection = scope.ServiceProvider.GetRequiredService<IDbConnection>();
-        connection.Open();
-        Console.WriteLine("Database connection successful");
-        connection.Close();
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Database connection failed: {ex.Message}");
-        throw;
-    }
-}
+        var errorFeature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+        if (errorFeature != null)
+        {
+            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+            await context.Response.WriteAsJsonAsync(new { error = "An unexpected error occurred" });
+            Log.Error(errorFeature.Error, "Unhandled exception in {Path}", context.Request.Path);
+        }
+    });
+});
+
+
+app.UseSerilogRequestLogging();
+app.UseCors("AllowSwagger");
 
 if (app.Environment.IsDevelopment())
 {
@@ -127,6 +148,4 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-
-app.Run();
-
+app.Run("http://localhost:4040");

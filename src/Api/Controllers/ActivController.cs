@@ -4,11 +4,21 @@ using CrmBack.Core.Models.Payload.Activ;
 using CrmBack.Core.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 
 [ApiController]
 [Route("api/activ")]
-public class ActivController(IActivService activService) : ControllerBase
+public class ActivController(IActivService activService, IMemoryCache cache, ILogger<ActivController> logger) : ControllerBase
 {
+    /// <summary>
+    /// Retrieves an activity by its unique identifier.
+    /// </summary>
+    /// <param name="id">The unique identifier of the activity (must be positive).</param>
+    /// <returns>The activity details in <see cref="ReadActivPayload"/> format.</returns>
+    /// <response code="200">Activity found and returned successfully.</response>
+    /// <response code="400">Invalid activity ID provided.</response>
+    /// <response code="401">Unauthorized access due to missing or invalid JWT token.</response>
+    /// <response code="404">Activity with the specified ID not found.</response>
     [HttpGet("{id:int}")]
     [Authorize]
     [ProducesResponseType(typeof(ReadActivPayload), StatusCodes.Status200OK)]
@@ -16,18 +26,38 @@ public class ActivController(IActivService activService) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ReadActivPayload>> GetById(int id)
     {
-        try
+        if (id <= 0)
         {
-            var activ = await activService.GetActivById(id).ConfigureAwait(true);
-            return activ != null ? Ok(activ) : NotFound();
+            logger.LogWarning("Invalid activity ID {Id} provided for GetById", id);
+            return BadRequest(new { error = "Activity ID must be a positive integer" });
         }
 
-        catch (Exception ex)
+        string cacheKey = $"activ_{id}";
+        if (cache.TryGetValue(cacheKey, out ReadActivPayload? activ))
         {
-            return BadRequest(new { error = ex.Message });
+            logger.LogInformation("Retrieved activity {Id} from cache", id);
+            return Ok(activ);
         }
+
+        activ = await activService.GetActivById(id);
+        if (activ == null)
+        {
+            logger.LogWarning("Activity with ID {Id} not found", id);
+            return NotFound();
+        }
+
+        cache.Set(cacheKey, activ, TimeSpan.FromMinutes(5));
+        logger.LogInformation("Cached activity {Id}", id);
+        return Ok(activ);
     }
 
+    /// <summary>
+    /// Retrieves all activities.
+    /// </summary>
+    /// <returns>A list of all activities in <see cref="ReadActivPayload"/> format.</returns>
+    /// <response code="200">List of activities returned successfully.</response>
+    /// <response code="401">Unauthorized access due to missing or invalid JWT token.</response>
+    /// <response code="404">No activities found in the system.</response>
     [HttpGet]
     [Authorize]
     [ProducesResponseType(typeof(List<ReadActivPayload>), StatusCodes.Status200OK)]
@@ -35,23 +65,33 @@ public class ActivController(IActivService activService) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<List<ReadActivPayload>>> GetAll()
     {
-        try
+        const string cacheKey = "all_activs";
+        if (cache.TryGetValue(cacheKey, out IEnumerable<ReadActivPayload>? activs))
         {
-            var users = await activService.GetAllActiv().ConfigureAwait(true);
-
-            if (!users.Any())
-            {
-                return NotFound();
-            }
-
-            return Ok(users);
+            logger.LogInformation("Retrieved all activities from cache");
+            return Ok(activs);
         }
-        catch (Exception ex)
+
+        activs = await activService.GetAllActiv();
+        if (!activs.Any())
         {
-            return BadRequest(new { error = ex.Message });
+            logger.LogWarning("No activities found");
+            return NotFound();
         }
+
+        cache.Set(cacheKey, activs, TimeSpan.FromMinutes(10));
+        logger.LogInformation("Cached all activities");
+        return Ok(activs);
     }
 
+    /// <summary>
+    /// Creates a new activity.
+    /// </summary>
+    /// <param name="activ">The activity data to create, provided in <see cref="CreateActivPayload"/> format.</param>
+    /// <returns>The created activity in <see cref="ReadActivPayload"/> format.</returns>
+    /// <response code="201">Activity created successfully, returns activity details.</response>
+    /// <response code="400">Invalid activity data provided.</response>
+    /// <response code="401">Unauthorized access due to missing or invalid JWT token.</response>
     [HttpPost]
     [Authorize]
     [ProducesResponseType(typeof(ReadActivPayload), StatusCodes.Status201Created)]
@@ -60,40 +100,68 @@ public class ActivController(IActivService activService) : ControllerBase
     public async Task<ActionResult<ReadActivPayload>> Create([FromBody] CreateActivPayload activ)
     {
         if (!ModelState.IsValid)
+        {
+            logger.LogWarning("Invalid activity data provided for Create: {Errors}", ModelState);
             return BadRequest(ModelState);
+        }
 
-        try
+        var payload = await activService.CreateActiv(activ);
+        if (payload == null)
         {
-            var payload = await activService.CreateActiv(activ).ConfigureAwait(false);
-            return payload != null ? CreatedAtAction(nameof(GetById), new { id = payload.ActivId }, payload) : NotFound();
+            logger.LogWarning("Failed to create activity");
+            return BadRequest(new { error = "Failed to create activity" });
         }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+
+        logger.LogInformation("Created activity with ID {Id}", payload.ActivId);
+        return CreatedAtAction(nameof(GetById), new { id = payload.ActivId }, payload);
     }
 
+    /// <summary>
+    /// Updates an existing activity by its unique identifier.
+    /// </summary>
+    /// <param name="id">The unique identifier of the activity to update (must be positive).</param>
+    /// <param name="payload">The updated activity data in <see cref="UpdateActivPayload"/> format.</param>
+    /// <returns>True if the activity was updated successfully, otherwise false.</returns>
+    /// <response code="200">Activity updated successfully.</response>
+    /// <response code="400">Invalid activity ID or data provided.</response>
+    /// <response code="401">Unauthorized access due to missing or invalid JWT token.</response>
+    /// <response code="404">Activity with the specified ID not found.</response>
     [HttpPut("{id:int}")]
     [Authorize]
     [ProducesResponseType(typeof(ReadActivPayload), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<bool>> Update(int id, [FromBody] UpdateActivPayload payload)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+        if (id <= 0 || !ModelState.IsValid)
+        {
+            logger.LogWarning("Invalid activity ID {Id} or data provided for Update", id);
+            return BadRequest(new { error = id <= 0 ? "Activity ID must be a positive integer" : "Invalid activity data" });
+        }
 
-        try
+        var updated = await activService.UpdateActiv(id, payload);
+        if (!updated)
         {
-            var updated = await activService.UpdateActiv(id, payload).ConfigureAwait(true);
-            return updated ? Ok(updated) : NotFound();
+            logger.LogWarning("Activity with ID {Id} not found for update", id);
+            return NotFound();
         }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+
+        logger.LogInformation("Updated activity with ID {Id}", id);
+        cache.Remove($"activ_{id}");
+        cache.Remove("all_activs");
+        return Ok(updated);
     }
 
+    /// <summary>
+    /// Deletes an activity by its unique identifier.
+    /// </summary>
+    /// <param name="id">The unique identifier of the activity to delete (must be positive).</param>
+    /// <returns>No content if the activity was deleted successfully.</returns>
+    /// <response code="204">Activity deleted successfully.</response>
+    /// <response code="400">Invalid activity ID provided.</response>
+    /// <response code="401">Unauthorized access due to missing or invalid JWT token.</response>
+    /// <response code="404">Activity with the specified ID not found.</response>
     [HttpDelete("{id:int}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -101,8 +169,23 @@ public class ActivController(IActivService activService) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id)
     {
-        var deleted = await activService.DeleteActiv(id).ConfigureAwait(true);
-        return deleted ? NoContent() : NotFound();
+        if (id <= 0)
+        {
+            logger.LogWarning("Invalid activity ID {Id} provided for Delete", id);
+            return BadRequest(new { error = "Activity ID must be a positive integer" });
+        }
+
+        var deleted = await activService.DeleteActiv(id);
+        if (!deleted)
+        {
+            logger.LogWarning("Activity with ID {Id} not found for deletion", id);
+            return NotFound();
+        }
+
+        logger.LogInformation("Deleted activity with ID {Id}", id);
+        cache.Remove($"activ_{id}");
+        cache.Remove("all_activs");
+        return NoContent();
     }
 }
 

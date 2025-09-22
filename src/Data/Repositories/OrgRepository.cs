@@ -55,7 +55,7 @@ public class OrgRepository(IDbConnection dbConnection) : IOrgRepository
 
         sql += " LIMIT @PageSize OFFSET @Offset";
 
-        return await dbConnection.QueryAsync<OrgEntity>(sql).ConfigureAwait(false);
+        return await dbConnection.QueryAsync<OrgEntity>(sql, new { PageSize = pageSize, Offset = (page - 1) * pageSize }).ConfigureAwait(false);
     }
 
     public async Task<int> CreateAsync(OrgEntity activ)
