@@ -10,7 +10,7 @@ using CrmBack.Core.Services;
 using CrmBack.Core.Utils.Mapper;
 using Microsoft.IdentityModel.Tokens;
 
-public class User Service(IUserRepository userRepository, IConfiguration configuration) : IUserService
+public class UserService(IUserRepository userRepository, IConfiguration configuration) : IUserService
 {
     public async Task<ReadUserPayload?> GetUserById(int id)
     {

@@ -94,7 +94,7 @@ jobs:
         to: ${{ secrets.TELEGRAM_CHAT_ID }}
         token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         message: |
-          ${{ (needs.build.result == 'success' && needs.test.result == 'success') && '✅ Build and unit tests succeeded!' || format('❌ Build or unit tests failed!{0}Logs: Check test output for details', '\n') }}
+          ${{ (needs.build.result == 'success' && needs.test.result == 'success') && '✅ Build and unit tests succeeded!' || '❌ Build or unit tests failed!' }}
           Repository: ${{ github.repository }}
           Branch: ${{ github.ref }}
           Commit: ${{ github.sha }}
