@@ -1,5 +1,6 @@
 using System.Data;
 using System.Text;
+using CrmBack.Core.Config;
 using CrmBack.Core.Repositories;
 using CrmBack.Core.Services;
 using CrmBack.Data.Repositories;
@@ -9,6 +10,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Npgsql;
 using Serilog;
+using Serilog.Sinks.SystemConsole.Themes;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,10 +18,15 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Host.UseSerilog((context, config) =>
 {
-    config.WriteTo.Console();
+    config.WriteTo.Console(
+        theme: AnsiConsoleTheme.Code,
+        outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {LogType:l} {Message:lj}{NewLine}{Exception}"
+    );
+
     config.WriteTo.Debug();
-    config.MinimumLevel.Information();
-    config.MinimumLevel.Override("Microsoft.AspNetCore", Serilog.Events.LogEventLevel.Warning);
+    config.MinimumLevel.Warning();
+    config.MinimumLevel.Override("CrmBack.Data", Serilog.Events.LogEventLevel.Debug);
+    config.MinimumLevel.Override("Microsoft.AspNetCore", Serilog.Events.LogEventLevel.Information);
 });
 
 builder.Services.AddCors(options =>
@@ -101,6 +108,8 @@ builder.Services.AddScoped<IDbConnection>(sp =>
     var connectionString = configuration.GetConnectionString("DbConnectionString");
     return new NpgsqlConnection(connectionString);
 });
+
+builder.Services.Configure<DatabaseLoggingOptions>(builder.Configuration.GetSection("DatabaseLogging"));
 
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
