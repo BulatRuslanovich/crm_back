@@ -100,11 +100,6 @@ public class UserController(IUserService userService) : ControllerBase
         return deleted ? NoContent() : NotFound();
     }
 
-    /// <summary>
-    /// Аутентификация пользователя и получение JWT-токена
-    /// </summary>
-    /// <param name="payload">Данные для входа</param>
-    /// <returns>JWT-токен для авторизации</returns>
     [HttpPost("login")]
     [ProducesResponseType(typeof(LoginResponsePayload), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
