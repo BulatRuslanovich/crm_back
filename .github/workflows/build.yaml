@@ -60,36 +60,8 @@ jobs:
         dotnet-version: ${{ env.DOTNET_VERSION }}
     - name: Restore dependencies
       run: dotnet restore
-    - name: Print environment info
-      run: |
-        dotnet --version
-        dotnet --info
-    - name: Run unit tests with coverage
-      run: dotnet test --no-restore --verbosity normal /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:CoverletOutput=./coverage/ --logger "trx;LogFileName=test-results.trx"
-    - name: Upload test results
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-results
-        path: ./**/test-results.trx
-    - name: Install ReportGenerator
-      run: dotnet tool install -g dotnet-reportgenerator-globaltool
-    - name: Generate coverage badge
-      run: reportgenerator -reports:./coverage/coverage.opencover.xml -targetdir:./coverage-report -reporttypes:Badges
-    - name: Upload coverage badge
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: coverage-badge
-        path: ./coverage-report/badge.svg
-    - name: Upload coverage to Codecov
-      if: success()
-      uses: codecov/codecov-action@v4
-      with:
-        files: ./coverage/coverage.opencover.xml
-        token: ${{ secrets.CODECOV_TOKEN }}
-        verbose: true
-        fail_ci_if_error: true
+    - name: Run unit tests
+      run: dotnet test --no-restore --verbosity normal
 
   notify:
     runs-on: ubuntu-latest
