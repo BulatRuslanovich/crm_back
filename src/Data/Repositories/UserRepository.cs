@@ -1,12 +1,12 @@
 namespace CrmBack.Data.Repositories;
 
-using System.Data;
-using Dapper;
-using CrmBack.Core.Repositories;
-using System.Threading.Tasks;
-using CrmBack.Core.Models.Entities;
 using System.Collections.Generic;
+using System.Data;
+using System.Threading.Tasks;
 using System.Transactions;
+using CrmBack.Core.Models.Entities;
+using CrmBack.Core.Repositories;
+using Dapper;
 
 public class UserRepository(IDbConnection dbConnection) : IUserRepository
 {

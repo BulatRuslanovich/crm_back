@@ -1,7 +1,6 @@
 namespace Tests.Controllers;
 
 using CrmBack.Api.Controllers;
-using CrmBack.Core.Models.Payload.Activ;
 using CrmBack.Core.Models.Payload.User;
 using CrmBack.Core.Services;
 using FluentAssertions;
@@ -66,7 +65,7 @@ public class UserControllerTests
             .ReturnsAsync(users);
 
         // Act
-        var result = await _controller.GetAllUsers();
+        var result = await _controller.GetAll();
 
         // Assert
         result.Result.Should().BeOfType<OkObjectResult>()
@@ -82,7 +81,7 @@ public class UserControllerTests
             .ReturnsAsync([]);
 
         // Act
-        var result = await _controller.GetAllUsers();
+        var result = await _controller.GetAll();
 
         // Assert
         result.Result.Should().BeOfType<NotFoundResult>();
@@ -94,7 +93,7 @@ public class UserControllerTests
     {
         // Arrange
         var createPayload = new CreateUserPayload("Lol", "Lol2", "LOl3", "LOL", "1234");
-        var readPayload = new ReadUserPayload(1, "Lol", "Lol2", "LOl3", "LOL");;
+        var readPayload = new ReadUserPayload(1, "Lol", "Lol2", "LOl3", "LOL"); ;
         _userServiceMock
             .Setup(service => service.CreateUser(createPayload))
             .ReturnsAsync(readPayload);
@@ -118,7 +117,7 @@ public class UserControllerTests
             .ReturnsAsync(true);
 
         // Act
-        var result = await _controller.DeleteUser(userId);
+        var result = await _controller.Delete(userId);
 
         // Assert
         result.Should().BeOfType<NoContentResult>();
@@ -134,7 +133,7 @@ public class UserControllerTests
             .ReturnsAsync(false);
 
         // Act
-        var result = await _controller.DeleteUser(userId);
+        var result = await _controller.Delete(userId);
 
         // Assert
         result.Should().BeOfType<NotFoundResult>();

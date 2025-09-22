@@ -12,6 +12,6 @@ public interface IUserService
 
     public Task<bool> UpdateUser(int id, UpdateUserPayload payload);
 
-    public Task<bool> DeleteUser(int id); 
+    public Task<bool> DeleteUser(int id);
     public Task<LoginResponsePayload> LoginUser(LoginUserPayload payload);
 }

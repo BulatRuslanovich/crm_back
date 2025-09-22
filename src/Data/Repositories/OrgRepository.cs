@@ -1,9 +1,9 @@
 namespace CrmBack.Data.Repositories;
 
+using System.Data;
 using CrmBack.Core.Models.Entities;
 using CrmBack.Core.Repositories;
 using Dapper;
-using System.Data;
 
 public class OrgRepository(IDbConnection dbConnection) : IOrgRepository
 {

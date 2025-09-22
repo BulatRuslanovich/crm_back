@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using CrmBack.Core.Models.Entities;
 using CrmBack.Core.Models.Payload.User;
 using CrmBack.Core.Repositories;
 using CrmBack.Core.Services;
@@ -26,7 +25,7 @@ public class UserService(IUserRepository userRepository, IConfiguration configur
         return users.Select(u => u.ToReadPayload());
     }
 
-    // there's no point in checking the login's uniqueness, as the field is unique in the database
+    //! there's no point in checking the login's uniqueness, as the field is unique in the database
     public async Task<ReadUserPayload?> CreateUser(CreateUserPayload payload)
     {
         var userId = await userRepository.CreateAsync(payload.ToEntity()).ConfigureAwait(false);

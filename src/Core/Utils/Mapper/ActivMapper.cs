@@ -35,7 +35,7 @@ public static class ActivMapper
             visit_date: payload.VisitDate,
             start_time: payload.StartTime,
             end_time: payload.EndTime,
-            description: payload.Description            
+            description: payload.Description
         );
     }
 

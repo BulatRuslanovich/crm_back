@@ -32,7 +32,7 @@ public class ActivService(IActivRepository activRepository) : IActivService
         return await activRepository.UpdateAsync(payload.ToEntity(id)).ConfigureAwait(false);
     }
 
-    public async Task<bool> DeleteUser(int id)
+    public async Task<bool> DeleteActiv(int id)
     {
         return await activRepository.SoftDeleteAsync(id).ConfigureAwait(false);
     }

@@ -1,13 +1,13 @@
 using System.Data;
+using System.Text;
 using CrmBack.Core.Repositories;
 using CrmBack.Core.Services;
 using CrmBack.Data.Repositories;
 using CrmBack.Services;
-using Microsoft.OpenApi.Models;
-using Npgsql;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
+using Microsoft.OpenApi.Models;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -79,7 +79,7 @@ builder.Services.AddScoped<IDbConnection>(sp =>
 {
     var configuration = sp.GetRequiredService<IConfiguration>();
     var connectionString = configuration.GetConnectionString("DbConnectionString");
-    
+
     return new NpgsqlConnection(connectionString);
 });
 

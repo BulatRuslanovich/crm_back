@@ -1,7 +1,8 @@
 namespace CrmBack.Core.Repositories;
 
 
-public interface IRepository<K, T> {
+public interface IRepository<K, T>
+{
     public Task<T?> GetByIdAsync(K id);
     public Task<IEnumerable<T>> GetAllAsync(bool includeDeleted = false, int page = 1, int pageSize = 10);
     public Task<K> CreateAsync(T entity);
