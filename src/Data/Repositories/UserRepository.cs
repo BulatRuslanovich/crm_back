@@ -51,13 +51,7 @@ public class UserRepository(IDbConnection dbConnection) : IUserRepository
     public async Task<int> CreateAsync(UserEntity user)
     {
         const string sql = @"INSERT INTO usr (first_name, middle_name, last_name, login, password_hash, created_by, updated_by)
-                            VALUES (@first_name,
-                            @middle_name,
-                            @last_name,
-                            @login,
-                            @password_hash,
-                            'system',
-                            'system')
+                            VALUES (@first_name, @middle_name, @last_name, @login, @password_hash, 'system', 'system')
                             RETURNING usr_id";
 
         return await dbConnection.ExecuteScalarAsync<int>(sql, user).ConfigureAwait(false);

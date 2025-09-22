@@ -2,6 +2,7 @@ namespace CrmBack.Api.Controllers;
 
 using CrmBack.Core.Models.Payload.Activ;
 using CrmBack.Core.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
@@ -32,7 +33,7 @@ public class ActivController(IActivService activService) : ControllerBase
     [ProducesResponseType(typeof(List<ReadActivPayload>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<List<ReadActivPayload>>> GetAllUsers()
+    public async Task<ActionResult<List<ReadActivPayload>>> GetAll()
     {
         try
         {
@@ -77,7 +78,7 @@ public class ActivController(IActivService activService) : ControllerBase
     [ProducesResponseType(typeof(ReadActivPayload), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<bool>> UpdateUser(int id, [FromBody] UpdateActivPayload payload)
+    public async Task<ActionResult<bool>> Update(int id, [FromBody] UpdateActivPayload payload)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
@@ -98,9 +99,9 @@ public class ActivController(IActivService activService) : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> DeleteUser(int id)
+    public async Task<IActionResult> Delete(int id)
     {
-        var deleted = await activService.DeleteUser(id).ConfigureAwait(true);
+        var deleted = await activService.DeleteActiv(id).ConfigureAwait(true);
         return deleted ? NoContent() : NotFound();
     }
 }

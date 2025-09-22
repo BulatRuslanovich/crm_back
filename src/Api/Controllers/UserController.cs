@@ -33,7 +33,7 @@ public class UserController(IUserService userService) : ControllerBase
     [ProducesResponseType(typeof(List<ReadUserPayload>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<List<ReadUserPayload>>> GetAllUsers()
+    public async Task<ActionResult<List<ReadUserPayload>>> GetAll()
     {
         try
         {
@@ -76,7 +76,7 @@ public class UserController(IUserService userService) : ControllerBase
     [ProducesResponseType(typeof(ReadUserPayload), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<bool>> UpdateUser(int id, [FromBody] UpdateUserPayload payload)
+    public async Task<ActionResult<bool>> Update(int id, [FromBody] UpdateUserPayload payload)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
@@ -97,7 +97,7 @@ public class UserController(IUserService userService) : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> DeleteUser(int id)
+    public async Task<IActionResult> Delete(int id)
     {
         var deleted = await userService.DeleteUser(id).ConfigureAwait(true);
         return deleted ? NoContent() : NotFound();

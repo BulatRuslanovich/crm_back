@@ -8,5 +8,5 @@ public interface IActivService
     public Task<IEnumerable<ReadActivPayload>> GetAllActiv();
     public Task<ReadActivPayload?> CreateActiv(CreateActivPayload payload);
     public Task<bool> UpdateActiv(int id, UpdateActivPayload payload);
-    public Task<bool> DeleteUser(int id);
+    public Task<bool> DeleteActiv(int id);
 }
