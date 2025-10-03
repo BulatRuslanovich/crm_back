@@ -1,4 +1,4 @@
-# CRM Backend System (not actual)
+# CRM Backend System (not actual) lol
 
 A robust backend system for a Customer Relationship Management (CRM) application, built with ASP.NET Core for scalable API development.
 
