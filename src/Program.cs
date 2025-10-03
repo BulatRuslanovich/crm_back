@@ -1,160 +1,209 @@
 using System.Data;
-using System.Text;
 using CrmBack.Core.Config;
 using CrmBack.Core.Repositories;
 using CrmBack.Core.Services;
 using CrmBack.Data.Repositories;
 using CrmBack.Services;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
 using Npgsql;
 using Serilog;
-using Serilog.Sinks.SystemConsole.Themes;
-
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Logging
+ConfigureLogging(builder);
 
-builder.Host.UseSerilog((context, config) =>
-{
-    config.WriteTo.Console(
-        theme: AnsiConsoleTheme.Code,
-        outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {LogType:l} {Message:lj}{NewLine}{Exception}"
-    );
-
-    config.WriteTo.Debug();
-    config.MinimumLevel.Warning();
-    config.MinimumLevel.Override("CrmBack.Data", Serilog.Events.LogEventLevel.Debug);
-    config.MinimumLevel.Override("Microsoft.AspNetCore", Serilog.Events.LogEventLevel.Information);
-});
-
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowSwagger", policy =>
-    {
-        policy.WithOrigins("http://localhost:4040", "https://localhost:4041")
-              .AllowAnyMethod()
-              .AllowAnyHeader()
-              .AllowCredentials();
-    });
-});
-
-builder.Services.AddSwaggerGen(option =>
-{
-    option.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "Crm API",
-        Version = "v1",
-        Description = "CRM API"
-    });
-
-    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
-    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-    option.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
-
-    option.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        In = ParameterLocation.Header,
-        Description = "Enter JWT-token in format: Bearer {token}",
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT"
-    });
-
-    option.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            Array.Empty<string>()
-        }
-    });
-});
-
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-}).AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key is not configured"))
-        ),
-        ClockSkew = TimeSpan.FromSeconds(30)
-    };
-});
-
+// Services
 builder.Services.AddMemoryCache();
-
-builder.Services.AddScoped<IDbConnection>(sp =>
-{
-    var configuration = sp.GetRequiredService<IConfiguration>();
-    var connectionString = configuration.GetConnectionString("DbConnectionString");
-    return new NpgsqlConnection(connectionString);
-});
-
-builder.Services.Configure<DatabaseLoggingOptions>(builder.Configuration.GetSection("DatabaseLogging"));
-
-
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IActivRepository, ActivRepository>();
-builder.Services.AddScoped<IOrgRepository, OrgRepository>();
-builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IActivService, ActivService>();
-builder.Services.AddScoped<IOrgService, OrgService>();
-
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
+// CORS
+ConfigureCors(builder.Services);
+
+// Authentication & Authorization
+ConfigureAuthentication(builder);
+
+// Swagger
+ConfigureSwagger(builder.Services);
+
+// Database
+ConfigureDatabase(builder.Services, builder.Configuration);
+
+// Application services
+ConfigureApplicationServices(builder.Services);
+
 var app = builder.Build();
 
-app.UseExceptionHandler(errorApp =>
+// Middleware pipeline
+ConfigureMiddleware(app);
+
+app.Run("http://localhost:5555");
+
+// Configuration methods
+
+static void ConfigureLogging(WebApplicationBuilder builder)
 {
-    errorApp.Run(async context =>
+    builder.Host.UseSerilog((context, config) =>
     {
-        var errorFeature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
-        if (errorFeature != null)
-        {
-            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-            await context.Response.WriteAsJsonAsync(new { error = "An unexpected error occurred" });
-            Log.Error(errorFeature.Error, "Unhandled exception in {Path}", context.Request.Path);
-        }
-    });
-});
-
-
-app.UseSerilogRequestLogging();
-app.UseCors("AllowSwagger");
-
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(options =>
-    {
-        options.SwaggerEndpoint("/swagger/v1/swagger.json", "CRM API V1");
-        options.RoutePrefix = "swagger";
+        config
+            .WriteTo.Console(
+                theme: Serilog.Sinks.SystemConsole.Themes.AnsiConsoleTheme.Code,
+                outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {LogType:l} {Message:lj}{NewLine}{Exception}")
+            .WriteTo.Debug()
+            .MinimumLevel.Warning()
+            .MinimumLevel.Override("CrmBack.Data", Serilog.Events.LogEventLevel.Debug)
+            .MinimumLevel.Override("Microsoft.AspNetCore", Serilog.Events.LogEventLevel.Information);
     });
 }
 
-app.UseHttpsRedirection();
-app.UseAuthentication();
-app.UseAuthorization();
-app.MapControllers();
+static void ConfigureCors(IServiceCollection services)
+{
+    services.AddCors(options =>
+    {
+        options.AddPolicy("AllowSwagger", policy =>
+        {
+            policy.WithOrigins("http://localhost:4040", "https://localhost:4041")
+                  .AllowAnyMethod()
+                  .AllowAnyHeader()
+                  .AllowCredentials();
+        });
+    });
+}
 
-app.Run("http://localhost:5555");
+static void ConfigureAuthentication(WebApplicationBuilder builder)
+{
+    var jwtKey = builder.Configuration["Jwt:Key"]
+        ?? throw new InvalidOperationException("JWT Key is not configured");
+    var jwtIssuer = builder.Configuration["Jwt:Issuer"]
+        ?? throw new InvalidOperationException("JWT Issuer is not configured");
+    var jwtAudience = builder.Configuration["Jwt:Audience"]
+        ?? throw new InvalidOperationException("JWT Audience is not configured");
+
+    builder.Services
+        .AddAuthentication(options =>
+        {
+            options.DefaultAuthenticateScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
+        })
+        .AddJwtBearer(options =>
+        {
+            options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                ValidIssuer = jwtIssuer,
+                ValidAudience = jwtAudience,
+                IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
+                    System.Text.Encoding.UTF8.GetBytes(jwtKey)),
+                ClockSkew = TimeSpan.FromSeconds(30)
+            };
+        });
+}
+
+static void ConfigureSwagger(IServiceCollection services)
+{
+    services.AddSwaggerGen(option =>
+    {
+        option.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+        {
+            Title = "CRM API",
+            Version = "v1",
+            Description = "CRM API for managing users, organizations, and activities"
+        });
+
+        // XML comments
+        var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+        var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+        option.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
+
+        // JWT Authentication
+        option.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+        {
+            In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+            Description = "Enter JWT token in format: Bearer {token}",
+            Name = "Authorization",
+            Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT"
+        });
+
+        option.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+        {
+            {
+                new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                {
+                    Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                    {
+                        Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                        Id = "Bearer"
+                    }
+                },
+                Array.Empty<string>()
+            }
+        });
+    });
+}
+
+static void ConfigureDatabase(IServiceCollection services, IConfiguration configuration)
+{
+    services.AddScoped<IDbConnection>(sp =>
+    {
+        var connectionString = configuration.GetConnectionString("DbConnectionString")
+            ?? throw new InvalidOperationException("Database connection string is not configured");
+        return new NpgsqlConnection(connectionString);
+    });
+
+    services.Configure<DatabaseLoggingOptions>(configuration.GetSection("DatabaseLogging"));
+}
+
+static void ConfigureApplicationServices(IServiceCollection services)
+{
+    // Repositories
+    services.AddScoped<IUserRepository, UserRepository>();
+    services.AddScoped<IActivRepository, ActivRepository>();
+    services.AddScoped<IOrgRepository, OrgRepository>();
+
+    // Services
+    services.AddScoped<IUserService, UserService>();
+    services.AddScoped<IActivService, ActivService>();
+    services.AddScoped<IOrgService, OrgService>();
+}
+
+static void ConfigureMiddleware(WebApplication app)
+{
+    // Exception handling
+    app.UseExceptionHandler(errorApp =>
+    {
+        errorApp.Run(async context =>
+        {
+            var errorFeature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+            if (errorFeature != null)
+            {
+                context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                await context.Response.WriteAsJsonAsync(new { error = "An unexpected error occurred" });
+                Log.Error(errorFeature.Error, "Unhandled exception in {Path}", context.Request.Path);
+            }
+        });
+    });
+
+    app.UseSerilogRequestLogging();
+    app.UseCors("AllowSwagger");
+
+    // Swagger (Development only)
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseSwagger();
+        app.UseSwaggerUI(options =>
+        {
+            options.SwaggerEndpoint("/swagger/v1/swagger.json", "CRM API V1");
+            options.RoutePrefix = "swagger";
+        });
+    }
+
+    app.UseHttpsRedirection();
+    app.UseAuthentication();
+    app.UseAuthorization();
+    app.MapControllers();
+}

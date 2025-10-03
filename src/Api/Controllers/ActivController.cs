@@ -15,9 +15,10 @@ using Microsoft.Extensions.Caching.Memory;
 public class ActivController(
     IActivService activService,
     IMemoryCache cache,
-    ILogger<ActivController> logger) : ControllerBase
+    ILogger<ActivController> logger) : BaseApiController(cache, logger)
 {
-    private const string AllActivsCacheKey = "all_activs";
+    private const string EntityPrefix = "activ_";
+    private const string AllCacheKey = "all_activs";
 
     /// <summary>
     /// Retrieves an activity by its unique identifier.
@@ -27,10 +28,10 @@ public class ActivController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ReadActivPayload>> GetById(int id)
     {
-        if (!ValidateId(id)) return BadRequest("Activity ID must be positive");
+        if (!ValidateId(id, "activity")) return BadRequest("Activity ID must be positive");
 
         return await GetOrSetCache(
-            $"activ_{id}",
+            $"{EntityPrefix}{id}",
             () => activService.GetActivById(id),
             TimeSpan.FromMinutes(5)
         );
@@ -45,7 +46,7 @@ public class ActivController(
     public async Task<ActionResult<List<ReadActivPayload>>> GetAll()
     {
         return await GetOrSetCache(
-            AllActivsCacheKey,
+            AllCacheKey,
             async () =>
             {
                 var activs = await activService.GetAllActiv();
@@ -73,7 +74,7 @@ public class ActivController(
         }
 
         logger.LogInformation("Created activity {Id}", payload.ActivId);
-        InvalidateCache(payload.ActivId);
+        InvalidateCache(payload.ActivId, EntityPrefix, AllCacheKey);
         return CreatedAtAction(nameof(GetById), new { id = payload.ActivId }, payload);
     }
 
@@ -86,7 +87,7 @@ public class ActivController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<bool>> Update(int id, [FromBody] UpdateActivPayload payload)
     {
-        if (!ValidateId(id) || !ModelState.IsValid)
+        if (!ValidateId(id, "activity") || !ModelState.IsValid)
             return BadRequest(id <= 0 ? "Activity ID must be positive" : "Invalid data");
 
         var updated = await activService.UpdateActiv(id, payload);
@@ -97,7 +98,7 @@ public class ActivController(
         }
 
         logger.LogInformation("Updated activity {Id}", id);
-        InvalidateCache(id);
+        InvalidateCache(id, EntityPrefix, AllCacheKey);
         return Ok(true);
     }
 
@@ -109,7 +110,7 @@ public class ActivController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id)
     {
-        if (!ValidateId(id)) return BadRequest("Activity ID must be positive");
+        if (!ValidateId(id, "activity")) return BadRequest("Activity ID must be positive");
 
         var deleted = await activService.DeleteActiv(id);
         if (!deleted)
@@ -119,45 +120,7 @@ public class ActivController(
         }
 
         logger.LogInformation("Deleted activity {Id}", id);
-        InvalidateCache(id);
+        InvalidateCache(id, EntityPrefix, AllCacheKey);
         return NoContent();
-    }
-
-    // Helper methods
-
-    private bool ValidateId(int id)
-    {
-        if (id > 0) return true;
-        logger.LogWarning("Invalid activity ID {Id}", id);
-        return false;
-    }
-
-    private void InvalidateCache(int id)
-    {
-        cache.Remove($"activ_{id}");
-        cache.Remove(AllActivsCacheKey);
-    }
-
-    private async Task<ActionResult<T>> GetOrSetCache<T>(
-        string cacheKey,
-        Func<Task<T?>> fetchData,
-        TimeSpan expiration) where T : class
-    {
-        if (cache.TryGetValue(cacheKey, out T? cached))
-        {
-            logger.LogDebug("Cache hit: {Key}", cacheKey);
-            return Ok(cached);
-        }
-
-        var data = await fetchData();
-        if (data == null)
-        {
-            logger.LogWarning("Data not found for key: {Key}", cacheKey);
-            return NotFound();
-        }
-
-        cache.Set(cacheKey, data, expiration);
-        logger.LogDebug("Cached: {Key}", cacheKey);
-        return Ok(data);
     }
 }

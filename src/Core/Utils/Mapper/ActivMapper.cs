@@ -1,8 +1,7 @@
-using System;
+namespace CrmBack.Core.Utils.Mapper;
+
 using CrmBack.Core.Models.Entities;
 using CrmBack.Core.Models.Payload.Activ;
-
-namespace CrmBack.Core.Utils.Mapper;
 
 public static class ActivMapper
 {
