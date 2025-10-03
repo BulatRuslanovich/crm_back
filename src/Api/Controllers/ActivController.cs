@@ -13,8 +13,8 @@ using Microsoft.Extensions.Caching.Memory;
 [Route("api/activ")]
 [Authorize]
 public class ActivController(
-    IActivService activService, 
-    IMemoryCache cache, 
+    IActivService activService,
+    IMemoryCache cache,
     ILogger<ActivController> logger) : ControllerBase
 {
     private const string AllActivsCacheKey = "all_activs";
