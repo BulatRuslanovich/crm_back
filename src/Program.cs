@@ -113,11 +113,6 @@ static void ConfigureSwagger(IServiceCollection services)
             Description = "CRM API for managing users, organizations, and activities"
         });
 
-        // XML comments
-        var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
-        var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-        option.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
-
         // JWT Authentication
         option.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
         {
