@@ -6,7 +6,7 @@ public interface IUserService
 {
     public Task<ReadUserPayload?> GetUserById(int id);
 
-    public Task<IEnumerable<ReadUserPayload>> GetAllUsers();
+    public Task<List<ReadUserPayload>> GetAllUsers();
 
     public Task<ReadUserPayload?> CreateUser(CreateUserPayload payload);
 

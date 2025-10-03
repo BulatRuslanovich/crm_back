@@ -20,9 +20,9 @@ public static class ActivMapper
         );
     }
 
-    public static IEnumerable<ReadActivPayload> ToReadPayloads(this IEnumerable<ActivEntity> entities)
+    public static List<ReadActivPayload> ToReadPayloads(this IEnumerable<ActivEntity> entities)
     {
-        return entities.Select(ToReadPayload);
+        return [.. entities.Select(ToReadPayload)];
     }
 
     public static ActivEntity ToEntity(this CreateActivPayload payload)

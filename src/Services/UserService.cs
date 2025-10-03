@@ -18,11 +18,11 @@ public class UserService(IUserRepository userRepository, IConfiguration configur
         return user?.ToReadPayload();
     }
 
-    public async Task<IEnumerable<ReadUserPayload>> GetAllUsers()
+    public async Task<List<ReadUserPayload>> GetAllUsers()
     {
         var users = await userRepository.GetAllAsync().ConfigureAwait(false);
 
-        return users.Select(u => u.ToReadPayload());
+        return [.. users.Select(u => u.ToReadPayload())];
     }
 
     //! there's no point in checking the login's uniqueness, as the field is unique in the database

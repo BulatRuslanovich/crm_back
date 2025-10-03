@@ -13,11 +13,11 @@ public class ActivService(IActivRepository activRepository) : IActivService
         return activ?.ToReadPayload();
     }
 
-    public async Task<IEnumerable<ReadActivPayload>> GetAllActiv()
+    public async Task<List<ReadActivPayload>> GetAllActiv()
     {
         var actives = await activRepository.GetAllAsync().ConfigureAwait(false);
 
-        return actives.Select(u => u.ToReadPayload());
+        return [.. actives.Select(u => u.ToReadPayload())];
     }
 
     public async Task<ReadActivPayload?> CreateActiv(CreateActivPayload payload)

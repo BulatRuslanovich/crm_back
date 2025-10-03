@@ -16,9 +16,9 @@ public static class UserMapper
         );
     }
 
-    public static IEnumerable<ReadUserPayload> ToReadPayloads(this IEnumerable<UserEntity> entities)
+    public static List<ReadUserPayload> ToReadPayloads(this IEnumerable<UserEntity> entities)
     {
-        return entities.Select(ToReadPayload);
+        return [.. entities.Select(ToReadPayload)];
     }
 
     public static UserEntity ToEntity(this CreateUserPayload payload)

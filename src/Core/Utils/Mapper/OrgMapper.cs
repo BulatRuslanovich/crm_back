@@ -17,9 +17,9 @@ public static class OrgMapper
         );
     }
 
-    public static IEnumerable<ReadOrgPayload> ToReadPayloads(this IEnumerable<OrgEntity> entities)
+    public static List<ReadOrgPayload> ToReadPayloads(this IEnumerable<OrgEntity> entities)
     {
-        return entities.Select(ToReadPayload);
+        return [.. entities.Select(ToReadPayload)];
     }
 
     public static OrgEntity ToEntity(this CreateOrgPayload payload)

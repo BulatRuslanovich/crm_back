@@ -25,7 +25,7 @@ public class OrgService(IOrgRepository orgRepository) : IOrgService
         return await orgRepository.SoftDeleteAsync(id).ConfigureAwait(false);
     }
 
-    public async Task<IEnumerable<ReadOrgPayload>> GetAllOrgs()
+    public async Task<List<ReadOrgPayload>> GetAllOrgs()
     {
         var orgs = await orgRepository.GetAllAsync().ConfigureAwait(false);
         return orgs.ToReadPayloads();
