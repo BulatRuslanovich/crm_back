@@ -2,91 +2,112 @@ namespace CrmBack.Data.Repositories;
 
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Threading.Tasks;
 using CrmBack.Core.Config;
+using Dapper;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Dapper;
 
-public abstract class BaseRepository<TEntity>(
-    IDbConnection dbConnection,
-    ILogger logger,
-    IOptions<DatabaseLoggingOptions> loggingOptions) where TEntity : class
+public abstract class BaseRepository<TEntity> where TEntity : class
 {
-    private readonly bool enableDbLog = loggingOptions.Value.EnableDatabaseLogging;
+    protected readonly IDbConnection DbConnection;
+    protected readonly ILogger Logger;
+    private readonly bool _enableDbLog;
 
-    protected void LogSql(string sql, object parameters)
+    protected BaseRepository(
+        IDbConnection dbConnection,
+        ILogger logger,
+        IOptions<DatabaseLoggingOptions> loggingOptions)
     {
-        if (enableDbLog)
+        DbConnection = dbConnection;
+        Logger = logger;
+        _enableDbLog = loggingOptions.Value.EnableDatabaseLogging;
+    }
+
+    protected void LogSql(string sql, object? parameters = null)
+    {
+        if (_enableDbLog)
         {
-            logger.LogDebug("[SQL] Executing SQL: {Sql} with parameters: {@Parameters}", sql, parameters);
+            Logger.LogDebug("[SQL] {Sql} | Params: {@Parameters}", sql, parameters);
         }
     }
 
-    protected async Task<TEntity?> GetByIdAsync<TId>(string sql, TId id, IDbTransaction? transaction = null)
+    protected async Task<TEntity?> QuerySingleAsync<TId>(
+        string sql,
+        TId id,
+        IDbTransaction? transaction = null)
     {
         var parameters = new { id };
         LogSql(sql, parameters);
-        var result = await dbConnection.QuerySingleOrDefaultAsync<TEntity>(sql, parameters, transaction).ConfigureAwait(false);
 
-        if (enableDbLog && result == null)
+        var result = await DbConnection.QuerySingleOrDefaultAsync<TEntity>(
+            sql, parameters, transaction).ConfigureAwait(false);
+
+        if (_enableDbLog && result == null)
         {
-            logger.LogDebug("No {Entity} found with ID: {Id}", typeof(TEntity).Name, id);
+            Logger.LogDebug("{Entity} not found: {Id}", typeof(TEntity).Name, id);
         }
 
         return result;
     }
 
-    protected async Task<IEnumerable<TEntity>> GetAllAsync(string sql, object parameters)
+    protected async Task<IEnumerable<TEntity>> QueryAsync(string sql, object? parameters = null)
     {
         LogSql(sql, parameters);
-        var result = await dbConnection.QueryAsync<TEntity>(sql, parameters).ConfigureAwait(false);
+        var result = await DbConnection.QueryAsync<TEntity>(sql, parameters).ConfigureAwait(false);
 
-        if (enableDbLog && !result.Any())
+        if (_enableDbLog && !result.Any())
         {
-            logger.LogDebug("No {Entity} found for GetAllAsync with parameters: {@Parameters}", typeof(TEntity).Name, parameters);
+            Logger.LogDebug("No {Entity} found", typeof(TEntity).Name);
         }
 
         return result;
     }
 
-    protected async Task<int> CreateAsync(string sql, TEntity entity)
+    protected async Task<int> ExecuteScalarAsync(string sql, object entity)
     {
         LogSql(sql, entity);
-        var result = await dbConnection.ExecuteScalarAsync<int>(sql, entity).ConfigureAwait(false);
+        var id = await DbConnection.ExecuteScalarAsync<int>(sql, entity).ConfigureAwait(false);
 
-        if (enableDbLog)
+        if (_enableDbLog)
         {
-            logger.LogDebug("Created {Entity} with ID {Id}", typeof(TEntity).Name, result);
+            Logger.LogDebug("Created {Entity}: {Id}", typeof(TEntity).Name, id);
         }
 
-        return result;
+        return id;
     }
 
-    protected async Task<bool> UpdateAsync(string sql, TEntity entity, IDbTransaction? transaction = null)
-    {
-        LogSql(sql, entity);
-        var affectedRows = await dbConnection.ExecuteAsync(sql, entity, transaction).ConfigureAwait(false);
-
-        if (enableDbLog)
-        {
-            logger.LogDebug("Updated {Entity}, affected rows: {AffectedRows}", typeof(TEntity).Name, affectedRows);
-        }
-
-        return affectedRows > 0;
-    }
-
-    protected async Task<bool> DeleteAsync(string sql, object parameters, bool isHardDelete)
+    protected async Task<bool> ExecuteAsync(
+        string sql,
+        object parameters,
+        IDbTransaction? transaction = null)
     {
         LogSql(sql, parameters);
-        var affectedRows = await dbConnection.ExecuteAsync(sql, parameters).ConfigureAwait(false);
+        var rows = await DbConnection.ExecuteAsync(sql, parameters, transaction).ConfigureAwait(false);
 
-        if (enableDbLog)
+        if (_enableDbLog)
         {
-            logger.LogDebug("{DeleteType} deleted {Entity} with parameters: {@Parameters}, affected rows: {AffectedRows}",
-                isHardDelete ? "Hard" : "Soft", typeof(TEntity).Name, parameters, affectedRows);
+            Logger.LogDebug("{Entity} affected rows: {Rows}", typeof(TEntity).Name, rows);
         }
 
-        return affectedRows > 0;
+        return rows > 0;
+    }
+
+    protected async Task<TResult> WithTransactionAsync<TResult>(
+        Func<IDbTransaction, Task<TResult>> action)
+    {
+        using var transaction = DbConnection.BeginTransaction();
+        try
+        {
+            var result = await action(transaction);
+            transaction.Commit();
+            return result;
+        }
+        catch
+        {
+            transaction.Rollback();
+            throw;
+        }
     }
 }

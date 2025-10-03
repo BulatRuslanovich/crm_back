@@ -12,17 +12,30 @@ using Microsoft.Extensions.Options;
 
 public class OrgRepository(IDbConnection dbConnection, ILogger<OrgRepository> logger, IOptions<DatabaseLoggingOptions> loggingOptions) : BaseRepository<OrgEntity>(dbConnection, logger, loggingOptions), IOrgRepository
 {
-    private readonly IDbConnection dbConnection = dbConnection;
-    private readonly bool enableDbLog = loggingOptions.Value.EnableDatabaseLogging;
+    private const string SelectQuery = @"
+        SELECT org_id,
+               name,
+               inn,
+               latitude,
+               longitude,
+               address,
+               created_at,
+               updated_at,
+               created_by,
+               updated_by,
+               is_deleted
+        FROM org
+        WHERE {0} AND NOT is_deleted
+        LIMIT 1";
 
-    public async Task<OrgEntity?> GetByIdAsync(int id)
-    {
-        return await GetByIdAsync(id, null);
-    }
 
-    private async Task<OrgEntity?> GetByIdAsync(int id, IDbTransaction? transaction = null)
+    public Task<OrgEntity?> GetByIdAsync(int id) =>
+        QuerySingleAsync(string.Format(SelectQuery, "org_id = @id"), id);
+
+
+    public Task<IEnumerable<OrgEntity>> GetAllAsync(bool includeDeleted = false, int page = 1, int pageSize = 10)
     {
-        var sql = @"SELECT org_id,
+        var sql = $@"SELECT org_id,
                            name,
                            inn,
                            latitude,
@@ -34,110 +47,52 @@ public class OrgRepository(IDbConnection dbConnection, ILogger<OrgRepository> lo
                            updated_by,
                            is_deleted
                     FROM org
-                    WHERE org_id = @id AND NOT is_deleted
-                    LIMIT 1";
-        return await GetByIdAsync(sql, id, transaction).ConfigureAwait(false);
+                    {(includeDeleted ? "" : "WHERE NOT is_deleted")}
+                    LIMIT @PageSize OFFSET @Offset
+                    ";
+
+        return QueryAsync(sql, new { PageSize = pageSize, Offset = (page - 1) * pageSize });
     }
 
-    public async Task<IEnumerable<OrgEntity>> GetAllAsync(bool includeDeleted = false, int page = 1, int pageSize = 10)
-    {
-        var sql = @"SELECT org_id,
-                           name,
-                           inn,
-                           latitude,
-                           longitude,
-                           address,
-                           created_at,
-                           updated_at,
-                           created_by,
-                           updated_by,
-                           is_deleted
-                    FROM org";
-
-        if (!includeDeleted)
-        {
-            sql += " WHERE NOT is_deleted";
-        }
-
-        sql += " LIMIT @PageSize OFFSET @Offset";
-
-        return await GetAllAsync(sql, new { PageSize = pageSize, Offset = (page - 1) * pageSize }).ConfigureAwait(false);
-    }
-
-    public async Task<int> CreateAsync(OrgEntity org)
+    public Task<int> CreateAsync(OrgEntity org)
     {
         const string sql = @"INSERT INTO org (name, inn, latitude, longitude, address, created_by, updated_by)
                             VALUES (@name, @inn, @latitude, @longitude, @address, 'system', 'system')
                             RETURNING org_id";
 
-        return await CreateAsync(sql, org).ConfigureAwait(false);
+        return ExecuteScalarAsync(sql, org);
     }
 
-    public async Task<bool> UpdateAsync(OrgEntity org)
+    public Task<bool> UpdateAsync(OrgEntity org) =>
+    WithTransactionAsync(async transaction =>
     {
-        using var tran = dbConnection.BeginTransaction();
+        var existing = await QuerySingleAsync(
+            string.Format(SelectQuery, "org_id = @id"), org.org_id, transaction);
 
-        try
-        {
-            var orgFromDb = await GetByIdAsync(org.org_id, tran);
+        if (existing == null) return false;
 
-            if (orgFromDb == null)
-            {
-                if (enableDbLog)
-                {
-                    logger.LogDebug("Organization with ID {Id} not found for update", org.org_id);
-                }
-                tran.Rollback();
-                return false;
-            }
+        var updated = new OrgEntity(
+            org_id: existing.org_id,
+            name: org.name ?? existing.name,
+            inn: org.inn ?? existing.inn,
+            latitude: org.latitude ?? existing.latitude,
+            longitude: org.longitude ?? existing.longitude,
+            address: org.address ?? existing.address
+        );
 
-            var result = new OrgEntity(
-                org_id: orgFromDb.org_id,
-                name: org.name ?? orgFromDb.name,
-                inn: org.inn ?? orgFromDb.inn,
-                latitude: org.latitude ?? orgFromDb.latitude,
-                longitude: org.longitude ?? orgFromDb.longitude,
-                address: org.address ?? orgFromDb.address
-            );
+        const string sql = @"UPDATE org 
+                            SET name = @name,
+                                inn = @inn,
+                                latitude = @latitude,
+                                longitude = @longitude,
+                                address = @address
+                            WHERE org_id = @org_id";
+        return await ExecuteAsync(sql, updated, transaction);
+    });
 
-            var sql = @"UPDATE org 
-                        SET name = @name,
-                            inn = @inn,
-                            latitude = @latitude,
-                            longitude = @longitude,
-                            address = @address
-                        WHERE org_id = @org_id";
+    public Task<bool> HardDeleteAsync(int id) =>
+    ExecuteAsync("DELETE FROM org WHERE org_id = @Id", new { Id = id });
 
-            LogSql(sql, result);
-
-            var affectedRows = await dbConnection.ExecuteAsync(sql, result, tran).ConfigureAwait(false);
-
-            if (enableDbLog)
-            {
-                logger.LogDebug("Updated organization with ID {Id}, affected rows: {AffectedRows}", org.org_id, affectedRows);
-            }
-
-            tran.Commit();
-            return affectedRows > 0;
-        }
-        catch
-        {
-            tran.Rollback();
-            throw;
-        }
-    }
-
-    public async Task<bool> HardDeleteAsync(int id)
-    {
-        const string sql = "DELETE FROM org WHERE org_id = @Id";
-        return await DeleteAsync(sql, new { Id = id }, isHardDelete: true).ConfigureAwait(false);
-    }
-
-    public async Task<bool> SoftDeleteAsync(int id)
-    {
-        var sql = @"UPDATE org 
-                    SET is_deleted = true
-                    WHERE org_id = @Id";
-        return await DeleteAsync(sql, new { Id = id }, isHardDelete: false).ConfigureAwait(false);
-    }
+    public Task<bool> SoftDeleteAsync(int id) =>
+    ExecuteAsync("UPDATE org SET is_deleted = true WHERE org_id = @Id", new { Id = id });
 }

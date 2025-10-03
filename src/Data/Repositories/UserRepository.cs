@@ -6,148 +6,78 @@ using System.Threading.Tasks;
 using CrmBack.Core.Config;
 using CrmBack.Core.Models.Entities;
 using CrmBack.Core.Repositories;
-using Dapper;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 public class UserRepository(
     IDbConnection dbConnection,
     ILogger<UserRepository> logger,
-    IOptions<DatabaseLoggingOptions> loggingOptions) : BaseRepository<UserEntity>(dbConnection, logger, loggingOptions), IUserRepository
+    IOptions<DatabaseLoggingOptions> options) : BaseRepository<UserEntity>(dbConnection, logger, options), IUserRepository
 {
-    private readonly IDbConnection dbConnection = dbConnection;
-    private readonly bool enableDbLog = loggingOptions.Value.EnableDatabaseLogging;
-    private const string BaseSelectQuery = @"SELECT usr_id,
-                                                    first_name,
-                                                    middle_name,
-                                                    last_name,
-                                                    login,
-                                                    password_hash,
-                                                    created_at,
-                                                    updated_at,
-                                                    created_by,
-                                                    updated_by,
-                                                    is_deleted
-                                        FROM usr
-                                        WHERE {0} AND NOT is_deleted
-                                        LIMIT 1";
+    private const string SelectQuery = @"
+        SELECT usr_id, first_name, middle_name, last_name, login, password_hash,
+               created_at, updated_at, created_by, updated_by, is_deleted
+        FROM usr
+        WHERE {0} AND NOT is_deleted
+        LIMIT 1";
 
-    public async Task<UserEntity?> GetByIdAsync(int id)
+    public Task<UserEntity?> GetByIdAsync(int id) =>
+        QuerySingleAsync(string.Format(SelectQuery, "usr_id = @id"), id);
+
+    public Task<UserEntity?> GetByLoginAsync(string login) =>
+        QuerySingleAsync(string.Format(SelectQuery, "login = @id"), login);
+
+    public Task<IEnumerable<UserEntity>> GetAllAsync(bool includeDeleted = false, int page = 1, int pageSize = 10)
     {
-        return await GetByIdAsync(id, null);
+        var sql = $@"
+            SELECT usr_id, first_name, middle_name, last_name, login, password_hash,
+                   created_at, updated_at, created_by, updated_by, is_deleted
+            FROM usr
+            {(includeDeleted ? "" : "WHERE NOT is_deleted")}
+            LIMIT @PageSize OFFSET @Offset";
+
+        return QueryAsync(sql, new { PageSize = pageSize, Offset = (page - 1) * pageSize });
     }
 
-    private async Task<UserEntity?> GetByIdAsync(int id, IDbTransaction? transaction = null)
+    public Task<int> CreateAsync(UserEntity user)
     {
-        var sql = string.Format(BaseSelectQuery, "usr_id = @id");
-       return await GetByIdAsync(sql, id, transaction).ConfigureAwait(false);
+        const string sql = @"
+            INSERT INTO usr (first_name, middle_name, last_name, login, password_hash, created_by, updated_by)
+            VALUES (@first_name, @middle_name, @last_name, @login, @password_hash, 'system', 'system')
+            RETURNING usr_id";
+
+        return ExecuteScalarAsync(sql, user);
     }
 
-    public async Task<UserEntity?> GetByLoginAsync(string _login)
-    {
-        var sql = string.Format(BaseSelectQuery, "login = @id");
-        return await GetByIdAsync(sql, _login).ConfigureAwait(false);
-    }
-
-    public async Task<IEnumerable<UserEntity>> GetAllAsync(bool includeDeleted = false, int page = 1, int pageSize = 10)
-    {
-        var sql = @"SELECT usr_id,
-                           first_name,
-                           middle_name,
-                           last_name,
-                           login,
-                           password_hash,
-                           created_at,
-                           updated_at,
-                           created_by,
-                           updated_by,
-                           is_deleted
-                    FROM usr";
-
-        if (!includeDeleted)
+    public Task<bool> UpdateAsync(UserEntity user) =>
+        WithTransactionAsync(async transaction =>
         {
-            sql += " WHERE NOT is_deleted";
-        }
+            var existing = await QuerySingleAsync(
+                string.Format(SelectQuery, "usr_id = @id"), user.usr_id, transaction);
 
-        sql += " LIMIT @PageSize OFFSET @Offset";
+            if (existing == null) return false;
 
-        return await GetAllAsync(sql, new { PageSize = pageSize, Offset = (page - 1) * pageSize }).ConfigureAwait(false);
-    }
-
-    public async Task<int> CreateAsync(UserEntity user)
-    {
-        const string sql = @"INSERT INTO usr (first_name, middle_name, last_name, login, password_hash, created_by, updated_by)
-                            VALUES (@first_name, @middle_name, @last_name, @login, @password_hash, 'system', 'system')
-                            RETURNING usr_id";
-
-        return await CreateAsync(sql, user).ConfigureAwait(false);
-    }
-
-    public async Task<bool> UpdateAsync(UserEntity user)
-    {
-        using var tran = dbConnection.BeginTransaction();
-
-        try
-        {
-            var usrFromDb = await GetByIdAsync(user.usr_id, tran);
-
-            if (usrFromDb == null)
-            {
-                if (enableDbLog)
-                {
-                    logger.LogDebug("User with ID {Id} not found for update", user.usr_id);
-                }
-
-                return false;
-            }
-
-            var result = new UserEntity(
-                usr_id: usrFromDb.usr_id,
-                first_name: user.first_name ?? usrFromDb.first_name,
-                last_name: user.last_name ?? usrFromDb.last_name,
-                middle_name: user.middle_name ?? usrFromDb.middle_name,
-                login: user.login ?? usrFromDb.login,
-                password_hash: user.password_hash ?? usrFromDb.password_hash
+            var updated = new UserEntity(
+                usr_id: existing.usr_id,
+                first_name: user.first_name ?? existing.first_name,
+                last_name: user.last_name ?? existing.last_name,
+                middle_name: user.middle_name ?? existing.middle_name,
+                login: user.login ?? existing.login,
+                password_hash: user.password_hash ?? existing.password_hash
             );
 
-            var sql = @"UPDATE usr
-                    SET first_name = @first_name,
-                    middle_name = @middle_name,
-                    last_name = @last_name,
-                    login = @login,
-                    password_hash = @password_hash
-                    WHERE usr_id = @usr_id";
+            const string sql = @"
+                UPDATE usr
+                SET first_name = @first_name, middle_name = @middle_name,
+                    last_name = @last_name, login = @login, password_hash = @password_hash
+                WHERE usr_id = @usr_id";
 
-            LogSql(sql, result);
+            return await ExecuteAsync(sql, updated, transaction);
+        });
 
-            var affectedRows = await dbConnection.ExecuteAsync(sql, result, tran).ConfigureAwait(false);
+    public Task<bool> HardDeleteAsync(int id) =>
+        ExecuteAsync("DELETE FROM usr WHERE usr_id = @Id", new { Id = id });
 
-            if (enableDbLog)
-            {
-                logger.LogDebug("Updated user with ID {Id}, affected rows: {AffectedRows}", user.usr_id, affectedRows);
-            }
-
-            tran.Commit();
-            return affectedRows > 0;
-        }
-        catch
-        {
-            tran.Rollback();
-            throw;
-        }
-    }
-
-    public async Task<bool> HardDeleteAsync(int id)
-    {
-        const string sql = "DELETE FROM usr WHERE usr_id = @Id";
-        return await DeleteAsync(sql, new { Id = id }, isHardDelete: true).ConfigureAwait(false);
-    }
-
-    public async Task<bool> SoftDeleteAsync(int id)
-    {
-        var sql = @"UPDATE usr 
-                    SET is_deleted = true
-                    WHERE usr_id = @Id";
-        return await DeleteAsync(sql, new { Id = id }, isHardDelete: false).ConfigureAwait(false);
-    }
+    public Task<bool> SoftDeleteAsync(int id) =>
+        ExecuteAsync("UPDATE usr SET is_deleted = true WHERE usr_id = @Id", new { Id = id });
 }
