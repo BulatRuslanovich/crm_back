@@ -144,9 +144,10 @@ public abstract class BaseRepository<TEntity>(
             transaction.Commit();
             return result;
         }
-        catch
+        catch (Exception ex)
         {
             transaction.Rollback();
+            logger.LogError(ex, "Transaction failed and rolled back for {Entity}", typeof(TEntity).Name);
             throw;
         }
     }
