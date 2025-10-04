@@ -1,13 +1,13 @@
 # CRM Backend System
 
 <p align="center">
-  <img src="https://github.com/BulatRuslanovich/crm_back/actions/workflows/build.yaml/badge.svg" alt="Build" />
-  <img src="https://codecov.io/gh/BulatRuslanovich/crm_back/branch/master/graph/badge.svg?token=YOUR_CODECOV_TOKEN" alt="Coverage" />
-  <img src="https://img.shields.io/github/last-commit/BulatRuslanovich/crm_back/master?label=Last%20Commit&color=blue" alt="Last Commit" />
-  <img src="https://img.shields.io/github/repo-size/BulatRuslanovich/crm_back?label=Repo%20Size&color=orange" alt="Repo Size" />
-  <img src="https://img.shields.io/badge/.NET-8.0-purple" alt=".NET Version" />
-  <img src="https://img.shields.io/badge/PostgreSQL-12%2B-blue" alt="PostgreSQL" />
-  <img src="https://img.shields.io/github/license/BulatRuslanovich/crm_back?color=yellow" alt="License" />
+  <img src="https://img.shields.io/github/actions/workflow/status/BulatRuslanovich/crm_back/build.yaml?branch=master&style=for-the-badge&label=Build" alt="Build" />
+  <img src="https://img.shields.io/codecov/c/github/BulatRuslanovich/crm_back?style=for-the-badge&label=Coverage" alt="Coverage" />
+  <img src="https://img.shields.io/github/last-commit/BulatRuslanovich/crm_back/master?label=Last%20Commit&color=blue&style=for-the-badge" alt="Last Commit" />
+  <img src="https://img.shields.io/github/repo-size/BulatRuslanovich/crm_back?label=Repo%20Size&color=orange&style=for-the-badge" alt="Repo Size" />
+  <img src="https://img.shields.io/badge/.NET-8.0-purple?style=for-the-badge" alt=".NET Version" />
+  <img src="https://img.shields.io/badge/PostgreSQL-12%2B-blue?style=for-the-badge" alt="PostgreSQL" />
+  <img src="https://img.shields.io/github/license/BulatRuslanovich/crm_back?color=yellow&style=for-the-badge" alt="License" />
 </p>
 
 
