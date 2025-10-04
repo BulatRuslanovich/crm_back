@@ -1,6 +1,8 @@
 # CRM Backend System
+
 <p align="center">  
-<img src="https://codecov.io/gh/BulatRuslanovich/crm_back/branch/master/graph/badge.svg?token=YOUR_CODECOV_TOKEN" alt="Coverage" />
+  <img src="https://github.com/BulatRuslanovich/crm_back/actions/workflows/build.yaml/badge.svg" alt="Build" />
+  <img src="https://codecov.io/gh/BulatRuslanovich/crm_back/branch/master/graph/badge.svg?token=YOUR_CODECOV_TOKEN" alt="Coverage" />
   <img src="https://img.shields.io/github/last-commit/BulatRuslanovich/crm_back/master?label=Last%20Commit&color=blue" alt="Last Commit" />
   <img src="https://img.shields.io/github/repo-size/BulatRuslanovich/crm_back?label=Repo%20Size&color=orange" alt="Repo Size" />
   <img src="https://img.shields.io/badge/.NET-8.0-purple" alt=".NET Version" />
