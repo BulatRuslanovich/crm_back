@@ -1,6 +1,6 @@
 # CRM Backend System
 
-<p align="center">  
+<p align="center">
   <img src="https://github.com/BulatRuslanovich/crm_back/actions/workflows/build.yaml/badge.svg" alt="Build" />
   <img src="https://codecov.io/gh/BulatRuslanovich/crm_back/branch/master/graph/badge.svg?token=YOUR_CODECOV_TOKEN" alt="Coverage" />
   <img src="https://img.shields.io/github/last-commit/BulatRuslanovich/crm_back/master?label=Last%20Commit&color=blue" alt="Last Commit" />
@@ -29,6 +29,8 @@ This project provides a RESTful API backend for managing customer relationships,
 | [Docker](https://www.docker.com/) | Containerization | — |
 | [GitHub Actions](https://github.com/features/actions) | CI/CD automation | — |
 | [Codecov](https://about.codecov.io/) | Test coverage reports | — |
+
+[Coverage](https://app.codecov.io/github/bulatruslanovich/crm_back)
 
 ---
 
