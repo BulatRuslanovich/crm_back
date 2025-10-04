@@ -280,7 +280,7 @@ public class BaseRepositoryTests
     // NOTE: my first test without vibe coding
     [Fact(DisplayName = "ExecuteScalarAsync should return generated ID")]
     [Trait("Method", "ExecuteScalarAsync")]
-    public void ExecuteScalarAsync_ReturnsGeneratedId()
+    public async Task ExecuteScalarAsync_ReturnsGeneratedId()
     {
 
         var connection = new Mock<DbConnection>();
@@ -292,11 +292,9 @@ public class BaseRepositoryTests
             _mockLogger.Object,
             _mockOptions.Object);
 
-        var res = repository.TestExecuteScalarAsync(
+        var res = await repository.TestExecuteScalarAsync(
             "INSERT INTO test (name) VALUES (@name) RETURNING id",
-            new { name = "NewEntity" })
-                  .GetAwaiter()
-                  .GetResult();
+            new { name = "NewEntity" });
 
         Assert.Equal(123, res);
     }
