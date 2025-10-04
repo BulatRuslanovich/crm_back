@@ -92,7 +92,8 @@ public abstract class BaseRepository<TEntity>(
     protected async Task<int> ExecuteScalarAsync(string sql, object entity)
     {
         LogSql(sql, entity);
-        var id = await dbConnection.ExecuteScalarAsync<int>(sql, entity).ConfigureAwait(false);
+
+        var id = await dbConnection.ExecuteScalarAsync<int>(sql, entity);
 
         if (_enableDbLog)
         {

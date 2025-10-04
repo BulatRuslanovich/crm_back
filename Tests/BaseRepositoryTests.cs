@@ -3,6 +3,7 @@ namespace Tests;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
 using CrmBack.Core.Config;
@@ -275,27 +276,29 @@ public class BaseRepositoryTests
         Assert.True(result);
     }
 
+
+    // NOTE: my first test without vibe coding
     [Fact(DisplayName = "ExecuteScalarAsync should return generated ID")]
     [Trait("Method", "ExecuteScalarAsync")]
-    public async Task ExecuteScalarAsync_ReturnsGeneratedId()
+    public void ExecuteScalarAsync_ReturnsGeneratedId()
     {
-        // Arrange
-        _mockConnection
-            .SetupDapperAsync(c => c.ExecuteScalarAsync<int>(
-                It.IsAny<string>(),
-                It.IsAny<object>(),
-                null,
-                null,
-                null))
-            .ReturnsAsync(123); // Simulate generated ID
 
-        // Act
-        var result = await _repository.TestExecuteScalarAsync(
+        var connection = new Mock<DbConnection>();
+        connection.SetupDapperAsync(c => c.ExecuteScalarAsync<object>(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<IDbTransaction>(), null, null))
+                  .ReturnsAsync(123);
+
+        var repository = new TestRepository(
+            connection.Object,
+            _mockLogger.Object,
+            _mockOptions.Object);
+
+        var res = repository.TestExecuteScalarAsync(
             "INSERT INTO test (name) VALUES (@name) RETURNING id",
-            new { name = "NewEntity" });
+            new { name = "NewEntity" })
+                  .GetAwaiter()
+                  .GetResult();
 
-        // Assert
-        Assert.Equal(123, result);
+        Assert.Equal(123, res);
     }
 }
 
