@@ -1,4 +1,4 @@
-# CRM Backend System
+<img src="https://readme-typing-svg.herokuapp.com?font=Lexend+Giga&size=25&pause=1000&color=6495ED&vCenter=true&width=435&height=25&lines=CRM%20Backend%20System" width="450"/>
 
 <p align="center">
   <img src="https://img.shields.io/github/actions/workflow/status/BulatRuslanovich/crm_back/build.yaml?branch=master&style=for-the-badge&label=Build" alt="Build" />
@@ -13,11 +13,11 @@
 
 A robust backend system for a Customer Relationship Management (CRM) application, built with ASP.NET Core for scalable API development.
 
-## Overview
+<img src="https://readme-typing-svg.herokuapp.com?font=Lexend+Giga&size=25&pause=1000&color=6495ED&vCenter=true&width=435&height=25&lines=Overview" width="450"/>
 
 This project provides a RESTful API backend for managing customer relationships, including endpoints for customers, interactions, and analytics. It leverages modern .NET practices for performance and maintainability.
 
-## Tech Stack
+<img src="https://readme-typing-svg.herokuapp.com?font=Lexend+Giga&size=25&pause=1000&color=6495ED&vCenter=true&width=435&height=25&lines=Tech%20Stack" width="450"/>
 
 | Technology | Role | Version |
 |-------------|------|----------|
@@ -34,7 +34,7 @@ This project provides a RESTful API backend for managing customer relationships,
 
 ---
 
-##  API Endpoints
+<img src="https://readme-typing-svg.herokuapp.com?font=Lexend+Giga&size=25&pause=1000&color=6495ED&vCenter=true&width=435&height=25&lines=API%20Endpoints" width="450"/>
 
 The CRM API provides endpoints for managing users, organizations, and activities.
 All routes are versioned under `/api/*` and protected where necessary by authorization.
