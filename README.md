@@ -1,5 +1,7 @@
 <img src="https://readme-typing-svg.herokuapp.com?font=Lexend+Giga&size=25&pause=1000&color=6495ED&vCenter=true&width=435&height=25&lines=CRM%20Backend%20System" width="450"/>
 
+---
+
 <p align="center">
   <img src="https://img.shields.io/github/actions/workflow/status/BulatRuslanovich/crm_back/build.yaml?branch=master&style=for-the-badge&label=Build" alt="Build" />
   <img src="https://img.shields.io/codecov/c/github/BulatRuslanovich/crm_back?style=for-the-badge&label=Coverage" alt="Coverage" />
@@ -15,9 +17,13 @@ A robust backend system for a Customer Relationship Management (CRM) application
 
 <img src="https://readme-typing-svg.herokuapp.com?font=Lexend+Giga&size=25&pause=1000&color=6495ED&vCenter=true&width=435&height=25&lines=Overview" width="450"/>
 
+---
+
 This project provides a RESTful API backend for managing customer relationships, including endpoints for customers, interactions, and analytics. It leverages modern .NET practices for performance and maintainability.
 
 <img src="https://readme-typing-svg.herokuapp.com?font=Lexend+Giga&size=25&pause=1000&color=6495ED&vCenter=true&width=435&height=25&lines=Tech%20Stack" width="450"/>
+
+---
 
 | Technology | Role | Version |
 |-------------|------|----------|
@@ -32,14 +38,15 @@ This project provides a RESTful API backend for managing customer relationships,
 
 [Coverage](https://app.codecov.io/github/bulatruslanovich/crm_back)
 
----
 
 <img src="https://readme-typing-svg.herokuapp.com?font=Lexend+Giga&size=25&pause=1000&color=6495ED&vCenter=true&width=435&height=25&lines=API%20Endpoints" width="450"/>
+
+---
 
 The CRM API provides endpoints for managing users, organizations, and activities.
 All routes are versioned under `/api/*` and protected where necessary by authorization.
 
----
+
 
 ### User API (`/api/user`)
 
@@ -52,7 +59,6 @@ All routes are versioned under `/api/*` and protected where necessary by authori
 | `DELETE` | `/api/user/{id}`  |   ✅  | Delete a user by ID              |
 | `POST`   | `/api/user/login` |   ❌  | Authenticate user and return JWT |
 
----
 
 ### Organization API (`/api/org`)
 
@@ -64,7 +70,6 @@ All routes are versioned under `/api/*` and protected where necessary by authori
 | `PUT`    | `/api/org/{id}` |   ✅  | Update an organization         |
 | `DELETE` | `/api/org/{id}` |   ✅  | Delete an organization by ID   |
 
----
 
 ### Activity API (`/api/activ`)
 
@@ -75,18 +80,6 @@ All routes are versioned under `/api/*` and protected where necessary by authori
 | `POST`   | `/api/activ`      |   ✅  | Create a new activity      |
 | `PUT`    | `/api/activ/{id}` |   ✅  | Update an activity         |
 | `DELETE` | `/api/activ/{id}` |   ✅  | Delete an activity by ID   |
-
----
-
-### Authentication
-
-* All protected endpoints require a valid JWT token in the `Authorization` header:
-
-  ```
-  Authorization: Bearer <your_token_here>
-  ```
-
----
 
 
 
