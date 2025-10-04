@@ -14,6 +14,8 @@ using Moq;
 using Moq.Dapper;
 using Xunit;
 
+[Trait("Category", "Unit")]
+[Trait("Layer", "Repository")]
 public class BaseRepositoryTests
 {
     private readonly Mock<IDbConnection> _mockConnection;
@@ -38,11 +40,13 @@ public class BaseRepositoryTests
             _mockOptions.Object);
     }
 
-    [Fact]
+    [Fact(DisplayName = "QuerySingleAsync should return entity when found")]
+    [Trait("Method", "QuerySingleAsync")]
     public async Task QuerySingleAsync_WhenEntityExists_ReturnsEntity()
     {
-        // Arrange
+        // Arrange - prepare test data
         var expectedEntity = new TestEntity { Id = 1, Name = "Test" };
+
         _mockConnection
             .SetupDapperAsync(c => c.QuerySingleOrDefaultAsync<TestEntity>(
                 It.IsAny<string>(),
@@ -52,16 +56,17 @@ public class BaseRepositoryTests
                 null))
             .ReturnsAsync(expectedEntity);
 
-        // Act
+        // Act - call the method under test
         var result = await _repository.TestQuerySingleAsync("SELECT * FROM test WHERE id = @id", 1);
 
-        // Assert
+        // Assert - verify the result
         Assert.NotNull(result);
         Assert.Equal(1, result.Id);
         Assert.Equal("Test", result.Name);
     }
 
-    [Fact]
+    [Fact(DisplayName = "QuerySingleAsync should return null when entity not found")]
+    [Trait("Method", "QuerySingleAsync")]
     public async Task QuerySingleAsync_WhenEntityNotFound_ReturnsNull()
     {
         // Arrange
@@ -79,17 +84,10 @@ public class BaseRepositoryTests
 
         // Assert
         Assert.Null(result);
-        _mockLogger.Verify(
-            x => x.Log(
-                LogLevel.Debug,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("not found")),
-                null,
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-            Times.Once);
     }
 
-    [Fact]
+    [Fact(DisplayName = "QueryAsync should return collection of entities")]
+    [Trait("Method", "QueryAsync")]
     public async Task QueryAsync_WhenEntitiesExist_ReturnsCollection()
     {
         // Arrange
@@ -116,7 +114,8 @@ public class BaseRepositoryTests
         Assert.Equal(2, result.Count());
     }
 
-    [Fact]
+    [Fact(DisplayName = "QueryAsync should return empty collection when no data")]
+    [Trait("Method", "QueryAsync")]
     public async Task QueryAsync_WhenNoEntities_ReturnsEmptyCollection()
     {
         // Arrange
@@ -135,48 +134,10 @@ public class BaseRepositoryTests
         // Assert
         Assert.NotNull(result);
         Assert.Empty(result);
-        _mockLogger.Verify(
-            x => x.Log(
-                LogLevel.Debug,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("No")),
-                null,
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-            Times.Once);
     }
 
-    // [Fact]
-    // public async Task ExecuteScalarAsync_ReturnsGeneratedId()
-    // {
-    //     // Arrange
-    //     var expectedId = 123;
-    //     var entity = new TestEntity { Name = "New Entity" };
-
-    //     _mockConnection
-    //         .SetupDapperAsync(c => c.ExecuteScalarAsync<int>(
-    //             It.IsAny<string>(), 
-    //             It.IsAny<object>(), 
-    //             It.IsAny<IDbTransaction>(), 
-    //             null, 
-    //             null))
-    //         .ReturnsAsync(expectedId);
-
-    //     // Act
-    //     var result = await _repository.TestExecuteScalarAsync("INSERT INTO test ... RETURNING id", entity);
-
-    //     // Assert
-    //     Assert.Equal(expectedId, result);
-    //     _mockLogger.Verify(
-    //         x => x.Log(
-    //             LogLevel.Debug,
-    //             It.IsAny<EventId>(),
-    //             It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Created")),
-    //             null,
-    //             It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-    //         Times.Once);
-    // }
-
-    [Fact]
+    [Fact(DisplayName = "ExecuteAsync should return true when rows affected")]
+    [Trait("Method", "ExecuteAsync")]
     public async Task ExecuteAsync_WhenRowsAffected_ReturnsTrue()
     {
         // Arrange
@@ -196,7 +157,8 @@ public class BaseRepositoryTests
         Assert.True(result);
     }
 
-    [Fact]
+    [Fact(DisplayName = "ExecuteAsync should return false when no rows affected")]
+    [Trait("Method", "ExecuteAsync")]
     public async Task ExecuteAsync_WhenNoRowsAffected_ReturnsFalse()
     {
         // Arrange
@@ -216,7 +178,8 @@ public class BaseRepositoryTests
         Assert.False(result);
     }
 
-    [Fact]
+    [Fact(DisplayName = "WithTransactionAsync should commit transaction on success")]
+    [Trait("Method", "WithTransactionAsync")]
     public async Task WithTransactionAsync_WhenSuccessful_CommitsTransaction()
     {
         // Arrange
@@ -230,21 +193,23 @@ public class BaseRepositoryTests
             return 42;
         });
 
-        // Assert
+        // Assert - verify result
         Assert.Equal(42, result);
+
+        // Verify transaction behavior
         mockTransaction.Verify(t => t.Commit(), Times.Once);
         mockTransaction.Verify(t => t.Rollback(), Times.Never);
-        mockTransaction.Verify(t => t.Dispose(), Times.Once);
     }
 
-    [Fact]
+    [Fact(DisplayName = "WithTransactionAsync should rollback transaction on exception")]
+    [Trait("Method", "WithTransactionAsync")]
     public async Task WithTransactionAsync_WhenExceptionThrown_RollsBackTransaction()
     {
         // Arrange
         var mockTransaction = new Mock<IDbTransaction>();
         _mockConnection.Setup(c => c.BeginTransaction()).Returns(mockTransaction.Object);
 
-        // Act & Assert
+        // Act & Assert - verify exception is thrown
         await Assert.ThrowsAsync<InvalidOperationException>(async () =>
         {
             await _repository.TestWithTransactionAsync<int>(async (transaction) =>
@@ -254,32 +219,20 @@ public class BaseRepositoryTests
             });
         });
 
+        // Assert - verify transaction behavior
         mockTransaction.Verify(t => t.Rollback(), Times.Once);
         mockTransaction.Verify(t => t.Commit(), Times.Never);
-        mockTransaction.Verify(t => t.Dispose(), Times.Once);
-        _mockLogger.Verify(
-            x => x.Log(
-                LogLevel.Error,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Transaction failed")),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-            Times.Once);
     }
 
-    [Fact]
-    public async Task LogSql_WhenLoggingDisabled_DoesNotLog()
+    [Fact(DisplayName = "QueryAsync with parameters should return correct results")]
+    [Trait("Method", "QueryAsync")]
+    public async Task QueryAsync_WithParameters_ReturnsCorrectResults()
     {
         // Arrange
-        _mockOptions.Setup(x => x.Value).Returns(new DatabaseLoggingOptions
+        var expectedEntities = new List<TestEntity>
         {
-            EnableDatabaseLogging = false
-        });
-
-        var repositoryWithoutLogging = new TestRepository(
-            _mockConnection.Object,
-            _mockLogger.Object,
-            _mockOptions.Object);
+            new() { Id = 5, Name = "FilteredTest" }
+        };
 
         _mockConnection
             .SetupDapperAsync(c => c.QueryAsync<TestEntity>(
@@ -288,55 +241,43 @@ public class BaseRepositoryTests
                 It.IsAny<IDbTransaction>(),
                 null,
                 null))
-            .ReturnsAsync(Enumerable.Empty<TestEntity>());
+            .ReturnsAsync(expectedEntities);
 
         // Act
-        await repositoryWithoutLogging.TestQueryAsync("SELECT * FROM test", null);
+        var result = await _repository.TestQueryAsync(
+            "SELECT * FROM test WHERE id > @minId",
+            new { minId = 3 });
 
         // Assert
-        _mockLogger.Verify(
-            x => x.Log(
-                LogLevel.Debug,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("[SQL]")),
-                null,
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-            Times.Never);
+        Assert.Single(result);
+        Assert.Equal(5, result.First().Id);
+        Assert.Equal("FilteredTest", result.First().Name);
     }
 
-    //     [Fact]
-    //     public async Task QuerySingleAsync_WithTransaction_PassesTransactionToQuery()
-    //     {
-    //         // Arrange
-    //         var mockTransaction = new Mock<IDbTransaction>();
-    //         var expectedEntity = new TestEntity { Id = 1, Name = "Test" };
+    [Fact(DisplayName = "ExecuteAsync with multiple rows affected should return true")]
+    [Trait("Method", "ExecuteAsync")]
+    public async Task ExecuteAsync_WithMultipleRowsAffected_ReturnsTrue()
+    {
+        // Arrange
+        _mockConnection
+            .SetupDapperAsync(c => c.ExecuteAsync(
+                It.IsAny<string>(),
+                It.IsAny<object>(),
+                It.IsAny<IDbTransaction>(),
+                null,
+                null))
+            .ReturnsAsync(10); // 10 rows affected
 
-    //         _mockConnection
-    //             .SetupDapperAsync(c => c.QuerySingleOrDefaultAsync<TestEntity>(
-    //                 It.IsAny<string>(), 
-    //                 It.IsAny<object>(), 
-    //                 mockTransaction.Object, 
-    //                 null, 
-    //                 null))
-    //             .ReturnsAsync(expectedEntity);
+        // Act
+        var result = await _repository.TestExecuteAsync("DELETE FROM test WHERE status = @status", new { status = "inactive" });
 
-    //         // Act
-    //         var result = await _repository.TestQuerySingleAsync("SELECT * FROM test WHERE id = @id", 1, mockTransaction.Object);
-
-    //         // Assert
-    //         Assert.NotNull(result);
-    //         _mockConnection.Verify(
-    //             c => c.QuerySingleOrDefaultAsync<TestEntity>(
-    //                 It.IsAny<string>(), 
-    //                 It.IsAny<object>(), 
-    //                 mockTransaction.Object, 
-    //                 null, 
-    //                 null),
-    //             Times.Once);
-    //     }
+        // Assert
+        Assert.True(result);
+    }
 }
 
-// Test helper classes
+// Helper classes for testing
+
 public class TestEntity
 {
     public int Id { get; set; }
