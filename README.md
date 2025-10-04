@@ -1,4 +1,13 @@
-# CRM Backend System (not actual) lol
+# CRM Backend System
+<p align="center">  
+<img src="https://codecov.io/gh/BulatRuslanovich/crm_back/branch/master/graph/badge.svg?token=YOUR_CODECOV_TOKEN" alt="Coverage" />
+  <img src="https://img.shields.io/github/last-commit/BulatRuslanovich/crm_back/master?label=Last%20Commit&color=blue" alt="Last Commit" />
+  <img src="https://img.shields.io/github/repo-size/BulatRuslanovich/crm_back?label=Repo%20Size&color=orange" alt="Repo Size" />
+  <img src="https://img.shields.io/badge/.NET-8.0-purple" alt=".NET Version" />
+  <img src="https://img.shields.io/badge/PostgreSQL-12%2B-blue" alt="PostgreSQL" />
+  <img src="https://img.shields.io/github/license/BulatRuslanovich/crm_back?color=yellow" alt="License" />
+</p>
+
 
 A robust backend system for a Customer Relationship Management (CRM) application, built with ASP.NET Core for scalable API development.
 
@@ -6,172 +15,78 @@ A robust backend system for a Customer Relationship Management (CRM) application
 
 This project provides a RESTful API backend for managing customer relationships, including endpoints for customers, interactions, and analytics. It leverages modern .NET practices for performance and maintainability.
 
-## Technologies
+## Tech Stack
 
-| Technology       | Purpose                          | Version/Notes          |
-|------------------|----------------------------------|------------------------|
-| .NET             | Development platform             | 8.0+                   |
-| ASP.NET Core     | Web framework                    | -                      |
-| Dapper           | Micro-ORM for database operations| -                      |
-| PostgreSQL       | Relational database              | 12+ (via Npgsql)       |
-| Swagger/OpenAPI  | API documentation                | -                      |
-| Docker           | Containerization                 | -                      |
+| Technology | Role | Version |
+|-------------|------|----------|
+| [.NET 8.0](https://dotnet.microsoft.com/) | Backend framework | LTS |
+| [ASP.NET Core](https://learn.microsoft.com/en-us/aspnet/core) | Web API layer | — |
+| [Dapper](https://github.com/DapperLib/Dapper) | Lightweight ORM | — |
+| [PostgreSQL](https://www.postgresql.org/) | Relational database | 12+ |
+| [Swagger / OpenAPI](https://swagger.io/tools/open-source/open-source-integrations/) | API documentation | — |
+| [Docker](https://www.docker.com/) | Containerization | — |
+| [GitHub Actions](https://github.com/features/actions) | CI/CD automation | — |
+| [Codecov](https://about.codecov.io/) | Test coverage reports | — |
 
-## Prerequisites
+---
 
-Before setting up the project, ensure you have the following installed:
+##  API Endpoints
 
-- [.NET SDK 8.0](https://dotnet.microsoft.com/download/dotnet/8.0) or higher
-- [PostgreSQL 12+](https://www.postgresql.org/download/)
-- [Docker](https://www.docker.com/products/docker-desktop) and [Docker Compose](https://docs.docker.com/compose/install/) (optional, for containerized deployment)
-- Git
+The CRM API provides endpoints for managing users, organizations, and activities.
+All routes are versioned under `/api/*` and protected where necessary by authorization.
 
-## Installation
+---
 
-### 1. Clone the Repository
+### User API (`/api/user`)
 
-```bash
-git clone https://github.com/BulatRuslanovich/crm_back.git
-cd crm_back
-```
+| Method   | Endpoint          | Auth | Description                      |
+| :------- | :---------------- | :--: | :------------------------------- |
+| `GET`    | `/api/user/{id}`  |   ✅  | Retrieve a user by ID            |
+| `GET`    | `/api/user`       |   ✅  | Retrieve all users               |
+| `POST`   | `/api/user`       |   ❌  | Create a new user                |
+| `PUT`    | `/api/user/{id}`  |   ✅  | Update an existing user          |
+| `DELETE` | `/api/user/{id}`  |   ✅  | Delete a user by ID              |
+| `POST`   | `/api/user/login` |   ❌  | Authenticate user and return JWT |
 
-### 2. Restore Dependencies
+---
 
-```bash
-dotnet restore
-```
+### Organization API (`/api/org`)
 
-### 3. Set Up the Database
+| Method   | Endpoint        | Auth | Description                    |
+| :------- | :-------------- | :--: | :----------------------------- |
+| `GET`    | `/api/org/{id}` |   ✅  | Retrieve an organization by ID |
+| `GET`    | `/api/org`      |   ✅  | Retrieve all organizations     |
+| `POST`   | `/api/org`      |   ✅  | Create a new organization      |
+| `PUT`    | `/api/org/{id}` |   ✅  | Update an organization         |
+| `DELETE` | `/api/org/{id}` |   ✅  | Delete an organization by ID   |
 
-1. Create a new PostgreSQL database (e.g., `crm_db`).
-2. Execute the schema initialization script:
+---
 
-   ```bash
-   psql -U postgres -d crm_db -f db_script.sql
-   ```
+### Activity API (`/api/activ`)
 
-3. Update the connection string in `appsettings.json` (see [Configuration](#configuration) below).
+| Method   | Endpoint          | Auth | Description                |
+| :------- | :---------------- | :--: | :------------------------- |
+| `GET`    | `/api/activ/{id}` |   ✅  | Retrieve an activity by ID |
+| `GET`    | `/api/activ`      |   ✅  | Retrieve all activities    |
+| `POST`   | `/api/activ`      |   ✅  | Create a new activity      |
+| `PUT`    | `/api/activ/{id}` |   ✅  | Update an activity         |
+| `DELETE` | `/api/activ/{id}` |   ✅  | Delete an activity by ID   |
 
-### 4. Run the Application
+---
 
-#### Development Mode
+### Authentication
 
-```bash
-dotnet run
-```
+* All protected endpoints require a valid JWT token in the `Authorization` header:
 
-#### With Hot Reload (for development)
+  ```
+  Authorization: Bearer <your_token_here>
+  ```
 
-```bash
-dotnet watch run
-```
+---
 
-The API will be available at `http://localhost:5000`. Access the interactive Swagger UI at `http://localhost:5000/swagger`.
 
-## Running with Docker
-
-For a containerized setup, use Docker Compose to spin up both the application and PostgreSQL database.
-
-### 1. Build and Start Containers
-
-```bash
-docker-compose up -d --build
-```
-
-### 2. Access the Application
-
-- API Base URL: `http://localhost:5000`
-- Swagger UI: `http://localhost:5000/swagger`
-- Database (if needed): `localhost:5432`
-
-### 3. Stop Containers
-
-```bash
-docker-compose down
-```
-
-To remove volumes (e.g., reset database):
-
-```bash
-docker-compose down -v
-```
-
-## Configuration
-
-The application configuration is managed via `appsettings.json`. Key sections include:
-
-### Database Connection
-
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Host=localhost;Port=5432;Database=crm_db;Username=postgres;Password=your_password;"
-  }
-}
-```
-
-### Logging
-
-```json
-{
-  "Logging": {
-    "LogLevel": {
-      "Default": "Information",
-      "Microsoft.AspNetCore": "Warning"
-    }
-  }
-}
-```
-
-For production environments, create an `appsettings.Production.json` file and override settings as needed. Environment variables can also be used for sensitive data like passwords.
-
-## API Endpoints
-
-The API provides the following core endpoints (documented in Swagger):
-
-- `GET /api/customers` - Retrieve all customers
-- `POST /api/customers` - Create a new customer
-- `PUT /api/customers/{id}` - Update a customer
-- `DELETE /api/customers/{id}` - Delete a customer
-- Additional endpoints for interactions, reports, etc.
-
-For full details, explore the Swagger UI after starting the application.
-
-## Project Structure
-
-```
-crm_back/
-├── Controllers/          # API controllers
-├── Data/                 # Database context and repositories
-├── Models/               # Domain models and DTOs
-├── Services/             # Business logic services
-├── db_script.sql        # Database schema script
-├── Dockerfile           # Docker configuration
-├── docker-compose.yml   # Container orchestration
-├── Program.cs           # Application entry point
-└── appsettings.json     # Configuration file
-```
-
-## Contributing
-
-We welcome contributions! To get started:
-
-1. Fork the repository.
-2. Create a feature branch: `git checkout -b feature/amazing-feature`.
-3. Make your changes and commit: `git commit -m "Add amazing feature"`.
-4. Push to the branch: `git push origin feature/amazing-feature`.
-5. Open a Pull Request on GitHub.
-
-Please ensure your code follows these guidelines:
-- Write unit tests for new features.
-- Update documentation if necessary.
-- Keep commits atomic and descriptive.
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Support
-
-If you encounter issues, please open an issue on GitHub with details about your environment and the problem. For questions, feel free to reach out via the repository's Discussions tab.
 
