@@ -134,6 +134,12 @@ static void ConfigureDatabase(IServiceCollection services, IConfiguration config
             ?? throw new InvalidOperationException("Database connection string is not configured");
         return new NpgsqlConnection(connectionString);
     });
+
+    services.AddStackExchangeRedisCache(options =>
+    {
+        options.Configuration = configuration.GetConnectionString("Redis");
+        options.InstanceName = "CrmBack:";
+    });
 }
 
 static void ConfigureApplicationServices(IServiceCollection services)

@@ -1,48 +1,35 @@
-namespace CrmBack.Api.Controllers;
 
 using CrmBack.Core.Models.Payload.Plan;
 using CrmBack.Core.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Caching.Distributed;
+
+namespace CrmBack.Api.Controllers;
 
 [ApiController]
 [Route("api/plan")]
 [Authorize]
-public class PlanController(
-    IPlanService service,
-    IMemoryCache cache,
-    ILogger<OrgController> logger) : BaseApiController(cache, logger)
+public class PlanController(IPlanService service, IDistributedCache cache) : BaseApiController(cache)
 {
     private const string EntityPrefix = "plan_";
-    private const string AllCacheKey = "all_plans";
 
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<ReadPlanPayload>> GetById(int id)
     {
-        if (!ValidateId(id, "organization")) return BadRequest("Organization ID must be positive");
+        if (!ValidateId(id)) return BadRequest();
 
-        return await GetOrSetCache(
+        return await GetDataFromCache(
             $"{EntityPrefix}{id}",
             () => service.GetPlanById(id),
-            TimeSpan.FromMinutes(5)
+            TimeSpan.FromMinutes(10)
         );
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<ReadPlanPayload>>> GetAll()
-    {
-        return await GetOrSetCache(
-            AllCacheKey,
-            async () =>
-            {
-                var orgs = await service.GetAllPlans();
-                return orgs.Count != 0 ? orgs : null;
-            },
-            TimeSpan.FromMinutes(10)
-        );
-    }
+    public async Task<ActionResult<List<ReadPlanPayload>>> GetAll() =>
+        await service.GetAllPlans();
 
     [HttpPost]
     public async Task<ActionResult<ReadPlanPayload>> Create([FromBody] CreatePlanPayload plan)
@@ -50,49 +37,36 @@ public class PlanController(
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
         var payload = await service.CreatePlan(plan);
-        if (payload == null)
-        {
-            logger.LogWarning("Failed to create organization");
-            return BadRequest("Failed to create organization");
-        }
 
-        logger.LogInformation("Created organization {Id}", payload.OrgId);
-        InvalidateCache(payload.OrgId, EntityPrefix, AllCacheKey);
+        if (payload == null) return BadRequest();
+
+        await CleanCache($"{EntityPrefix}{payload.PlanId}");
         return CreatedAtAction(nameof(GetById), new { id = payload.OrgId }, payload);
     }
 
     [HttpPut("{id:int}")]
     public async Task<ActionResult<bool>> Update(int id, [FromBody] UpdatePlanPayload payload)
     {
-        if (!ValidateId(id, "organization") || !ModelState.IsValid)
-            return BadRequest(id <= 0 ? "Organization ID must be positive" : "Invalid data");
+        if (!ValidateId(id) || !ModelState.IsValid) return BadRequest();
 
         var updated = await service.UpdatePlan(id, payload);
-        if (!updated)
-        {
-            logger.LogWarning("Organization {Id} not found for update", id);
-            return NotFound();
-        }
 
-        logger.LogInformation("Updated organization {Id}", id);
-        InvalidateCache(id, EntityPrefix, AllCacheKey);
+        if (!updated) return NotFound();
+
+        await CleanCache($"{EntityPrefix}{id}");
         return Ok(true);
     }
 
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)
     {
-        if (!ValidateId(id, "organization")) return BadRequest("Organization ID must be positive");
+        if (!ValidateId(id)) return BadRequest();
 
         var deleted = await service.DeletePlan(id);
-        if (!deleted)
-        {
-            logger.LogWarning("Organization {Id} not found for deletion", id);
-            return NotFound();
-        }
 
-        logger.LogInformation("Deleted organization {Id}", id);
-        InvalidateCache(id, EntityPrefix, AllCacheKey);
+        if (!deleted) return NotFound();
+
+        await CleanCache($"{EntityPrefix}{id}");
         return NoContent();
     }
 }

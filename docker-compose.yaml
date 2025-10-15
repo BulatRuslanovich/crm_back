@@ -12,6 +12,25 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
+    networks:
+      - crm-back-net
+    
+    redis:
+      image: redis:7-alpine
+      container_name: redis_cache
+      ports:
+        - "6379:6379"
+      volumes:
+        - redis_data:/data
+      restart: unless-stopped
+      command: redis-server --appendonly yes --requirepass "1234"
+      networks:
+        - crm-back-net
 
 volumes:
   postgres_data:
+  redis_data:
+
+networks:
+  crm-network:
+    driver: bridge

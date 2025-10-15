@@ -1,43 +1,44 @@
-namespace CrmBack.Api.Controllers;
 
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Caching.Distributed;
+using System.Text.Json;
 
-public abstract class BaseApiController(IMemoryCache cache, ILogger logger) : ControllerBase
+namespace CrmBack.Api.Controllers;
+
+public abstract class BaseApiController(IDistributedCache cache) : ControllerBase
 {
-    protected bool ValidateId(int id, string? entityName = null)
-    {
-        if (id > 0) return true;
-        logger.LogWarning("Invalid {Entity} ID {Id}", entityName ?? "entity", id);
-        return false;
-    }
+    protected bool ValidateId(int id) => id > 0;
 
-    protected async Task<ActionResult<T>> GetOrSetCache<T>(
-        string cacheKey,
+    protected async Task<ActionResult<T>> GetDataFromCache<T>(
+        string key,
         Func<Task<T?>> fetchData,
         TimeSpan expiration) where T : class
     {
-        if (cache.TryGetValue(cacheKey, out T? cached))
+        var cacheData = await cache.GetStringAsync(key);
+
+        if (!string.IsNullOrEmpty(cacheData))
         {
-            logger.LogDebug("Cache hit: {Key}", cacheKey);
-            return Ok(cached);
+            var value = JsonSerializer.Deserialize<T>(cacheData);
+            return Ok(value);
         }
 
         var data = await fetchData();
+
         if (data == null)
         {
-            logger.LogWarning("Data not found for key: {Key}", cacheKey);
             return NotFound();
         }
 
-        cache.Set(cacheKey, data, expiration);
-        logger.LogDebug("Cached: {Key}", cacheKey);
+        var cacheOpt = new DistributedCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = expiration
+        };
+
+        var serData = JsonSerializer.Serialize(data);
+        await cache.SetStringAsync(key, serData, cacheOpt);
         return Ok(data);
     }
 
-    protected void InvalidateCache(int id, string entityPrefix, string allCacheKey)
-    {
-        cache.Remove($"{entityPrefix}{id}");
-        cache.Remove(allCacheKey);
-    }
+    protected async Task CleanCache(string key) =>
+        await cache.RemoveAsync(key);
 }

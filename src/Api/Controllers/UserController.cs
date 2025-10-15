@@ -4,25 +4,21 @@ using CrmBack.Core.Models.Payload.User;
 using CrmBack.Core.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Caching.Distributed;
 
 [ApiController]
 [Route("api/user")]
-public class UserController(
-    IUserService userService,
-    IMemoryCache cache,
-    ILogger<UserController> logger) : BaseApiController(cache, logger)
+public class UserController(IUserService userService, IDistributedCache cache) : BaseApiController(cache)
 {
     private const string EntityPrefix = "user_";
-    private const string AllCacheKey = "all_users";
 
     [Authorize]
     [HttpGet("{id:int}")]
     public async Task<ActionResult<ReadUserPayload>> GetById(int id)
     {
-        if (!ValidateId(id, "user")) return BadRequest("User ID must be positive");
+        if (!ValidateId(id)) return BadRequest();
 
-        return await GetOrSetCache(
+        return await GetDataFromCache(
             $"{EntityPrefix}{id}",
             () => userService.GetUserById(id),
             TimeSpan.FromMinutes(5)
@@ -31,18 +27,9 @@ public class UserController(
 
     [Authorize]
     [HttpGet]
-    public async Task<ActionResult<List<ReadUserPayload>>> GetAll()
-    {
-        return await GetOrSetCache(
-            AllCacheKey,
-            async () =>
-            {
-                var users = await userService.GetAllUsers();
-                return users.Count != 0 ? users : null;
-            },
-            TimeSpan.FromMinutes(10)
-        );
-    }
+    public async Task<ActionResult<List<ReadUserPayload>>> GetAll() =>
+        await userService.GetAllUsers();
+
 
     [HttpPost]
     public async Task<ActionResult<ReadUserPayload>> Create([FromBody] CreateUserPayload user)
@@ -50,14 +37,10 @@ public class UserController(
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
         var payload = await userService.CreateUser(user);
-        if (payload == null)
-        {
-            logger.LogWarning("Failed to create user");
-            return BadRequest("Failed to create user");
-        }
 
-        logger.LogInformation("Created user {Id}", payload.Id);
-        InvalidateCache(payload.Id, EntityPrefix, AllCacheKey);
+        if (payload == null) return BadRequest("Failed to create user");
+
+        await CleanCache($"{EntityPrefix}{payload.Id}");
         return CreatedAtAction(nameof(GetById), new { id = payload.Id }, payload);
     }
 
@@ -65,18 +48,13 @@ public class UserController(
     [HttpPut("{id:int}")]
     public async Task<ActionResult<bool>> Update(int id, [FromBody] UpdateUserPayload payload)
     {
-        if (!ValidateId(id, "user") || !ModelState.IsValid)
-            return BadRequest(id <= 0 ? "User ID must be positive" : "Invalid data");
+        if (!ValidateId(id) || !ModelState.IsValid) return BadRequest();
 
         var updated = await userService.UpdateUser(id, payload);
-        if (!updated)
-        {
-            logger.LogWarning("User {Id} not found for update", id);
-            return NotFound();
-        }
 
-        logger.LogInformation("Updated user {Id}", id);
-        InvalidateCache(id, EntityPrefix, AllCacheKey);
+        if (!updated) return NotFound();
+
+        await CleanCache($"{EntityPrefix}{id}");
         return Ok(true);
     }
 
@@ -84,17 +62,13 @@ public class UserController(
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)
     {
-        if (!ValidateId(id, "user")) return BadRequest("User ID must be positive");
+        if (!ValidateId(id)) return BadRequest();
 
         var deleted = await userService.DeleteUser(id);
-        if (!deleted)
-        {
-            logger.LogWarning("User {Id} not found for deletion", id);
-            return NotFound();
-        }
 
-        logger.LogInformation("Deleted user {Id}", id);
-        InvalidateCache(id, EntityPrefix, AllCacheKey);
+        if (!deleted) return NotFound();
+
+        await CleanCache($"{EntityPrefix}{id}");
         return NoContent();
     }
 
@@ -104,13 +78,10 @@ public class UserController(
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
         var response = await userService.LoginUser(payload);
-        if (response == null)
-        {
-            logger.LogWarning("Authentication failed for login: {Login}", payload.Login);
-            return Unauthorized("Invalid username or password");
-        }
 
-        logger.LogInformation("User authenticated: {UserId}", response.user.Id);
+        if (response == null) return Unauthorized("Invalid username or password");
+
+
         return Ok(response);
     }
 }

@@ -6,15 +6,16 @@
     <NoWarn>$(NoWarn);1591</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3"/>
-    <PackageReference Include="Dapper" Version="2.1.66"/>
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.20"/>
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.20"/>
-    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.9"/>
-    <PackageReference Include="Npgsql" Version="9.0.3"/>
-    <PackageReference Include="Serilog" Version="4.3.0"/>
-    <PackageReference Include="Serilog.AspNetCore" Version="9.0.0"/>
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.6"/>
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0"/>
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+    <PackageReference Include="Dapper" Version="2.1.66" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.20" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.20" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="9.0.10" />
+    <PackageReference Include="Npgsql" Version="9.0.3" />
+    <PackageReference Include="Serilog" Version="4.3.0" />
+    <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.6" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0" />
   </ItemGroup>
 </Project>

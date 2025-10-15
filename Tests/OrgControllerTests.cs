@@ -4,6 +4,7 @@ using CrmBack.Api.Controllers;
 using CrmBack.Core.Models.Payload.Org;
 using CrmBack.Core.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -16,7 +17,7 @@ using Xunit;
 public class OrgControllerTests
 {
     private readonly Mock<IOrgService> _mockOrgService;
-    private readonly Mock<IMemoryCache> _mockCache;
+    private readonly Mock<IDistributedCache> _mockCache;
     private readonly Mock<ILogger<OrgController>> _mockLogger;
     private readonly Mock<ICacheEntry> _mockCacheEntry;
     private readonly OrgController _controller;
@@ -24,18 +25,12 @@ public class OrgControllerTests
     public OrgControllerTests()
     {
         _mockOrgService = new Mock<IOrgService>();
-        _mockCache = new Mock<IMemoryCache>();
+        _mockCache = new Mock<IDistributedCache>();
         _mockLogger = new Mock<ILogger<OrgController>>();
-        _mockCacheEntry = new Mock<ICacheEntry>();
-
-        _mockCache
-            .Setup(x => x.CreateEntry(It.IsAny<object>()))
-            .Returns(_mockCacheEntry.Object);
 
         _controller = new OrgController(
             _mockOrgService.Object,
-            _mockCache.Object,
-            _mockLogger.Object);
+            _mockCache.Object);
     }
 
     #region GetById Tests
