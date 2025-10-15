@@ -77,8 +77,8 @@ public class OrgRepository(IDbConnection dbConnection) : BaseRepository<OrgEntit
     }
 
     public Task<bool> HardDeleteAsync(int id) =>
-        ExecuteAsync("DELETE FROM org WHERE org_id = @id", id);
+        ExecuteAsync("DELETE FROM org WHERE org_id = @id", new { id });
 
     public Task<bool> SoftDeleteAsync(int id) =>
-        ExecuteAsync("UPDATE org SET is_deleted = true WHERE org_id = @id", id);
+        ExecuteAsync("UPDATE org SET is_deleted = true WHERE org_id = @id", new { id });
 }

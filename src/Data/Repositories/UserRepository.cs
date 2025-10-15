@@ -78,8 +78,8 @@ public class UserRepository(IDbConnection dbConnection) : BaseRepository<UserEnt
     }
 
     public Task<bool> HardDeleteAsync(int id) =>
-        ExecuteAsync("DELETE FROM usr WHERE usr_id = @id", id);
+        ExecuteAsync("DELETE FROM usr WHERE usr_id = @id", new { id });
 
     public Task<bool> SoftDeleteAsync(int id) =>
-        ExecuteAsync("UPDATE usr SET is_deleted = true WHERE usr_id = @id", id);
+        ExecuteAsync("UPDATE usr SET is_deleted = true WHERE usr_id = @id", new { id });
 }

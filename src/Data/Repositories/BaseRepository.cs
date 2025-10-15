@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 public abstract class BaseRepository<TEntity>(IDbConnection dbConnection) where TEntity : class
 {
     protected async Task<TEntity?> QuerySingleAsync<TId>(string sql, TId id) =>
-        await dbConnection.QuerySingleOrDefaultAsync<TEntity>(sql, id).ConfigureAwait(false);
+        await dbConnection.QuerySingleOrDefaultAsync<TEntity>(sql, new { id }).ConfigureAwait(false);
 
     protected async Task<IEnumerable<TEntity>> QueryAsync(string sql, object? parameters = null) =>
         await dbConnection.QueryAsync<TEntity>(sql, parameters).ConfigureAwait(false);

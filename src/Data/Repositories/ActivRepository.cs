@@ -84,8 +84,8 @@ public class ActivRepository(IDbConnection dbConnection) : BaseRepository<ActivE
     }
 
     public Task<bool> HardDeleteAsync(int id) =>
-        ExecuteAsync("DELETE FROM activ WHERE activ_id = @id", id);
+        ExecuteAsync("DELETE FROM activ WHERE activ_id = @id", new { id });
 
     public Task<bool> SoftDeleteAsync(int id) =>
-        ExecuteAsync("UPDATE activ SET is_deleted = true WHERE activ_id = @id", id);
+        ExecuteAsync("UPDATE activ SET is_deleted = true WHERE activ_id = @id", new { id });
 }

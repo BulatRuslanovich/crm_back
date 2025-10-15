@@ -47,7 +47,7 @@ static void ConfigureCors(IServiceCollection services)
     {
         options.AddPolicy("AllowSwagger", policy =>
         {
-            policy.WithOrigins("http://localhost:4040", "https://localhost:4041")
+            policy.WithOrigins("http://localhost:5555", "https://localhost:5556")
                   .AllowAnyMethod()
                   .AllowAnyHeader()
                   .AllowCredentials();
@@ -137,7 +137,6 @@ static void ConfigureDatabase(IServiceCollection services, IConfiguration config
     services.AddStackExchangeRedisCache(options =>
     {
         options.Configuration = configuration.GetConnectionString("Redis");
-        options.InstanceName = "CrmBack:";
     });
 }
 
@@ -146,10 +145,12 @@ static void ConfigureApplicationServices(IServiceCollection services)
     services.AddScoped<IUserRepository, UserRepository>();
     services.AddScoped<IActivRepository, ActivRepository>();
     services.AddScoped<IOrgRepository, OrgRepository>();
+    services.AddScoped<IPlanRepository, PlanRepository>();
 
     services.AddScoped<IUserService, UserService>();
     services.AddScoped<IActivService, ActivService>();
     services.AddScoped<IOrgService, OrgService>();
+    services.AddScoped<IPlanService, PlanService>();
 }
 
 static void ConfigureMiddleware(WebApplication app)

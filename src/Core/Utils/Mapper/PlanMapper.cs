@@ -10,7 +10,9 @@ public static class PlanMapper
         return new ReadPlanPayload(
             PlanId: entity.plan_id,
             UsrId: entity.usr_id,
-            OrgId: entity.org_id
+            OrgId: entity.org_id,
+            StartDate: entity.start_date,
+            EndDate: entity.end_date
         );
     }
 
@@ -21,7 +23,12 @@ public static class PlanMapper
 
     public static PlanEntity ToEntity(this CreatePlanPayload payload)
     {
-        return new PlanEntity();
+        return new PlanEntity(
+            usr_id: payload.UsrId,
+            org_id: payload.OrgId,
+            start_date: payload.StartDate,
+            end_date: payload.EndDate
+        );
     }
 
     public static PlanEntity ToEntity(this UpdatePlanPayload payload, int id)
@@ -29,7 +36,9 @@ public static class PlanMapper
         return new PlanEntity(
             plan_id: id,
             org_id: payload.OrgId,
-            usr_id: payload.UsrId
+            usr_id: payload.UsrId,
+            start_date: payload.StartDate,
+            end_date: payload.EndDate
         );
     }
 }
