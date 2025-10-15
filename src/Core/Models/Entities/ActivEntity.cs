@@ -9,9 +9,5 @@ public record ActivEntity(
     TimeSpan? start_time = null,
     TimeSpan? end_time = null,
     string? description = null,
-    DateTime? created_at = null,
-    DateTime? updated_at = null,
-    string? created_by = null,
-    string? updated_by = null,
     bool? is_deleted = null
 );

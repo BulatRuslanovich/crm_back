@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
 
-public class OrgRepository(IDbConnection dbConnection, ILogger<OrgRepository> logger) : BaseRepository<OrgEntity>(dbConnection, logger), IOrgRepository
+public class OrgRepository(IDbConnection dbConnection) : BaseRepository<OrgEntity>(dbConnection), IOrgRepository
 {
     private const string SelectQuery = @"
         SELECT org_id,
@@ -16,54 +16,44 @@ public class OrgRepository(IDbConnection dbConnection, ILogger<OrgRepository> lo
                latitude,
                longitude,
                address,
-               created_at,
-               updated_at,
-               created_by,
-               updated_by,
                is_deleted
         FROM org
-        WHERE {0} AND NOT is_deleted
+        WHERE org_id = {0} AND NOT is_deleted
         LIMIT 1";
 
 
     public Task<OrgEntity?> GetByIdAsync(int id) =>
-        QuerySingleAsync(string.Format(SelectQuery, "org_id = @id"), id);
+        QuerySingleAsync(string.Format(SelectQuery, "@id"), id);
 
 
     public Task<IEnumerable<OrgEntity>> GetAllAsync(bool includeDeleted = false, int page = 1, int pageSize = 10)
     {
         var sql = $@"SELECT org_id,
-                           name,
-                           inn,
-                           latitude,
-                           longitude,
-                           address,
-                           created_at,
-                           updated_at,
-                           created_by,
-                           updated_by,
-                           is_deleted
+                            name,
+                            inn,
+                            latitude,
+                            longitude,
+                            address,
+                            is_deleted
                     FROM org
                     {(includeDeleted ? "" : "WHERE NOT is_deleted")}
-                    LIMIT @PageSize OFFSET @Offset";
+                    LIMIT @pageSize OFFSET @offset";
 
-        return QueryAsync(sql, new { PageSize = pageSize, Offset = (page - 1) * pageSize });
+        return QueryAsync(sql, new { pageSize, offset = (page - 1) * pageSize });
     }
 
     public Task<int> CreateAsync(OrgEntity org)
     {
-        const string sql = @"INSERT INTO org (name, inn, latitude, longitude, address, created_by, updated_by)
-                            VALUES (@name, @inn, @latitude, @longitude, @address, 'system', 'system')
+        const string sql = @"INSERT INTO org (name, inn, latitude, longitude, address)
+                            VALUES (@name, @inn, @latitude, @longitude, @address)
                             RETURNING org_id";
 
         return ExecuteScalarAsync(sql, org);
     }
 
-    public Task<bool> UpdateAsync(OrgEntity org) =>
-    WithTransactionAsync(async transaction =>
+    public async Task<bool> UpdateAsync(OrgEntity org)
     {
-        var existing = await QuerySingleAsync(
-            string.Format(SelectQuery, "org_id = @id"), org.org_id, transaction);
+        var existing = await GetByIdAsync(org.org_id);
 
         if (existing == null) return false;
 
@@ -83,12 +73,12 @@ public class OrgRepository(IDbConnection dbConnection, ILogger<OrgRepository> lo
                                 longitude = @longitude,
                                 address = @address
                             WHERE org_id = @org_id";
-        return await ExecuteAsync(sql, updated, transaction);
-    });
+        return await ExecuteAsync(sql, updated);
+    }
 
     public Task<bool> HardDeleteAsync(int id) =>
-    ExecuteAsync("DELETE FROM org WHERE org_id = @Id", new { Id = id });
+        ExecuteAsync("DELETE FROM org WHERE org_id = @id", id);
 
     public Task<bool> SoftDeleteAsync(int id) =>
-    ExecuteAsync("UPDATE org SET is_deleted = true WHERE org_id = @Id", new { Id = id });
+        ExecuteAsync("UPDATE org SET is_deleted = true WHERE org_id = @id", id);
 }

@@ -28,8 +28,7 @@ public class UserController(IUserService userService, IDistributedCache cache) :
     [Authorize]
     [HttpGet]
     public async Task<ActionResult<List<ReadUserPayload>>> GetAll() =>
-        await userService.GetAllUsers();
-
+        Ok(await userService.GetAllUsers());
 
     [HttpPost]
     public async Task<ActionResult<ReadUserPayload>> Create([FromBody] CreateUserPayload user)

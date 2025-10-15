@@ -10,12 +10,9 @@ namespace CrmBack.Api.Controllers;
 [ApiController]
 [Route("api/activ")]
 [Authorize]
-public class ActivController(
-    IActivService service,
-    IDistributedCache cache) : BaseApiController(cache)
+public class ActivController(IActivService service, IDistributedCache cache) : BaseApiController(cache)
 {
     private const string EntityPrefix = "activ_";
-
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<ReadActivPayload>> GetById(int id)
@@ -30,10 +27,8 @@ public class ActivController(
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<ReadActivPayload>>> GetAll()
-    {
-        return await service.GetAllActiv();
-    }
+    public async Task<ActionResult<List<ReadActivPayload>>> GetAll() =>
+        Ok(await service.GetAllActiv());
 
     [HttpPost]
     public async Task<ActionResult<ReadActivPayload>> Create([FromBody] CreateActivPayload activ)
@@ -47,7 +42,6 @@ public class ActivController(
         await CleanCache($"{EntityPrefix}{payload.ActivId}");
         return CreatedAtAction(nameof(GetById), new { id = payload.ActivId }, payload);
     }
-
 
     [HttpPut("{id:int}")]
     public async Task<ActionResult<bool>> Update(int id, [FromBody] UpdateActivPayload payload)
@@ -64,7 +58,6 @@ public class ActivController(
         await CleanCache($"{EntityPrefix}{id}");
         return Ok(true);
     }
-
 
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)

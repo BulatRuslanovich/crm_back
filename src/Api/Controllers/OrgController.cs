@@ -28,8 +28,7 @@ public class OrgController(IOrgService orgService, IDistributedCache cache) : Ba
 
     [HttpGet]
     public async Task<ActionResult<List<ReadOrgPayload>>> GetAll() =>
-        await orgService.GetAllOrgs();
-
+        Ok(await orgService.GetAllOrgs());
 
     [HttpPost]
     public async Task<ActionResult<ReadOrgPayload>> Create([FromBody] CreateOrgPayload payload)

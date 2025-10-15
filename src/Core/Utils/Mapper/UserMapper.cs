@@ -40,7 +40,7 @@ public static class UserMapper
             first_name: payload.FirstName,
             last_name: payload.LastName,
             middle_name: payload.MiddleName,
-            login: payload.Login,
+            login: payload.Login ?? "",
             password_hash: payload.Password
         );
     }

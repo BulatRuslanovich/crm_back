@@ -98,7 +98,6 @@ static void ConfigureSwagger(IServiceCollection services)
             Description = "CRM API for managing users, organizations, and activities"
         });
 
-        // JWT Authentication
         option.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
         {
             In = Microsoft.OpenApi.Models.ParameterLocation.Header,
@@ -144,12 +143,10 @@ static void ConfigureDatabase(IServiceCollection services, IConfiguration config
 
 static void ConfigureApplicationServices(IServiceCollection services)
 {
-    // Repositories
     services.AddScoped<IUserRepository, UserRepository>();
     services.AddScoped<IActivRepository, ActivRepository>();
     services.AddScoped<IOrgRepository, OrgRepository>();
 
-    // Services
     services.AddScoped<IUserService, UserService>();
     services.AddScoped<IActivService, ActivService>();
     services.AddScoped<IOrgService, OrgService>();
@@ -174,7 +171,6 @@ static void ConfigureMiddleware(WebApplication app)
     app.UseSerilogRequestLogging();
     app.UseCors("AllowSwagger");
 
-    // Swagger (Development only)
     if (app.Environment.IsDevelopment())
     {
         app.UseSwagger();

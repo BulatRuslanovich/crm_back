@@ -1,5 +1,6 @@
 namespace CrmBack.Services;
 
+using CrmBack.Core.Models.Entities;
 using CrmBack.Core.Models.Payload.User;
 using CrmBack.Core.Repositories;
 using CrmBack.Core.Services;
@@ -57,7 +58,7 @@ public class UserService(IUserRepository userRepository, IConfiguration configur
         return new LoginResponsePayload(token, userPayload);
     }
 
-    private string GenerateJwtToken(dynamic user)
+    private string GenerateJwtToken(UserEntity user)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"] ?? "lol"));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
