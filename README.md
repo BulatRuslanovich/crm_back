@@ -41,48 +41,6 @@ This project provides a RESTful API backend for managing customer relationships,
 
 <img src="https://readme-typing-svg.herokuapp.com?font=Lexend+Giga&size=25&pause=1000&color=6495ED&vCenter=true&width=435&height=25&lines=API%20Endpoints" width="450"/>
 
----
-
-The CRM API provides endpoints for managing users, organizations, and activities.
-All routes are versioned under `/api/*` and protected where necessary by authorization.
-
-
-
-### User API (`/api/user`)
-
-| Method   | Endpoint          | Auth | Description                      |
-| :------- | :---------------- | :--: | :------------------------------- |
-| `GET`    | `/api/user/{id}`  |   ✅  | Retrieve a user by ID            |
-| `GET`    | `/api/user`       |   ✅  | Retrieve all users               |
-| `POST`   | `/api/user`       |   ❌  | Create a new user                |
-| `PUT`    | `/api/user/{id}`  |   ✅  | Update an existing user          |
-| `DELETE` | `/api/user/{id}`  |   ✅  | Delete a user by ID              |
-| `POST`   | `/api/user/login` |   ❌  | Authenticate user and return JWT |
-
-
-### Organization API (`/api/org`)
-
-| Method   | Endpoint        | Auth | Description                    |
-| :------- | :-------------- | :--: | :----------------------------- |
-| `GET`    | `/api/org/{id}` |   ✅  | Retrieve an organization by ID |
-| `GET`    | `/api/org`      |   ✅  | Retrieve all organizations     |
-| `POST`   | `/api/org`      |   ✅  | Create a new organization      |
-| `PUT`    | `/api/org/{id}` |   ✅  | Update an organization         |
-| `DELETE` | `/api/org/{id}` |   ✅  | Delete an organization by ID   |
-
-
-### Activity API (`/api/activ`)
-
-| Method   | Endpoint          | Auth | Description                |
-| :------- | :---------------- | :--: | :------------------------- |
-| `GET`    | `/api/activ/{id}` |   ✅  | Retrieve an activity by ID |
-| `GET`    | `/api/activ`      |   ✅  | Retrieve all activities    |
-| `POST`   | `/api/activ`      |   ✅  | Create a new activity      |
-| `PUT`    | `/api/activ/{id}` |   ✅  | Update an activity         |
-| `DELETE` | `/api/activ/{id}` |   ✅  | Delete an activity by ID   |
-
-
-
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
