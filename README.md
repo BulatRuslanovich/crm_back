@@ -21,25 +21,8 @@ A robust backend system for a Customer Relationship Management (CRM) application
 
 This project provides a RESTful API backend for managing customer relationships, including endpoints for customers, interactions, and analytics. It leverages modern .NET practices for performance and maintainability.
 
-<img src="https://readme-typing-svg.herokuapp.com?font=Lexend+Giga&size=25&pause=1000&color=6495ED&vCenter=true&width=435&height=25&lines=Tech%20Stack" width="450"/>
-
----
-
-| Technology | Role | Version |
-|-------------|------|----------|
-| [.NET 8.0](https://dotnet.microsoft.com/) | Backend framework | LTS |
-| [ASP.NET Core](https://learn.microsoft.com/en-us/aspnet/core) | Web API layer | — |
-| [Dapper](https://github.com/DapperLib/Dapper) | Lightweight ORM | — |
-| [PostgreSQL](https://www.postgresql.org/) | Relational database | 12+ |
-| [Swagger / OpenAPI](https://swagger.io/tools/open-source/open-source-integrations/) | API documentation | — |
-| [Docker](https://www.docker.com/) | Containerization | — |
-| [GitHub Actions](https://github.com/features/actions) | CI/CD automation | — |
-| [Codecov](https://about.codecov.io/) | Test coverage reports | — |
 
 [Coverage](https://app.codecov.io/github/bulatruslanovich/crm_back)
-
-
-<img src="https://readme-typing-svg.herokuapp.com?font=Lexend+Giga&size=25&pause=1000&color=6495ED&vCenter=true&width=435&height=25&lines=API%20Endpoints" width="450"/>
 
 ## License
 
