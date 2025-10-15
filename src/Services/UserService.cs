@@ -1,14 +1,14 @@
 namespace CrmBack.Services;
 
-using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 using CrmBack.Core.Models.Payload.User;
 using CrmBack.Core.Repositories;
 using CrmBack.Core.Services;
 using CrmBack.Core.Utils.Mapper;
 using Microsoft.IdentityModel.Tokens;
+using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 public class UserService(IUserRepository userRepository, IConfiguration configuration) : IUserService
 {

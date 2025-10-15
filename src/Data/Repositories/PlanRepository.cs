@@ -1,10 +1,10 @@
 namespace CrmBack.Data.Repositories;
 
+using CrmBack.Core.Models.Entities;
+using CrmBack.Core.Repositories;
 using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
-using CrmBack.Core.Models.Entities;
-using CrmBack.Core.Repositories;
 
 public class PlanRepository(IDbConnection dbConnection,
 ILogger<ActivRepository> logger) : BaseRepository<PlanEntity>(dbConnection, logger), IPlanRepository

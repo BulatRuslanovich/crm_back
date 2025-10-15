@@ -1,45 +1,30 @@
-using System.Data;
-using CrmBack.Core.Config;
 using CrmBack.Core.Repositories;
 using CrmBack.Core.Services;
 using CrmBack.Data.Repositories;
 using CrmBack.Services;
 using Npgsql;
 using Serilog;
+using System.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Logging
 ConfigureLogging(builder);
 
-// Services
 builder.Services.AddMemoryCache();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
-// CORS
 ConfigureCors(builder.Services);
-
-// Authentication & Authorization
 ConfigureAuthentication(builder);
-
-// Swagger
 ConfigureSwagger(builder.Services);
-
-// Database
 ConfigureDatabase(builder.Services, builder.Configuration);
-
-// Application services
 ConfigureApplicationServices(builder.Services);
 
 var app = builder.Build();
 
-// Middleware pipeline
 ConfigureMiddleware(app);
 
 app.Run("http://localhost:5555");
-
-// Configuration methods
 
 static void ConfigureLogging(WebApplicationBuilder builder)
 {
@@ -149,8 +134,6 @@ static void ConfigureDatabase(IServiceCollection services, IConfiguration config
             ?? throw new InvalidOperationException("Database connection string is not configured");
         return new NpgsqlConnection(connectionString);
     });
-
-    services.Configure<DatabaseLoggingOptions>(configuration.GetSection("DatabaseLogging"));
 }
 
 static void ConfigureApplicationServices(IServiceCollection services)
@@ -168,7 +151,6 @@ static void ConfigureApplicationServices(IServiceCollection services)
 
 static void ConfigureMiddleware(WebApplication app)
 {
-    // Exception handling
     app.UseExceptionHandler(errorApp =>
     {
         errorApp.Run(async context =>

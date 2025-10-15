@@ -15,4 +15,3 @@ public record ActivEntity(
     string? updated_by = null,
     bool? is_deleted = null
 );
-

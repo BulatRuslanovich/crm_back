@@ -9,4 +9,3 @@ public record StatusEntity(
     string updated_by = "system",
     bool is_deleted = false
 );
-

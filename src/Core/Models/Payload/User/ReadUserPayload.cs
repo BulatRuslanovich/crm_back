@@ -8,4 +8,3 @@ public record ReadUserPayload
     string MiddleName,
     string Login
 );
-

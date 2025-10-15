@@ -13,4 +13,3 @@ public record OrgEntity(
     string? updated_by = null,
     bool? is_deleted = null
 );
-

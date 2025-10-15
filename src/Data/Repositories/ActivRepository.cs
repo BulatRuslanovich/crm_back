@@ -1,11 +1,11 @@
 namespace CrmBack.Data.Repositories;
 
-using System.Collections.Generic;
-using System.Data;
-using System.Threading.Tasks;
 using CrmBack.Core.Models.Entities;
 using CrmBack.Core.Repositories;
 using Microsoft.Extensions.Logging;
+using System.Collections.Generic;
+using System.Data;
+using System.Threading.Tasks;
 
 public class ActivRepository(IDbConnection dbConnection,
  ILogger<ActivRepository> logger) : BaseRepository<ActivEntity>(dbConnection, logger), IActivRepository

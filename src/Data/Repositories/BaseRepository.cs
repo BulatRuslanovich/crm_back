@@ -1,11 +1,11 @@
 namespace CrmBack.Data.Repositories;
 
+using Dapper;
+using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
-using Dapper;
-using Microsoft.Extensions.Logging;
 
 
 public abstract class BaseRepository<TEntity>(

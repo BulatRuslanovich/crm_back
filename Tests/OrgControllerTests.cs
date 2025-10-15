@@ -1,7 +1,5 @@
 namespace Tests;
 
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using CrmBack.Api.Controllers;
 using CrmBack.Core.Models.Payload.Org;
 using CrmBack.Core.Services;
@@ -9,6 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Moq;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Xunit;
 
 [Trait("Category", "Unit")]

@@ -9,4 +9,3 @@ public record PolicyEntity(
     string updated_by = "system",
     bool is_deleted = false
 );
-

@@ -1,18 +1,16 @@
 namespace Tests;
 
+using CrmBack.Data.Repositories;
+using Dapper;
+using Microsoft.Extensions.Logging;
+using Moq;
+using Moq.Dapper;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
-using CrmBack.Core.Config;
-using CrmBack.Data.Repositories;
-using Dapper;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Moq;
-using Moq.Dapper;
 using Xunit;
 
 [Trait("Category", "Unit")]
@@ -21,24 +19,17 @@ public class BaseRepositoryTests
 {
     private readonly Mock<IDbConnection> _mockConnection;
     private readonly Mock<ILogger<TestRepository>> _mockLogger;
-    private readonly Mock<IOptions<DatabaseLoggingOptions>> _mockOptions;
     private readonly TestRepository _repository;
 
     public BaseRepositoryTests()
     {
         _mockConnection = new Mock<IDbConnection>();
         _mockLogger = new Mock<ILogger<TestRepository>>();
-        _mockOptions = new Mock<IOptions<DatabaseLoggingOptions>>();
 
-        _mockOptions.Setup(x => x.Value).Returns(new DatabaseLoggingOptions
-        {
-            EnableDatabaseLogging = true
-        });
 
         _repository = new TestRepository(
             _mockConnection.Object,
-            _mockLogger.Object,
-            _mockOptions.Object);
+            _mockLogger.Object);
     }
 
     [Fact(DisplayName = "QuerySingleAsync should return entity when found")]
@@ -289,8 +280,7 @@ public class BaseRepositoryTests
 
         var repository = new TestRepository(
             connection.Object,
-            _mockLogger.Object,
-            _mockOptions.Object);
+            _mockLogger.Object);
 
         var res = await repository.TestExecuteScalarAsync(
             "INSERT INTO test (name) VALUES (@name) RETURNING id",
@@ -310,8 +300,7 @@ public class TestEntity
 
 public class TestRepository(
     IDbConnection dbConnection,
-    ILogger<TestRepository> logger,
-    IOptions<DatabaseLoggingOptions> options) : BaseRepository<TestEntity>(dbConnection, logger, options)
+    ILogger<TestRepository> logger) : BaseRepository<TestEntity>(dbConnection, logger)
 {
     public Task<TestEntity?> TestQuerySingleAsync<TId>(string sql, TId id, IDbTransaction? transaction = null)
         => QuerySingleAsync(sql, id, transaction);
