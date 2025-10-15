@@ -1,5 +1,3 @@
-using System;
-
 namespace CrmBack.Core.Models.Payload.Activ;
 
 public record CreateActivPayload(

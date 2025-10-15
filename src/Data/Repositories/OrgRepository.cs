@@ -3,14 +3,11 @@ namespace CrmBack.Data.Repositories;
 using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
-using CrmBack.Core.Config;
 using CrmBack.Core.Models.Entities;
 using CrmBack.Core.Repositories;
-using Dapper;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
-public class OrgRepository(IDbConnection dbConnection, ILogger<OrgRepository> logger, IOptions<DatabaseLoggingOptions> loggingOptions) : BaseRepository<OrgEntity>(dbConnection, logger, loggingOptions), IOrgRepository
+public class OrgRepository(IDbConnection dbConnection, ILogger<OrgRepository> logger) : BaseRepository<OrgEntity>(dbConnection, logger), IOrgRepository
 {
     private const string SelectQuery = @"
         SELECT org_id,
@@ -48,8 +45,7 @@ public class OrgRepository(IDbConnection dbConnection, ILogger<OrgRepository> lo
                            is_deleted
                     FROM org
                     {(includeDeleted ? "" : "WHERE NOT is_deleted")}
-                    LIMIT @PageSize OFFSET @Offset
-                    ";
+                    LIMIT @PageSize OFFSET @Offset";
 
         return QueryAsync(sql, new { PageSize = pageSize, Offset = (page - 1) * pageSize });
     }

@@ -2,8 +2,6 @@ namespace CrmBack.Core.Models.Payload.User;
 
 using System.ComponentModel.DataAnnotations;
 
-
-//TODO: logic when update only exist field
 public record UpdateUserPayload
 (
     [MinLength(2, ErrorMessage = "First name cannot be less 2 character")]

@@ -1,43 +1,43 @@
 namespace CrmBack.Api.Controllers;
 
-using CrmBack.Core.Models.Payload.Org;
+using CrmBack.Core.Models.Payload.Plan;
 using CrmBack.Core.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 
 [ApiController]
-[Route("api/org")]
+[Route("api/plan")]
 [Authorize]
-public class OrgController(
-    IOrgService orgService,
+public class PlanController(
+    IPlanService service,
     IMemoryCache cache,
     ILogger<OrgController> logger) : BaseApiController(cache, logger)
 {
-    private const string EntityPrefix = "org_";
-    private const string AllCacheKey = "all_orgs";
+    private const string EntityPrefix = "plan_";
+    private const string AllCacheKey = "all_plans";
 
 
     [HttpGet("{id:int}")]
-    public async Task<ActionResult<ReadOrgPayload>> GetById(int id)
+    public async Task<ActionResult<ReadPlanPayload>> GetById(int id)
     {
         if (!ValidateId(id, "organization")) return BadRequest("Organization ID must be positive");
 
         return await GetOrSetCache(
             $"{EntityPrefix}{id}",
-            () => orgService.GetOrgById(id),
+            () => service.GetPlanById(id),
             TimeSpan.FromMinutes(5)
         );
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<ReadOrgPayload>>> GetAll()
+    public async Task<ActionResult<List<ReadPlanPayload>>> GetAll()
     {
         return await GetOrSetCache(
             AllCacheKey,
             async () =>
             {
-                var orgs = await orgService.GetAllOrgs();
+                var orgs = await service.GetAllPlans();
                 return orgs.Count != 0 ? orgs : null;
             },
             TimeSpan.FromMinutes(10)
@@ -45,12 +45,11 @@ public class OrgController(
     }
 
     [HttpPost]
-    public async Task<ActionResult<ReadOrgPayload>> Create([FromBody] CreateOrgPayload org)
+    public async Task<ActionResult<ReadPlanPayload>> Create([FromBody] CreatePlanPayload plan)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
-        var payload = await orgService.CreateOrg(org);
-
+        var payload = await service.CreatePlan(plan);
         if (payload == null)
         {
             logger.LogWarning("Failed to create organization");
@@ -63,13 +62,12 @@ public class OrgController(
     }
 
     [HttpPut("{id:int}")]
-    public async Task<ActionResult<bool>> Update(int id, [FromBody] UpdateOrgPayload payload)
+    public async Task<ActionResult<bool>> Update(int id, [FromBody] UpdatePlanPayload payload)
     {
         if (!ValidateId(id, "organization") || !ModelState.IsValid)
             return BadRequest(id <= 0 ? "Organization ID must be positive" : "Invalid data");
 
-        var updated = await orgService.UpdateOrg(id, payload);
-
+        var updated = await service.UpdatePlan(id, payload);
         if (!updated)
         {
             logger.LogWarning("Organization {Id} not found for update", id);
@@ -86,8 +84,7 @@ public class OrgController(
     {
         if (!ValidateId(id, "organization")) return BadRequest("Organization ID must be positive");
 
-        var deleted = await orgService.DeleteOrg(id);
-
+        var deleted = await service.DeletePlan(id);
         if (!deleted)
         {
             logger.LogWarning("Organization {Id} not found for deletion", id);

@@ -3,15 +3,12 @@ namespace CrmBack.Data.Repositories;
 using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
-using CrmBack.Core.Config;
 using CrmBack.Core.Models.Entities;
 using CrmBack.Core.Repositories;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 public class ActivRepository(IDbConnection dbConnection,
- ILogger<ActivRepository> logger,
-  IOptions<DatabaseLoggingOptions> loggingOptions) : BaseRepository<ActivEntity>(dbConnection, logger, loggingOptions), IActivRepository
+ ILogger<ActivRepository> logger) : BaseRepository<ActivEntity>(dbConnection, logger), IActivRepository
 {
     private const string SelectQuery = @"
         SELECT activ_id,

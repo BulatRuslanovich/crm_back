@@ -3,16 +3,13 @@ namespace CrmBack.Data.Repositories;
 using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
-using CrmBack.Core.Config;
 using CrmBack.Core.Models.Entities;
 using CrmBack.Core.Repositories;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 public class UserRepository(
     IDbConnection dbConnection,
-    ILogger<UserRepository> logger,
-    IOptions<DatabaseLoggingOptions> options) : BaseRepository<UserEntity>(dbConnection, logger, options), IUserRepository
+    ILogger<UserRepository> logger) : BaseRepository<UserEntity>(dbConnection, logger), IUserRepository
 {
     private const string SelectQuery = @"
         SELECT usr_id, first_name, middle_name, last_name, login, password_hash,

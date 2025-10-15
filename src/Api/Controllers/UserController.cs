@@ -18,8 +18,6 @@ public class UserController(
 
     [Authorize]
     [HttpGet("{id:int}")]
-    [ProducesResponseType(typeof(ReadUserPayload), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ReadUserPayload>> GetById(int id)
     {
         if (!ValidateId(id, "user")) return BadRequest("User ID must be positive");
@@ -33,8 +31,6 @@ public class UserController(
 
     [Authorize]
     [HttpGet]
-    [ProducesResponseType(typeof(List<ReadUserPayload>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<List<ReadUserPayload>>> GetAll()
     {
         return await GetOrSetCache(
@@ -42,15 +38,13 @@ public class UserController(
             async () =>
             {
                 var users = await userService.GetAllUsers();
-                return users.Any() ? users : null;
+                return users.Count != 0 ? users : null;
             },
             TimeSpan.FromMinutes(10)
         );
     }
 
     [HttpPost]
-    [ProducesResponseType(typeof(ReadUserPayload), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<ReadUserPayload>> Create([FromBody] CreateUserPayload user)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -69,9 +63,6 @@ public class UserController(
 
     [Authorize]
     [HttpPut("{id:int}")]
-    [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<bool>> Update(int id, [FromBody] UpdateUserPayload payload)
     {
         if (!ValidateId(id, "user") || !ModelState.IsValid)
@@ -91,8 +82,6 @@ public class UserController(
 
     [Authorize]
     [HttpDelete("{id:int}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id)
     {
         if (!ValidateId(id, "user")) return BadRequest("User ID must be positive");
@@ -110,9 +99,6 @@ public class UserController(
     }
 
     [HttpPost("login")]
-    [ProducesResponseType(typeof(LoginResponsePayload), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<LoginResponsePayload>> Login([FromBody] LoginUserPayload payload)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
