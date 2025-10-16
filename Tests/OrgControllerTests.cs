@@ -60,7 +60,7 @@ public class OrgControllerTests
             new(1, "Org1", "Addr1", 0, 0, ""),
             new(2, "Org2", "Addr2", 0, 0, "")
         };
-        _mockOrgService.Setup(x => x.GetAllOrgs()).ReturnsAsync(orgs);
+        _mockOrgService.Setup(x => x.GetAllOrgs(false, 1, 10)).ReturnsAsync(orgs);
 
         // Act
         var result = await _controller.GetAll();
