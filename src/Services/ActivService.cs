@@ -13,9 +13,9 @@ public class ActivService(IActivRepository activRepository) : IActivService
         return activ?.ToReadPayload();
     }
 
-    public async Task<List<ReadActivPayload>> GetAllActiv()
+    public async Task<List<ReadActivPayload>> GetAllActiv(bool isDeleted, int page, int pageSize)
     {
-        var actives = await activRepository.GetAllAsync().ConfigureAwait(false);
+        var actives = await activRepository.GetAllAsync(isDeleted, page, pageSize).ConfigureAwait(false);
 
         return [.. actives.Select(u => u.ToReadPayload())];
     }

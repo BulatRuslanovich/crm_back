@@ -27,7 +27,7 @@ public class UserRepository(IDbConnection dbConnection) : BaseRepository<UserEnt
     public Task<UserEntity?> GetByLoginAsync(string login) =>
         QuerySingleAsync(string.Format(SelectQuery, "login = @id"), login);
 
-    public Task<IEnumerable<UserEntity>> GetAllAsync(bool includeDeleted = false, int page = 1, int pageSize = 10)
+    public Task<IEnumerable<UserEntity>> GetAllAsync(bool isDeleted, int page, int pageSize)
     {
         var sql = $@"SELECT usr_id,
                             first_name,
@@ -37,7 +37,7 @@ public class UserRepository(IDbConnection dbConnection) : BaseRepository<UserEnt
                             password_hash,
                             is_deleted
                     FROM usr
-                    {(includeDeleted ? "" : "WHERE NOT is_deleted")}
+                    {(isDeleted ? "" : "WHERE NOT is_deleted")}
                     LIMIT @pageSize OFFSET @offset";
 
         return QueryAsync(sql, new { pageSize, offset = (page - 1) * pageSize });

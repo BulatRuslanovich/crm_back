@@ -30,7 +30,7 @@ public class PlanRepository(IDbConnection dbConnection) : BaseRepository<PlanEnt
         return ExecuteScalarAsync(sql, entity);
     }
 
-    public Task<IEnumerable<PlanEntity>> GetAllAsync(bool includeDeleted = false, int page = 1, int pageSize = 10)
+    public Task<IEnumerable<PlanEntity>> GetAllAsync(bool isDeleted, int page, int pageSize)
     {
         var sql = $@"SELECT plan_id,
                             usr_id,
@@ -39,7 +39,7 @@ public class PlanRepository(IDbConnection dbConnection) : BaseRepository<PlanEnt
                             end_date,
                             is_deleted
                     FROM plan
-                    {(includeDeleted ? "" : "WHERE NOT is_deleted")}
+                    {(isDeleted ? "" : "WHERE NOT is_deleted")}
                     LIMIT @pageSize OFFSET @offset";
 
         return QueryAsync(sql, new { pageSize, offset = (page - 1) * pageSize });

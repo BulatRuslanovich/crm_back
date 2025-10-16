@@ -28,8 +28,8 @@ public class PlanController(IPlanService service, IDistributedCache cache) : Bas
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<ReadPlanPayload>>> GetAll() =>
-        Ok(await service.GetAllPlans());
+    public async Task<ActionResult<List<ReadPlanPayload>>> GetAll([FromQuery] bool isDeleted = false, [FromQuery] int page = 1, [FromQuery] int pageSize = 10) =>
+        Ok(await service.GetAllPlans(isDeleted, page, pageSize));
 
     [HttpPost]
     public async Task<ActionResult<ReadPlanPayload>> Create([FromBody] CreatePlanPayload plan)

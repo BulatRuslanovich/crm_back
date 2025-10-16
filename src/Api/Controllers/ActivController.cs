@@ -27,8 +27,8 @@ public class ActivController(IActivService service, IDistributedCache cache) : B
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<ReadActivPayload>>> GetAll() =>
-        Ok(await service.GetAllActiv());
+    public async Task<ActionResult<List<ReadActivPayload>>> GetAll([FromQuery] bool isDeleted = false, [FromQuery] int page = 1, [FromQuery] int pageSize = 10) =>
+        Ok(await service.GetAllActiv(isDeleted, page, pageSize));
 
     [HttpPost]
     public async Task<ActionResult<ReadActivPayload>> Create([FromBody] CreateActivPayload activ)

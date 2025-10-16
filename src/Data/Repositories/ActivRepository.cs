@@ -25,7 +25,7 @@ public class ActivRepository(IDbConnection dbConnection) : BaseRepository<ActivE
     public async Task<ActivEntity?> GetByIdAsync(int id) =>
         await QuerySingleAsync(string.Format(SelectQuery, "@id"), id).ConfigureAwait(false);
 
-    public Task<IEnumerable<ActivEntity>> GetAllAsync(bool includeDeleted = false, int page = 1, int pageSize = 10)
+    public Task<IEnumerable<ActivEntity>> GetAllAsync(bool isDeleted, int page, int pageSize)
     {
         var sql = $@"SELECT activ_id,
                             usr_id,
@@ -37,7 +37,7 @@ public class ActivRepository(IDbConnection dbConnection) : BaseRepository<ActivE
                             description,
                             is_deleted
                     FROM activ
-                    {(includeDeleted ? "" : "WHERE NOT is_deleted")}
+                    {(isDeleted ? "" : "WHERE NOT is_deleted")}
                     LIMIT @pageSize OFFSET @offset";
 
         return QueryAsync(sql, new { pageSize, offset = (page - 1) * pageSize });

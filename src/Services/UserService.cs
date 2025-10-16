@@ -19,9 +19,9 @@ public class UserService(IUserRepository userRepository, IConfiguration configur
         return user?.ToReadPayload();
     }
 
-    public async Task<List<ReadUserPayload>> GetAllUsers()
+    public async Task<List<ReadUserPayload>> GetAllUsers(bool isDeleted, int page, int pageSize)
     {
-        var users = await userRepository.GetAllAsync().ConfigureAwait(false);
+        var users = await userRepository.GetAllAsync(isDeleted, page, pageSize).ConfigureAwait(false);
 
         return [.. users.Select(u => u.ToReadPayload())];
     }

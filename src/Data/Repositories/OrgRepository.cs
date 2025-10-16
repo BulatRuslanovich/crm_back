@@ -26,7 +26,7 @@ public class OrgRepository(IDbConnection dbConnection) : BaseRepository<OrgEntit
         QuerySingleAsync(string.Format(SelectQuery, "@id"), id);
 
 
-    public Task<IEnumerable<OrgEntity>> GetAllAsync(bool includeDeleted = false, int page = 1, int pageSize = 10)
+    public Task<IEnumerable<OrgEntity>> GetAllAsync(bool isDeleted, int page, int pageSize)
     {
         var sql = $@"SELECT org_id,
                             name,
@@ -36,7 +36,7 @@ public class OrgRepository(IDbConnection dbConnection) : BaseRepository<OrgEntit
                             address,
                             is_deleted
                     FROM org
-                    {(includeDeleted ? "" : "WHERE NOT is_deleted")}
+                    {(isDeleted ? "" : "WHERE NOT is_deleted")}
                     LIMIT @pageSize OFFSET @offset";
 
         return QueryAsync(sql, new { pageSize, offset = (page - 1) * pageSize });

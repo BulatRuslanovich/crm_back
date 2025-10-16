@@ -21,9 +21,9 @@ public class PlanService(IPlanRepository planRepository) : IPlanService
         return await planRepository.SoftDeleteAsync(id).ConfigureAwait(false);
     }
 
-    public async Task<List<ReadPlanPayload>> GetAllPlans()
+    public async Task<List<ReadPlanPayload>> GetAllPlans(bool isDeleted, int page, int pageSize)
     {
-        var plans = await planRepository.GetAllAsync().ConfigureAwait(false);
+        var plans = await planRepository.GetAllAsync(isDeleted, page, pageSize).ConfigureAwait(false);
         return plans.ToReadPayloads();
     }
 
