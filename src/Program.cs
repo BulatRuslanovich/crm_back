@@ -5,6 +5,11 @@ using CrmBack.Services;
 using Npgsql;
 using Serilog;
 using System.Data;
+using Dapper;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +26,8 @@ ConfigureDatabase(builder.Services, builder.Configuration);
 ConfigureApplicationServices(builder.Services);
 
 var app = builder.Build();
+
+DefaultTypeMap.MatchNamesWithUnderscores = true;
 
 ConfigureMiddleware(app);
 
@@ -182,7 +189,11 @@ static void ConfigureMiddleware(WebApplication app)
         });
     }
 
-    app.UseHttpsRedirection();
+    if (!app.Environment.IsDevelopment())
+    {
+        app.UseHttpsRedirection();
+    }
+
     app.UseAuthentication();
     app.UseAuthorization();
     app.MapControllers();

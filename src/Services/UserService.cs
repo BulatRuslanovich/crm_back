@@ -13,40 +13,44 @@ using System.Text;
 
 public class UserService(IUserRepository userRepository, IConfiguration configuration) : IUserService
 {
-    public async Task<ReadUserPayload?> GetUserById(int id)
+    public async Task<ReadUserPayload?> GetUserById(int id, CancellationToken ct = default)
     {
-        var user = await userRepository.GetByIdAsync(id).ConfigureAwait(false);
+        var user = await userRepository.GetByIdAsync(id, ct).ConfigureAwait(false);
         return user?.ToReadPayload();
     }
 
-    public async Task<List<ReadUserPayload>> GetAllUsers(bool isDeleted, int page, int pageSize)
+    public async Task<List<ReadUserPayload>> GetAllUsers(bool isDeleted, int page, int pageSize, CancellationToken ct = default)
     {
-        var users = await userRepository.GetAllAsync(isDeleted, page, pageSize).ConfigureAwait(false);
+        var users = await userRepository.GetAllAsync(isDeleted, page, pageSize, ct).ConfigureAwait(false);
 
         return [.. users.Select(u => u.ToReadPayload())];
     }
 
     //! there's no point in checking the login's uniqueness, as the field is unique in the database
-    public async Task<ReadUserPayload?> CreateUser(CreateUserPayload payload)
+    public async Task<ReadUserPayload?> CreateUser(CreateUserPayload payload, CancellationToken ct = default)
     {
-        var userId = await userRepository.CreateAsync(payload.ToEntity()).ConfigureAwait(false);
-        var userDto = await userRepository.GetByIdAsync(userId).ConfigureAwait(false);
+        var userId = await userRepository.CreateAsync(payload.ToEntity(), ct).ConfigureAwait(false);
+        var userDto = await userRepository.GetByIdAsync(userId, ct).ConfigureAwait(false);
         return userDto?.ToReadPayload();
     }
 
-    public async Task<bool> UpdateUser(int id, UpdateUserPayload payload)
+    public async Task<bool> UpdateUser(int id, UpdateUserPayload payload, CancellationToken ct = default)
     {
-        return await userRepository.UpdateAsync(payload.ToEntity(id)).ConfigureAwait(false);
+        var existing = await userRepository.GetByIdAsync(id, ct).ConfigureAwait(false);
+        if (existing == null) return false;
+
+        var entityToUpdate = payload.ToEntity(id, existingLogin: existing.login, existingHash: existing.password_hash);
+        return await userRepository.UpdateAsync(entityToUpdate, ct).ConfigureAwait(false);
     }
 
-    public async Task<bool> DeleteUser(int id)
+    public async Task<bool> DeleteUser(int id, CancellationToken ct = default)
     {
-        return await userRepository.SoftDeleteAsync(id).ConfigureAwait(false);
+        return await userRepository.SoftDeleteAsync(id, ct).ConfigureAwait(false);
     }
 
-    public async Task<LoginResponsePayload> LoginUser(LoginUserPayload payload)
+    public async Task<LoginResponsePayload> LoginUser(LoginUserPayload payload, CancellationToken ct = default)
     {
-        var user = await userRepository.GetByLoginAsync(payload.Login);
+        var user = await userRepository.GetByLoginAsync(payload.Login, ct);
 
         if (user == null || !BCrypt.Net.BCrypt.Verify(payload.Password, user.password_hash))
             throw new UnauthorizedAccessException("Invalid login or password.");

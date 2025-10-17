@@ -9,16 +9,23 @@ public abstract class BaseApiController(IDistributedCache cache) : ControllerBas
 {
     protected bool ValidateId(int id) => id > 0;
 
+    private static readonly JsonSerializerOptions CacheJsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        WriteIndented = false,
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+    };
+
     protected async Task<ActionResult<T>> GetDataFromCache<T>(
         string key,
         Func<Task<T?>> fetchData,
         TimeSpan expiration) where T : class
     {
-        var cacheData = await cache.GetStringAsync(key);
+        var cacheData = await cache.GetStringAsync(key, HttpContext.RequestAborted);
 
         if (!string.IsNullOrEmpty(cacheData))
         {
-            var value = JsonSerializer.Deserialize<T>(cacheData);
+            var value = JsonSerializer.Deserialize<T>(cacheData, CacheJsonOptions);
             return Ok(value);
         }
 
@@ -34,11 +41,11 @@ public abstract class BaseApiController(IDistributedCache cache) : ControllerBas
             AbsoluteExpirationRelativeToNow = expiration
         };
 
-        var serData = JsonSerializer.Serialize(data);
-        await cache.SetStringAsync(key, serData, cacheOpt);
+        var serData = JsonSerializer.Serialize(data, CacheJsonOptions);
+        await cache.SetStringAsync(key, serData, cacheOpt, HttpContext.RequestAborted);
         return Ok(data);
     }
 
     protected async Task CleanCache(string key) =>
-        await cache.RemoveAsync(key);
+        await cache.RemoveAsync(key, HttpContext.RequestAborted);
 }

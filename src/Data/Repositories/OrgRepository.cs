@@ -2,58 +2,48 @@ namespace CrmBack.Data.Repositories;
 
 using CrmBack.Core.Models.Entities;
 using CrmBack.Core.Repositories;
-using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
 
 public class OrgRepository(IDbConnection dbConnection) : BaseRepository<OrgEntity>(dbConnection), IOrgRepository
 {
-    private const string SelectQuery = @"
-        SELECT org_id,
-               name,
-               inn,
-               latitude,
-               longitude,
-               address,
-               is_deleted
+    private const string OrgColumns = "org_id, name, inn, latitude, longitude, address, is_deleted";
+
+    private const string SelectByIdSql = $@"
+        SELECT {OrgColumns}
         FROM org
-        WHERE org_id = {0} AND NOT is_deleted
+        WHERE org_id = @id AND NOT is_deleted
         LIMIT 1";
 
 
-    public Task<OrgEntity?> GetByIdAsync(int id) =>
-        QuerySingleAsync(string.Format(SelectQuery, "@id"), id);
+    public Task<OrgEntity?> GetByIdAsync(int id, CancellationToken ct = default) =>
+        QuerySingleAsync(SelectByIdSql, id, ct);
 
 
-    public Task<IEnumerable<OrgEntity>> GetAllAsync(bool isDeleted, int page, int pageSize)
+    public Task<IEnumerable<OrgEntity>> GetAllAsync(bool isDeleted, int page, int pageSize, CancellationToken ct = default)
     {
-        var sql = $@"SELECT org_id,
-                            name,
-                            inn,
-                            latitude,
-                            longitude,
-                            address,
-                            is_deleted
+        var where = isDeleted ? "" : "WHERE NOT is_deleted";
+        var sql = $@"SELECT {OrgColumns}
                     FROM org
-                    {(isDeleted ? "" : "WHERE NOT is_deleted")}
+                    {where}
                     LIMIT @pageSize OFFSET @offset";
 
-        return QueryAsync(sql, new { pageSize, offset = (page - 1) * pageSize });
+        return QueryAsync(sql, new { pageSize, offset = (page - 1) * pageSize }, ct);
     }
 
-    public Task<int> CreateAsync(OrgEntity org)
+    public Task<int> CreateAsync(OrgEntity org, CancellationToken ct = default)
     {
         const string sql = @"INSERT INTO org (name, inn, latitude, longitude, address)
                             VALUES (@name, @inn, @latitude, @longitude, @address)
                             RETURNING org_id";
 
-        return ExecuteScalarAsync(sql, org);
+        return ExecuteScalarAsync(sql, org, ct);
     }
 
-    public async Task<bool> UpdateAsync(OrgEntity org)
+    public async Task<bool> UpdateAsync(OrgEntity org, CancellationToken ct = default)
     {
-        var existing = await GetByIdAsync(org.org_id);
+        var existing = await GetByIdAsync(org.org_id, ct);
 
         if (existing == null) return false;
 
@@ -73,12 +63,12 @@ public class OrgRepository(IDbConnection dbConnection) : BaseRepository<OrgEntit
                                 longitude = @longitude,
                                 address = @address
                             WHERE org_id = @org_id";
-        return await ExecuteAsync(sql, updated);
+        return await ExecuteAsync(sql, updated, ct);
     }
 
-    public Task<bool> HardDeleteAsync(int id) =>
-        ExecuteAsync("DELETE FROM org WHERE org_id = @id", new { id });
+    public Task<bool> HardDeleteAsync(int id, CancellationToken ct = default) =>
+        ExecuteAsync("DELETE FROM org WHERE org_id = @id", new { id }, ct);
 
-    public Task<bool> SoftDeleteAsync(int id) =>
-        ExecuteAsync("UPDATE org SET is_deleted = true WHERE org_id = @id", new { id });
+    public Task<bool> SoftDeleteAsync(int id, CancellationToken ct = default) =>
+        ExecuteAsync("UPDATE org SET is_deleted = true WHERE org_id = @id", new { id }, ct);
 }

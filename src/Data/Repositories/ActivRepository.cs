@@ -8,53 +8,41 @@ using System.Threading.Tasks;
 
 public class ActivRepository(IDbConnection dbConnection) : BaseRepository<ActivEntity>(dbConnection), IActivRepository
 {
-    private const string SelectQuery = @"
-        SELECT activ_id,
-               usr_id,
-               org_id,
-               status_id,
-               visit_date,
-               start_time,
-               end_time,
-               description,
-               is_deleted
+    private const string ActivColumns = "activ_id, usr_id, org_id, status_id, visit_date, start_time, end_time, description, is_deleted";
+
+    private const string SelectByIdSql = $@"
+        SELECT {ActivColumns}
         FROM activ
-        WHERE activ_id = {0} AND NOT is_deleted
+        WHERE activ_id = @id AND NOT is_deleted
         LIMIT 1";
 
-    public async Task<ActivEntity?> GetByIdAsync(int id) =>
-        await QuerySingleAsync(string.Format(SelectQuery, "@id"), id).ConfigureAwait(false);
+    public async Task<ActivEntity?> GetByIdAsync(int id, CancellationToken ct = default) =>
+        await QuerySingleAsync(SelectByIdSql, id, ct).ConfigureAwait(false);
 
-    public Task<IEnumerable<ActivEntity>> GetAllAsync(bool isDeleted, int page, int pageSize)
+    public Task<IEnumerable<ActivEntity>> GetAllAsync(bool isDeleted, int page, int pageSize, CancellationToken ct = default)
     {
-        var sql = $@"SELECT activ_id,
-                            usr_id,
-                            org_id,
-                            status_id,
-                            visit_date,
-                            start_time,
-                            end_time,
-                            description,
-                            is_deleted
+        var where = isDeleted ? "" : "WHERE NOT is_deleted";
+        var sql = $@"SELECT {ActivColumns}
                     FROM activ
-                    {(isDeleted ? "" : "WHERE NOT is_deleted")}
+                    {where}
                     LIMIT @pageSize OFFSET @offset";
 
-        return QueryAsync(sql, new { pageSize, offset = (page - 1) * pageSize });
+        return QueryAsync(sql, new { pageSize, offset = (page - 1) * pageSize }, ct);
     }
 
-    public Task<int> CreateAsync(ActivEntity activ)
+
+    public Task<int> CreateAsync(ActivEntity activ, CancellationToken ct = default)
     {
         const string sql = @"INSERT INTO activ (usr_id, org_id, status_id, visit_date, start_time, end_time, description)
                             VALUES (@usr_id, @org_id, @status_id, @visit_date, @start_time, @end_time, @description)
                             RETURNING activ_id";
 
-        return ExecuteScalarAsync(sql, activ);
+        return ExecuteScalarAsync(sql, activ, ct);
     }
 
-    public async Task<bool> UpdateAsync(ActivEntity activ)
+    public async Task<bool> UpdateAsync(ActivEntity activ, CancellationToken ct = default)
     {
-        var existing = await GetByIdAsync(activ.activ_id);
+        var existing = await GetByIdAsync(activ.activ_id, ct);
 
         if (existing == null) return false;
 
@@ -80,12 +68,12 @@ public class ActivRepository(IDbConnection dbConnection) : BaseRepository<ActivE
                     description = @description
                 WHERE activ_id = @activ_id";
 
-        return await ExecuteAsync(sql, updated);
+        return await ExecuteAsync(sql, updated, ct);
     }
 
-    public Task<bool> HardDeleteAsync(int id) =>
-        ExecuteAsync("DELETE FROM activ WHERE activ_id = @id", new { id });
+    public Task<bool> HardDeleteAsync(int id, CancellationToken ct = default) =>
+        ExecuteAsync("DELETE FROM activ WHERE activ_id = @id", new { id }, ct);
 
-    public Task<bool> SoftDeleteAsync(int id) =>
-        ExecuteAsync("UPDATE activ SET is_deleted = true WHERE activ_id = @id", new { id });
+    public Task<bool> SoftDeleteAsync(int id, CancellationToken ct = default) =>
+        ExecuteAsync("UPDATE activ SET is_deleted = true WHERE activ_id = @id", new { id }, ct);
 }

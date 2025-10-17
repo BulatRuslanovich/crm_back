@@ -8,46 +8,40 @@ using System.Threading.Tasks;
 
 public class PlanRepository(IDbConnection dbConnection) : BaseRepository<PlanEntity>(dbConnection), IPlanRepository
 {
-    private const string SelectQuery = @"SELECT plan_id,
-                                                usr_id,
-                                                org_id,
-                                                start_date,
-                                                end_date,
-                                                is_deleted
+    private const string PlanColumns = "plan_id, usr_id, org_id, start_date, end_date, is_deleted";
+
+    private const string SelectByIdSql = $@"SELECT {PlanColumns}
                                         FROM plan
-                                        WHERE plan_id = {0} AND NOT is_deleted
+                                        WHERE plan_id = @id AND NOT is_deleted
                                         LIMIT 1";
 
-    public async Task<PlanEntity?> GetByIdAsync(int id) =>
-        await QuerySingleAsync(string.Format(SelectQuery, "@id"), id).ConfigureAwait(false);
+    public async Task<PlanEntity?> GetByIdAsync(int id, CancellationToken ct = default) =>
+        await QuerySingleAsync(SelectByIdSql, id, ct).ConfigureAwait(false);
 
-    public Task<int> CreateAsync(PlanEntity entity)
+    public Task<int> CreateAsync(PlanEntity entity, CancellationToken ct = default)
     {
         const string sql = @"INSERT INTO plan (usr_id, org_id, start_date, end_date)
                             VALUES (@usr_id, @org_id, @start_date, @end_date)
                             RETURNING plan_id";
 
-        return ExecuteScalarAsync(sql, entity);
+        return ExecuteScalarAsync(sql, entity, ct);
     }
 
-    public Task<IEnumerable<PlanEntity>> GetAllAsync(bool isDeleted, int page, int pageSize)
+    public Task<IEnumerable<PlanEntity>> GetAllAsync(bool isDeleted, int page, int pageSize, CancellationToken ct = default)
     {
-        var sql = $@"SELECT plan_id,
-                            usr_id,
-                            org_id,
-                            start_date,
-                            end_date,
-                            is_deleted
+        var where = isDeleted ? "" : "WHERE NOT is_deleted";
+        var sql = $@"SELECT {PlanColumns}
                     FROM plan
-                    {(isDeleted ? "" : "WHERE NOT is_deleted")}
+                    {where}
                     LIMIT @pageSize OFFSET @offset";
 
-        return QueryAsync(sql, new { pageSize, offset = (page - 1) * pageSize });
+        return QueryAsync(sql, new { pageSize, offset = (page - 1) * pageSize }, ct);
     }
 
-    public async Task<bool> UpdateAsync(PlanEntity entity)
+
+    public async Task<bool> UpdateAsync(PlanEntity entity, CancellationToken ct = default)
     {
-        var existing = await GetByIdAsync(entity.plan_id);
+        var existing = await GetByIdAsync(entity.plan_id, ct);
 
         if (existing == null) return false;
 
@@ -65,12 +59,12 @@ public class PlanRepository(IDbConnection dbConnection) : BaseRepository<PlanEnt
                                 start_date = @start_date,
                                 end_date = @end_date
                             WHERE plan_id = @plan_id";
-        return await ExecuteAsync(sql, updated);
+        return await ExecuteAsync(sql, updated, ct);
     }
 
-    public async Task<bool> HardDeleteAsync(int id) =>
-        await ExecuteAsync("DELETE FROM plan WHERE plan_id = @id", new { id });
+    public async Task<bool> HardDeleteAsync(int id, CancellationToken ct = default) =>
+        await ExecuteAsync("DELETE FROM plan WHERE plan_id = @id", new { id }, ct);
 
-    public async Task<bool> SoftDeleteAsync(int id) =>
-        await ExecuteAsync("UPDATE plan SET is_deleted = true WHERE plan_id = @id", new { id });
+    public async Task<bool> SoftDeleteAsync(int id, CancellationToken ct = default) =>
+        await ExecuteAsync("UPDATE plan SET is_deleted = true WHERE plan_id = @id", new { id }, ct);
 }

@@ -21,21 +21,24 @@ public class ActivController(IActivService service, IDistributedCache cache) : B
 
         return await GetDataFromCache(
             $"{EntityPrefix}{id}",
-            () => service.GetActivById(id),
+            () => service.GetActivById(id, HttpContext.RequestAborted),
             TimeSpan.FromMinutes(10)
         );
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<ReadActivPayload>>> GetAll([FromQuery] bool isDeleted = false, [FromQuery] int page = 1, [FromQuery] int pageSize = 10) =>
-        Ok(await service.GetAllActiv(isDeleted, page, pageSize));
+    public async Task<ActionResult<List<ReadActivPayload>>> GetAll([FromQuery] bool isDeleted = false, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+    {
+        if (page < 1 || pageSize < 1 || pageSize > 1000) return BadRequest("Invalid pagination parameters");
+        return Ok(await service.GetAllActiv(isDeleted, page, pageSize, HttpContext.RequestAborted));
+    }
 
     [HttpPost]
     public async Task<ActionResult<ReadActivPayload>> Create([FromBody] CreateActivPayload activ)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
-        var payload = await service.CreateActiv(activ);
+        var payload = await service.CreateActiv(activ, HttpContext.RequestAborted);
 
         if (payload == null) return BadRequest("Not created");
 
@@ -49,7 +52,7 @@ public class ActivController(IActivService service, IDistributedCache cache) : B
         if (!ValidateId(id) || !ModelState.IsValid)
             return BadRequest();
 
-        var updated = await service.UpdateActiv(id, payload);
+        var updated = await service.UpdateActiv(id, payload, HttpContext.RequestAborted);
         if (!updated)
         {
             return NotFound();
@@ -64,7 +67,7 @@ public class ActivController(IActivService service, IDistributedCache cache) : B
     {
         if (!ValidateId(id)) return BadRequest();
 
-        var deleted = await service.DeleteActiv(id);
+        var deleted = await service.DeleteActiv(id, HttpContext.RequestAborted);
 
         if (!deleted)
         {
