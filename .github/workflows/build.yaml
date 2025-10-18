@@ -69,7 +69,7 @@ jobs:
         message: |
           ${{ needs.build-and-test.result == 'success' && '✅ Build successful!' || '❌ Build failed!' }}
           
-          Build: ${{ needs.build-and-test.result }}
+          Backend build: ${{ needs.build-and-test.result }}
           
           Repository: ${{ github.repository }}
           Branch: ${{ github.ref_name }}
