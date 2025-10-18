@@ -17,13 +17,10 @@ echo "🔍 Анализ кода..."
 dotnet build --verbosity quiet
 
 echo "✨ Форматирование кода..."
-find . -name "*.cs" -not -path "./bin/*" -not -path "./obj/*" -not -path "./node_modules/*" | while read -r file; do
-    echo "  Форматирование: $file"
-    dotnet format "$file" --verbosity quiet
-done
-
-echo "🎯 Применение правил форматирования..."
 dotnet format src/CrmBack.csproj --verbosity quiet
+
+echo "🎯 Форматирование тестов..."
+dotnet format Tests/Tests.csproj --verbosity quiet
 
 echo "✅ Форматирование завершено!"
 echo ""
