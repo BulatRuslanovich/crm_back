@@ -30,7 +30,13 @@ public class OrgController(IOrgService orgService, IDistributedCache cache) : Ba
     public async Task<ActionResult<List<ReadOrgPayload>>> GetAll([FromQuery] bool isDeleted = false, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
         if (page < 1 || pageSize < 1 || pageSize > 1000) return BadRequest("Invalid pagination parameters");
-        return Ok(await orgService.GetAllOrgs(isDeleted, page, pageSize, HttpContext.RequestAborted));
+
+
+        return Ok(await GetDataFromCache(
+            $"{EntityPrefix}{isDeleted}_{page}_{pageSize}",
+            async () => await orgService.GetAllOrgs(isDeleted, page, pageSize, HttpContext.RequestAborted),
+            TimeSpan.FromMinutes(10)
+        ));
     }
 
     [HttpPost]

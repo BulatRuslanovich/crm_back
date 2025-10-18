@@ -30,7 +30,11 @@ public class ActivController(IActivService service, IDistributedCache cache) : B
     public async Task<ActionResult<List<ReadActivPayload>>> GetAll([FromQuery] bool isDeleted = false, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
         if (page < 1 || pageSize < 1 || pageSize > 1000) return BadRequest("Invalid pagination parameters");
-        return Ok(await service.GetAllActiv(isDeleted, page, pageSize, HttpContext.RequestAborted));
+        return Ok(await GetDataFromCache(
+            $"{EntityPrefix}{isDeleted}_{page}_{pageSize}",
+            async () => await service.GetAllActiv(isDeleted, page, pageSize, HttpContext.RequestAborted),
+            TimeSpan.FromMinutes(10)
+        ));
     }
 
     [HttpPost]

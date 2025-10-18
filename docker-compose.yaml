@@ -3,43 +3,47 @@ version: '3.8'
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: postgres_db
+    container_name: crm_postgres
     environment:
-      POSTGRES_USER: bulat
-      POSTGRES_PASSWORD: 1111
-      POSTGRES_DB: crm_test
+      POSTGRES_USER: ${POSTGRES_USER:-crm_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-crm_db}
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --lc-collate=C --lc-ctype=C"
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./sql-scripts:/docker-entrypoint-initdb.d:ro
     restart: unless-stopped
     networks:
-      - crm-back-net
+      - crm-network
     healthcheck:
-      test: |
-        PGPASSWORD=1111 pg_isready -U bulat -d crm_test -h 127.0.0.1 -p 5432
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-crm_user} -d ${POSTGRES_DB:-crm_db}"]
       start_period: 30s
       interval: 15s
       timeout: 10s
       retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
 
   redis:
     image: redis:7-alpine
-    container_name: redis_cache
+    container_name: crm_redis
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
       - ./redis.conf:/usr/local/etc/redis/redis.conf:ro
     restart: unless-stopped
     command: redis-server /usr/local/etc/redis/redis.conf
     networks:
-      - crm-back-net
+      - crm-network
     healthcheck:
-      test: |
-        redis-cli -a 1234 --raw ping | grep -q PONG
+      test: ["CMD", "redis-cli", "--raw", "ping"]
       start_period: 20s
       interval: 10s
       timeout: 5s
@@ -58,7 +62,7 @@ volumes:
     driver: local
 
 networks:
-  crm-back-net:
+  crm-network:
     driver: bridge
     ipam:
       config:

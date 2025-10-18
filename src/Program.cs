@@ -3,13 +3,9 @@ using CrmBack.Core.Services;
 using CrmBack.Data.Repositories;
 using CrmBack.Services;
 using Dapper;
-using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 using Serilog;
 using System.Data;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
