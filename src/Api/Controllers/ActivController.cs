@@ -8,5 +8,6 @@ namespace CrmBack.Api.Controllers;
 
 [ApiController]
 [Route("api/activ")]
-public class ActivController(IActivService activService, IDistributedCache cache) 
-: BaseApiController<ReadActivPayload, CreateActivPayload, UpdateActivPayload>(cache, "activ_", activService) { }
+public class ActivController(IActivService activService)
+: BaseApiController<ReadActivPayload, CreateActivPayload, UpdateActivPayload>(activService)
+{ }

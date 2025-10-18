@@ -39,14 +39,21 @@ public class UserService(IUserRepository userRepository, IConfiguration configur
         var existing = await userRepository.GetByIdAsync(id, ct).ConfigureAwait(false);
         if (existing == null) return false;
 
-        var entityToUpdate = payload.ToEntity(id, existingLogin: existing.login, existingHash: existing.password_hash);
-        return await userRepository.UpdateAsync(entityToUpdate, ct).ConfigureAwait(false);
+        var newEntity = new UserEntity(
+            usr_id: id,
+            first_name: payload.FirstName ?? existing.first_name,
+            last_name: payload.LastName ?? existing.last_name,
+            middle_name: payload.MiddleName ?? existing.middle_name,
+            login: payload.Login ?? existing.login,
+            password_hash: string.IsNullOrEmpty(payload.Password) ? existing.password_hash : BCrypt.Net.BCrypt.HashPassword(payload.Password),
+            is_deleted: existing.is_deleted
+        );
+
+        return await userRepository.UpdateAsync(newEntity, ct).ConfigureAwait(false);
     }
 
-    public async Task<bool> Delete(int id, CancellationToken ct = default)
-    {
-        return await userRepository.SoftDeleteAsync(id, ct).ConfigureAwait(false);
-    }
+    public async Task<bool> Delete(int id, CancellationToken ct = default) =>
+        await userRepository.SoftDeleteAsync(id, ct).ConfigureAwait(false);
 
     public async Task<LoginResponsePayload> Login(LoginUserPayload payload, CancellationToken ct = default)
     {

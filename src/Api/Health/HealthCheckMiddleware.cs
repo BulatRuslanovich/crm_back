@@ -13,10 +13,10 @@ public class HealthCheckMiddleware(RequestDelegate next, IConfiguration configur
         if (context.Request.Path.StartsWithSegments("/health"))
         {
             var healthStatus = await CheckServicesHealth();
-            
+
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = healthStatus.IsHealthy ? 200 : 503;
-            
+
             await context.Response.WriteAsync(JsonSerializer.Serialize(healthStatus));
             return;
         }
@@ -54,13 +54,13 @@ public class HealthCheckMiddleware(RequestDelegate next, IConfiguration configur
             }
 
             var stopwatch = Stopwatch.StartNew();
-            
+
             using var connection = new NpgsqlConnection(connectionString);
             await connection.OpenAsync();
-            
+
             using var command = new NpgsqlCommand("SELECT 1", connection);
             await command.ExecuteScalarAsync();
-            
+
             stopwatch.Stop();
 
             services.Add("postgresql", new ServiceHealth(
@@ -101,12 +101,12 @@ public class HealthCheckMiddleware(RequestDelegate next, IConfiguration configur
             }
 
             var stopwatch = Stopwatch.StartNew();
-            
+
             using var connection = await ConnectionMultiplexer.ConnectAsync(redisConnectionString);
             var database = connection.GetDatabase();
-            
+
             await database.PingAsync();
-            
+
             stopwatch.Stop();
             services.Add("redis", new ServiceHealth(
                 IsHealthy: true,
@@ -131,7 +131,7 @@ public class HealthCheckMiddleware(RequestDelegate next, IConfiguration configur
 }
 
 
-public record HealthStatus (
+public record HealthStatus(
     [property: JsonPropertyName("timestamp")]
     DateTime Timestamp,
     [property: JsonPropertyName("is_healthy")]
@@ -141,7 +141,7 @@ public record HealthStatus (
 );
 
 
-public record ServiceHealth (
+public record ServiceHealth(
     [property: JsonPropertyName("is_healthy")]
     bool IsHealthy,
     [property: JsonPropertyName("response_time")]

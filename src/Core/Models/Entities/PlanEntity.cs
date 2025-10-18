@@ -1,10 +1,10 @@
 namespace CrmBack.Core.Models.Entities;
 
 public record PlanEntity(
-    int plan_id = 0,
-    int usr_id = 0,
-    int org_id = 0,
-    DateTime start_date = default,
-    DateTime end_date = default,
-    bool is_deleted = false
+    int plan_id,
+    int usr_id,
+    int org_id,
+    DateTime start_date,
+    DateTime end_date,
+    bool is_deleted
 );

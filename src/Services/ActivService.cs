@@ -1,5 +1,6 @@
 namespace CrmBack.Services;
 
+using CrmBack.Core.Models.Entities;
 using CrmBack.Core.Models.Payload.Activ;
 using CrmBack.Core.Repositories;
 using CrmBack.Core.Services;
@@ -29,7 +30,22 @@ public class ActivService(IActivRepository activRepository) : IActivService
 
     public async Task<bool> Update(int id, UpdateActivPayload payload, CancellationToken ct = default)
     {
-        return await activRepository.UpdateAsync(payload.ToEntity(id), ct).ConfigureAwait(false);
+        var existing = await activRepository.GetByIdAsync(id, ct).ConfigureAwait(false);
+        if (existing == null) return false;
+
+        var newEntity = new ActivEntity(
+            activ_id: id,
+            usr_id: existing.usr_id,
+            org_id: existing.org_id,
+            status_id: payload.StatusId ?? existing.status_id,
+            visit_date: payload.VisitDate ?? existing.visit_date,
+            start_time: payload.StartTime ?? existing.start_time,
+            end_time: payload.EndTime ?? existing.end_time,
+            description: payload.Description ?? existing.description,
+            is_deleted: existing.is_deleted
+        );
+
+        return await activRepository.UpdateAsync(newEntity, ct).ConfigureAwait(false);
     }
 
     public async Task<bool> Delete(int id, CancellationToken ct = default)

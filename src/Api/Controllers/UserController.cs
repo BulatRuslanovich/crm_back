@@ -3,11 +3,10 @@ namespace CrmBack.Api.Controllers;
 using CrmBack.Core.Models.Payload.User;
 using CrmBack.Core.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Caching.Distributed;
 
 [ApiController]
 [Route("api/user")]
-public class UserController(IUserService userService, IDistributedCache cache) : BaseApiController<ReadUserPayload, CreateUserPayload, UpdateUserPayload>(cache, "user_", userService)
+public class UserController(IUserService userService) : BaseApiController<ReadUserPayload, CreateUserPayload, UpdateUserPayload>(userService)
 {
 
     [HttpPost("login")]

@@ -7,15 +7,13 @@ public static class OrgMapper
 {
     public static ReadOrgPayload ToReadPayload(this OrgEntity entity) => new(
         OrgId: entity.org_id,
-        Name: entity.name ?? "-",
-        INN: entity.inn ?? "-",
-        Latitude: entity.latitude ?? 0,
-        Longitude: entity.longitude ?? 0,
-        Address: entity.address ?? "-"
+        Name: entity.name,
+        INN: entity.inn,
+        Latitude: entity.latitude,
+        Longitude: entity.longitude,
+        Address: entity.address
     );
 
-    public static List<ReadOrgPayload> ToReadPayloads(this IEnumerable<OrgEntity> entities) =>
-        [.. entities.Select(ToReadPayload)];
 
     public static OrgEntity ToEntity(this CreateOrgPayload payload) => new(
         org_id: 0,
@@ -23,15 +21,7 @@ public static class OrgMapper
         inn: payload.INN,
         latitude: payload.Latitude,
         longitude: payload.Longitude,
-        address: payload.Address
-    );
-
-    public static OrgEntity ToEntity(this UpdateOrgPayload payload, int id) => new(
-        org_id: id,
-        name: payload.Name,
-        inn: payload.INN,
-        latitude: payload.Latitude,
-        longitude: payload.Longitude,
-        address: payload.Address
+        address: payload.Address,
+        is_deleted: false
     );
 }

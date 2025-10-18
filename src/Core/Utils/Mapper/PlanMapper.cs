@@ -13,21 +13,12 @@ public static class PlanMapper
         EndDate: entity.end_date
     );
 
-    public static List<ReadPlanPayload> ToReadPayloads(this IEnumerable<PlanEntity> entities) =>
-        [.. entities.Select(ToReadPayload)];
-
     public static PlanEntity ToEntity(this CreatePlanPayload payload) => new(
+        plan_id: 0,
         usr_id: payload.UsrId,
         org_id: payload.OrgId,
         start_date: payload.StartDate,
-        end_date: payload.EndDate
-    );
-
-    public static PlanEntity ToEntity(this UpdatePlanPayload payload, int id) => new(
-        plan_id: id,
-        org_id: payload.OrgId,
-        usr_id: payload.UsrId,
-        start_date: payload.StartDate,
-        end_date: payload.EndDate
+        end_date: payload.EndDate,
+        is_deleted: false
     );
 }
