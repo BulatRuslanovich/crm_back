@@ -1,11 +1,13 @@
 using CrmBack.Core.Repositories;
 using CrmBack.Core.Utils;
 using Dapper;
+using Microsoft.Extensions.Caching.Distributed;
 using System.Data;
+using System.Text.Json;
 
 namespace CrmBack.Data.Repositories;
 
-public class Repository<TEntity, TKey>(IDbConnection dbConnection) where TEntity : class where TKey : notnull
+public class BaseRepository<TEntity, TKey>(IDbConnection dbConnection, IDistributedCache cache) where TEntity : class where TKey : notnull
 {
     private readonly string tableName = EntityMetadataExtractor.ExtractMetadata<TEntity>().tableName;
     private readonly string keyColumn = EntityMetadataExtractor.ExtractMetadata<TEntity>().keyColumn;
@@ -13,15 +15,38 @@ public class Repository<TEntity, TKey>(IDbConnection dbConnection) where TEntity
     private readonly string[] insertColumns = EntityMetadataExtractor.ExtractMetadata<TEntity>().insertColumns;
     private readonly string[] updateColumns = EntityMetadataExtractor.ExtractMetadata<TEntity>().updateColumns;
 
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        WriteIndented = false
+    };
+
     public virtual async Task<TEntity?> GetByIdAsync(TKey id, CancellationToken ct = default)
     {
+        var cacheKey = $"{tableName}:{id}";
+
+        var cached = await cache.GetStringAsync(cacheKey, ct);
+
+        if (!string.IsNullOrEmpty(cached)) return JsonSerializer.Deserialize<TEntity>(cached, JsonOptions);
+
+
         var sql = $@"
             SELECT {string.Join(", ", columns)}
             FROM {tableName}
             WHERE {keyColumn} = @id AND NOT is_deleted
             LIMIT 1";
 
-        return await QuerySingleAsync(sql, new { id }, ct);
+        var result = await QuerySingleAsync(sql, new { id }, ct);
+
+        if (result != null) {
+            var serialized = JsonSerializer.Serialize(result, JsonOptions);
+            await cache.SetStringAsync(cacheKey, serialized, new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
+            }, ct);
+        }
+
+        return result;
     }
 
     public virtual async Task<IEnumerable<TEntity>> GetAllAsync(
@@ -53,7 +78,17 @@ public class Repository<TEntity, TKey>(IDbConnection dbConnection) where TEntity
             VALUES ({parameters})
             RETURNING {keyColumn}";
 
-        return await ExecuteScalarAsync<TKey>(sql, entity, ct);
+        var result = await ExecuteScalarAsync<TKey>(sql, entity, ct);
+
+        if (result != null) {
+            var cacheKey = $"{tableName}:{result}";
+            await cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(entity, JsonOptions), new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
+            }, ct);
+        }
+
+        return result;
     }
 
     public virtual async Task<bool> UpdateAsync(TEntity entity, CancellationToken ct = default)
@@ -65,7 +100,14 @@ public class Repository<TEntity, TKey>(IDbConnection dbConnection) where TEntity
             SET {setClause}
             WHERE {keyColumn} = @{keyColumn}";
 
-        return await ExecuteAsync(sql, entity, ct);
+        var result = await ExecuteAsync(sql, entity, ct);
+
+        if (result) {
+            var cacheKey = $"{tableName}:{entity.GetType().GetProperty(keyColumn)?.GetValue(entity)}";
+            await cache.RemoveAsync(cacheKey, ct);
+        }
+
+        return result;
     }
 
     public virtual async Task<bool> SoftDeleteAsync(TKey id, CancellationToken ct = default)
@@ -75,11 +117,14 @@ public class Repository<TEntity, TKey>(IDbConnection dbConnection) where TEntity
             SET is_deleted = true
             WHERE {keyColumn} = @id";
 
+        var result = await ExecuteAsync(sql, new { id }, ct);
 
-        Console.WriteLine(sql);
-        Console.WriteLine($"Entity: {id}");
+        if (result) {
+            var cacheKey = $"{tableName}:{id}";
+            await cache.RemoveAsync(cacheKey, ct);
+        }
 
-        return await ExecuteAsync(sql, new { id }, ct);
+        return result;
     }
 
 
@@ -87,7 +132,14 @@ public class Repository<TEntity, TKey>(IDbConnection dbConnection) where TEntity
     {
         var sql = $"DELETE FROM {tableName} WHERE {keyColumn} = @id";
 
-        return await ExecuteAsync(sql, new { id }, ct);
+        var result = await ExecuteAsync(sql, new { id }, ct);
+
+        if (result) {
+            var cacheKey = $"{tableName}:{id}";
+            await cache.RemoveAsync(cacheKey, ct);
+        }
+
+        return result;
     }
 
 

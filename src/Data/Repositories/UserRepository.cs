@@ -1,10 +1,11 @@
 using CrmBack.Core.Models.Entities;
 using CrmBack.Core.Repositories;
+using Microsoft.Extensions.Caching.Distributed;
 using System.Data;
 
 namespace CrmBack.Data.Repositories;
 
-public class UserRepository(IDbConnection dbConnection) : Repository<UserEntity, int>(dbConnection), IUserRepository
+public class UserRepository(IDbConnection dbConnection, IDistributedCache cache) : BaseRepository<UserEntity, int>(dbConnection, cache), IUserRepository
 {
 
     public Task<UserEntity?> GetByLoginAsync(string login, CancellationToken ct = default)
