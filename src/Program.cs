@@ -52,7 +52,7 @@ static void ConfigureCors(IServiceCollection services)
     {
         options.AddPolicy("AllowSwagger", policy =>
         {
-            policy.WithOrigins("http://localhost:5555", "https://localhost:5556")
+            policy.WithOrigins("http://localhost:5555", "https://localhost:5556", "http://localhost:3000")
                   .AllowAnyMethod()
                   .AllowAnyHeader()
                   .AllowCredentials();

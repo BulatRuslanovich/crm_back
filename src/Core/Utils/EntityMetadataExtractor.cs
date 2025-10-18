@@ -64,12 +64,12 @@ public static class EntityMetadataExtractor
             keyColumn = columnName;
         }
 
-        if (columnAttribute.IsInsertable)
+        if (columnAttribute.IsInsertable && columnAttribute.IsKey == false)
         {
             insertColumns.Add(columnName);
         }
 
-        if (columnAttribute.IsUpdatable)
+        if (columnAttribute.IsUpdatable && columnAttribute.IsKey == false)
         {
             updateColumns.Add(columnName);
         }
