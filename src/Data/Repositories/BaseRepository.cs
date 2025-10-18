@@ -38,7 +38,8 @@ public class BaseRepository<TEntity, TKey>(IDbConnection dbConnection, IDistribu
 
         var result = await QuerySingleAsync(sql, new { id }, ct);
 
-        if (result != null) {
+        if (result != null)
+        {
             var serialized = JsonSerializer.Serialize(result, JsonOptions);
             await cache.SetStringAsync(cacheKey, serialized, new DistributedCacheEntryOptions
             {
@@ -80,7 +81,8 @@ public class BaseRepository<TEntity, TKey>(IDbConnection dbConnection, IDistribu
 
         var result = await ExecuteScalarAsync<TKey>(sql, entity, ct);
 
-        if (result != null) {
+        if (result != null)
+        {
             var cacheKey = $"{tableName}:{result}";
             await cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(entity, JsonOptions), new DistributedCacheEntryOptions
             {
@@ -102,7 +104,8 @@ public class BaseRepository<TEntity, TKey>(IDbConnection dbConnection, IDistribu
 
         var result = await ExecuteAsync(sql, entity, ct);
 
-        if (result) {
+        if (result)
+        {
             var cacheKey = $"{tableName}:{entity.GetType().GetProperty(keyColumn)?.GetValue(entity)}";
             await cache.RemoveAsync(cacheKey, ct);
         }
@@ -119,7 +122,8 @@ public class BaseRepository<TEntity, TKey>(IDbConnection dbConnection, IDistribu
 
         var result = await ExecuteAsync(sql, new { id }, ct);
 
-        if (result) {
+        if (result)
+        {
             var cacheKey = $"{tableName}:{id}";
             await cache.RemoveAsync(cacheKey, ct);
         }
@@ -134,7 +138,8 @@ public class BaseRepository<TEntity, TKey>(IDbConnection dbConnection, IDistribu
 
         var result = await ExecuteAsync(sql, new { id }, ct);
 
-        if (result) {
+        if (result)
+        {
             var cacheKey = $"{tableName}:{id}";
             await cache.RemoveAsync(cacheKey, ct);
         }
