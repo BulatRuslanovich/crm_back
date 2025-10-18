@@ -1,12 +1,12 @@
-using CrmBack.Api.Health;
-using CrmBack.Core.Repositories;
-using CrmBack.Core.Services;
-using CrmBack.Data.Repositories;
+using System.Data;
+using CrmBack.Core.Utils.Health;
+using CrmBack.Repository;
+using CrmBack.Repository.Impl;
 using CrmBack.Services;
+using CrmBack.Services.Impl;
 using Dapper;
 using Npgsql;
 using Serilog;
-using System.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 

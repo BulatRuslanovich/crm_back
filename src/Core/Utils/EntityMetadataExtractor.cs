@@ -1,5 +1,5 @@
-using CrmBack.Core.Attributes;
 using System.Reflection;
+using CrmBack.Core.Utils.Attributes;
 
 namespace CrmBack.Core.Utils;
 

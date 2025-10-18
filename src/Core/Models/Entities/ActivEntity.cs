@@ -1,4 +1,4 @@
-using CrmBack.Core.Attributes;
+using CrmBack.Core.Utils.Attributes;
 
 namespace CrmBack.Core.Models.Entities;
 
