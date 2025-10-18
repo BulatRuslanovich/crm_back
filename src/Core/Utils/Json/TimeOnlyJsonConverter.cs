@@ -18,4 +18,3 @@ public sealed class TimeOnlyJsonConverter : JsonConverter<TimeOnly>
         writer.WriteStringValue(value.ToString(Format));
     }
 }
-

@@ -1,10 +1,10 @@
 using CrmBack.Api.Controllers;
 using CrmBack.Core.Models.Payload.Org;
 using CrmBack.Core.Services;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Distributed;
 using Moq;
-using Xunit;
 
 namespace Tests;
 
@@ -19,6 +19,12 @@ public class OrgControllerTests
         _mockOrgService = new Mock<IOrgService>();
         _mockCache = new Mock<IDistributedCache>();
         _controller = new OrgController(_mockOrgService.Object, _mockCache.Object);
+
+        var httpContext = new DefaultHttpContext();
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = httpContext
+        };
     }
 
     [Fact]
@@ -27,7 +33,7 @@ public class OrgControllerTests
         // Arrange
         var orgId = 1;
         var expectedOrg = new ReadOrgPayload(orgId, "Test Org", "Address", 45.0, -93.0, "1234567890");
-        _mockOrgService.Setup(x => x.GetOrgById(orgId)).ReturnsAsync(expectedOrg);
+        _mockOrgService.Setup(x => x.GetOrgById(orgId, It.IsAny<CancellationToken>())).ReturnsAsync(expectedOrg);
 
         // Act
         var result = await _controller.GetById(orgId);
@@ -60,7 +66,7 @@ public class OrgControllerTests
             new(1, "Org1", "Addr1", 0, 0, ""),
             new(2, "Org2", "Addr2", 0, 0, "")
         };
-        _mockOrgService.Setup(x => x.GetAllOrgs(false, 1, 10)).ReturnsAsync(orgs);
+        _mockOrgService.Setup(x => x.GetAllOrgs(false, 1, 10, It.IsAny<CancellationToken>())).ReturnsAsync(orgs);
 
         // Act
         var result = await _controller.GetAll();
@@ -77,7 +83,7 @@ public class OrgControllerTests
         // Arrange
         var createPayload = new CreateOrgPayload("New Org", "Address", 0, 0, "");
         var readPayload = new ReadOrgPayload(1, "New Org", "Address", 0, 0, "");
-        _mockOrgService.Setup(x => x.CreateOrg(createPayload)).ReturnsAsync(readPayload);
+        _mockOrgService.Setup(x => x.CreateOrg(createPayload, It.IsAny<CancellationToken>())).ReturnsAsync(readPayload);
 
         // Act
         var result = await _controller.Create(createPayload);
@@ -108,7 +114,7 @@ public class OrgControllerTests
     {
         // Arrange
         var createPayload = new CreateOrgPayload("New Org", "Address", 0, 0, "");
-        _mockOrgService.Setup(x => x.CreateOrg(createPayload)).ReturnsAsync((ReadOrgPayload?)null);
+        _mockOrgService.Setup(x => x.CreateOrg(createPayload, It.IsAny<CancellationToken>())).ReturnsAsync((ReadOrgPayload?)null);
 
         // Act
         var result = await _controller.Create(createPayload);
@@ -124,7 +130,7 @@ public class OrgControllerTests
         // Arrange
         var orgId = 1;
         var updatePayload = new UpdateOrgPayload("Updated", "Address", 0, 0, "");
-        _mockOrgService.Setup(x => x.UpdateOrg(orgId, updatePayload)).ReturnsAsync(true);
+        _mockOrgService.Setup(x => x.UpdateOrg(orgId, updatePayload, It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
         // Act
         var result = await _controller.Update(orgId, updatePayload);
@@ -173,7 +179,7 @@ public class OrgControllerTests
         // Arrange
         var orgId = 999;
         var updatePayload = new UpdateOrgPayload("Updated", "Address", 0, 0, "");
-        _mockOrgService.Setup(x => x.UpdateOrg(orgId, updatePayload)).ReturnsAsync(false);
+        _mockOrgService.Setup(x => x.UpdateOrg(orgId, updatePayload, It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
         // Act
         var result = await _controller.Update(orgId, updatePayload);
@@ -188,7 +194,7 @@ public class OrgControllerTests
     {
         // Arrange
         var orgId = 1;
-        _mockOrgService.Setup(x => x.DeleteOrg(orgId)).ReturnsAsync(true);
+        _mockOrgService.Setup(x => x.DeleteOrg(orgId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
         // Act
         var result = await _controller.Delete(orgId);
@@ -214,7 +220,7 @@ public class OrgControllerTests
     {
         // Arrange
         var orgId = 999;
-        _mockOrgService.Setup(x => x.DeleteOrg(orgId)).ReturnsAsync(false);
+        _mockOrgService.Setup(x => x.DeleteOrg(orgId, It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
         // Act
         var result = await _controller.Delete(orgId);

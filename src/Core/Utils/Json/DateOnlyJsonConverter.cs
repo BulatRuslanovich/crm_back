@@ -18,4 +18,3 @@ public sealed class DateOnlyJsonConverter : JsonConverter<DateOnly>
         writer.WriteStringValue(value.ToString(Format));
     }
 }
-

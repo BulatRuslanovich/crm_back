@@ -2,12 +2,12 @@ using CrmBack.Core.Repositories;
 using CrmBack.Core.Services;
 using CrmBack.Data.Repositories;
 using CrmBack.Services;
+using Dapper;
+using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 using Serilog;
 using System.Data;
-using Dapper;
 using System.IdentityModel.Tokens.Jwt;
-using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using System.Text;
 
