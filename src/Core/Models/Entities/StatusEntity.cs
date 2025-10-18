@@ -1,7 +1,10 @@
+using CrmBack.Core.Attributes;
+
 namespace CrmBack.Core.Models.Entities;
 
+[Table("status")]
 public record StatusEntity(
-    int status_id,
-    string name,
-    bool is_deleted
+    [Column(IsKey = true, IsUpdatable = false)] int status_id,
+    [Column] string name,
+    [Column(IsInsertable = false, IsUpdatable = false)] bool is_deleted
 );

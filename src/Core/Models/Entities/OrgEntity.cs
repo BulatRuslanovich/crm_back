@@ -1,11 +1,14 @@
+using CrmBack.Core.Attributes;
+
 namespace CrmBack.Core.Models.Entities;
 
+[Table("org")]
 public record OrgEntity(
-    int org_id,
-    string name,
-    string inn,
-    double latitude,
-    double longitude,
-    string address,
-    bool is_deleted
+    [Column(IsKey = true, IsUpdatable = false)] int org_id,
+    [Column] string name,
+    [Column] string inn,
+    [Column] double latitude,
+    [Column] double longitude,
+    [Column] string address,
+    [Column(IsInsertable = false, IsUpdatable = false)] bool is_deleted
 );

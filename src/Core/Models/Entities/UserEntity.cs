@@ -1,11 +1,14 @@
+using CrmBack.Core.Attributes;
+
 namespace CrmBack.Core.Models.Entities;
 
+[Table("usr")]
 public record UserEntity(
-    int usr_id,
-    string first_name,
-    string middle_name,
-    string last_name,
-    string login,
-    string password_hash,
-    bool is_deleted
+    [Column(IsKey = true, IsUpdatable = false)] int usr_id,
+    [Column] string first_name,
+    [Column] string middle_name,
+    [Column] string last_name,
+    [Column] string login,
+    [Column] string password_hash,
+    [Column(IsInsertable = false, IsUpdatable = false)] bool is_deleted
 );

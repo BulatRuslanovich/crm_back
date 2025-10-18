@@ -1,16 +1,17 @@
 using CrmBack.Core.Repositories;
+using CrmBack.Core.Utils;
 using Dapper;
 using System.Data;
 
 namespace CrmBack.Data.Repositories;
 
-public class Repository<TEntity, TKey>(IDbConnection dbConnection,
-    string tableName,
-    string keyColumn,
-    string[] columns,
-    string[] insertColumns,
-    string[] updateColumns) where TEntity : class where TKey : notnull
+public class Repository<TEntity, TKey>(IDbConnection dbConnection) where TEntity : class where TKey : notnull
 {
+    private readonly string tableName = EntityMetadataExtractor.ExtractMetadata<TEntity>().tableName;
+    private readonly string keyColumn = EntityMetadataExtractor.ExtractMetadata<TEntity>().keyColumn;
+    private readonly string[] columns = EntityMetadataExtractor.ExtractMetadata<TEntity>().columns;
+    private readonly string[] insertColumns = EntityMetadataExtractor.ExtractMetadata<TEntity>().insertColumns;
+    private readonly string[] updateColumns = EntityMetadataExtractor.ExtractMetadata<TEntity>().updateColumns;
 
     public virtual async Task<TEntity?> GetByIdAsync(TKey id, CancellationToken ct = default)
     {

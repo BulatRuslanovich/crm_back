@@ -1,10 +1,13 @@
+using CrmBack.Core.Attributes;
+
 namespace CrmBack.Core.Models.Entities;
 
+[Table("plan")]
 public record PlanEntity(
-    int plan_id,
-    int usr_id,
-    int org_id,
-    DateTime start_date,
-    DateTime end_date,
-    bool is_deleted
+    [Column(IsKey = true, IsUpdatable = false)] int plan_id,
+    [Column] int usr_id,
+    [Column] int org_id,
+    [Column] DateTime start_date,
+    [Column] DateTime end_date,
+    [Column(IsInsertable = false, IsUpdatable = false)] bool is_deleted
 );
