@@ -1,3 +1,4 @@
+using CrmBack.Api.Health;
 using CrmBack.Core.Repositories;
 using CrmBack.Core.Services;
 using CrmBack.Data.Repositories;
@@ -40,6 +41,7 @@ static void ConfigureLogging(WebApplicationBuilder builder)
             .WriteTo.Debug()
             .MinimumLevel.Warning()
             .MinimumLevel.Override("CrmBack.Data", Serilog.Events.LogEventLevel.Debug)
+            .MinimumLevel.Override("CrmBack.Api.Middleware", Serilog.Events.LogEventLevel.Debug)
             .MinimumLevel.Override("Microsoft.AspNetCore", Serilog.Events.LogEventLevel.Information);
     });
 }
@@ -192,5 +194,6 @@ static void ConfigureMiddleware(WebApplication app)
 
     app.UseAuthentication();
     app.UseAuthorization();
+    app.UseHealthCheck();
     app.MapControllers();
 }
