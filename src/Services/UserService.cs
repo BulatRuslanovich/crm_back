@@ -13,13 +13,13 @@ using System.Text;
 
 public class UserService(IUserRepository userRepository, IConfiguration configuration) : IUserService
 {
-    public async Task<ReadUserPayload?> GetUserById(int id, CancellationToken ct = default)
+    public async Task<ReadUserPayload?> GetById(int id, CancellationToken ct = default)
     {
         var user = await userRepository.GetByIdAsync(id, ct).ConfigureAwait(false);
         return user?.ToReadPayload();
     }
 
-    public async Task<List<ReadUserPayload>> GetAllUsers(bool isDeleted, int page, int pageSize, CancellationToken ct = default)
+    public async Task<List<ReadUserPayload>> GetAll(bool isDeleted, int page, int pageSize, CancellationToken ct = default)
     {
         var users = await userRepository.GetAllAsync(isDeleted, page, pageSize, ct).ConfigureAwait(false);
 
@@ -27,14 +27,14 @@ public class UserService(IUserRepository userRepository, IConfiguration configur
     }
 
     //! there's no point in checking the login's uniqueness, as the field is unique in the database
-    public async Task<ReadUserPayload?> CreateUser(CreateUserPayload payload, CancellationToken ct = default)
+    public async Task<ReadUserPayload?> Create(CreateUserPayload payload, CancellationToken ct = default)
     {
         var userId = await userRepository.CreateAsync(payload.ToEntity(), ct).ConfigureAwait(false);
         var userDto = await userRepository.GetByIdAsync(userId, ct).ConfigureAwait(false);
         return userDto?.ToReadPayload();
     }
 
-    public async Task<bool> UpdateUser(int id, UpdateUserPayload payload, CancellationToken ct = default)
+    public async Task<bool> Update(int id, UpdateUserPayload payload, CancellationToken ct = default)
     {
         var existing = await userRepository.GetByIdAsync(id, ct).ConfigureAwait(false);
         if (existing == null) return false;
@@ -43,12 +43,12 @@ public class UserService(IUserRepository userRepository, IConfiguration configur
         return await userRepository.UpdateAsync(entityToUpdate, ct).ConfigureAwait(false);
     }
 
-    public async Task<bool> DeleteUser(int id, CancellationToken ct = default)
+    public async Task<bool> Delete(int id, CancellationToken ct = default)
     {
         return await userRepository.SoftDeleteAsync(id, ct).ConfigureAwait(false);
     }
 
-    public async Task<LoginResponsePayload> LoginUser(LoginUserPayload payload, CancellationToken ct = default)
+    public async Task<LoginResponsePayload> Login(LoginUserPayload payload, CancellationToken ct = default)
     {
         var user = await userRepository.GetByLoginAsync(payload.Login, ct);
 
