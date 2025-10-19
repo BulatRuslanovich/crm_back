@@ -14,46 +14,85 @@
   <img src="https://img.shields.io/github/license/BulatRuslanovich/crm_back?color=yellow&style=for-the-badge" alt="License" />
 </p>
 
+Backend API for CRM system built with ASP.NET Core 8, PostgreSQL, and Redis.
 
-A robust backend system for a Customer Relationship Management (CRM) application, built with ASP.NET Core 8, PostgreSQL, and Redis.
+> **⚠️ Project Status**: In active development. API endpoints and structure may change.
 
-> **⚠️ Project Status**: Currently in active development. API endpoints and structure may change.
+---
 
 ## Tech Stack
 
 - **ASP.NET Core 8** - Modern web framework
-- **PostgreSQL 16+** - Reliable data storage
+- **PostgreSQL 16+** - Relational database
 - **Redis** - Caching and session management
-- **Dapper** - Micro ORM for efficient data access
-- **JWT** - Authentication and authorization
-- **Swagger/OpenAPI** - API documentation
-- **Serilog** - Structured logging
-- **Docker Compose** - Container orchestration
+- **Dapper** - High-performance ORM
+- **JWT Authentication** - Secure token-based auth
+- **xUnit** - Unit and integration testing
 
-## Architecture
+---
+
+## Core Features
+
+- **Authentication System** - JWT-based user authentication
+- **CRUD Operations** - Generic repository pattern for all entities
+- **Data Validation** - Input validation and sanitization
+- **Caching** - Redis integration for performance
+- **API Documentation** - Swagger/OpenAPI integration
+- **Comprehensive Testing** - Unit and integration test coverage
+
+---
+
+## Getting Started
+
+### Prerequisites
+- .NET 8.0 SDK
+- PostgreSQL 16+
+- Redis 7+
+
+### Quick Start
+
+```bash
+dotnet run --project src/
+```
+
+### Database Setup
+
+```bash
+# Initialize databases
+docker-compose up -d
+```
+
+### API Documentation
+
+Access Swagger UI at: `https://localhost:7000/swagger`
+
+---
+
+## Development
+
+### Running Tests
+
+```bash
+# Run all tests
+dotnet test
+
+# Run with coverage
+dotnet test --collect:"XPlat Code Coverage"
+```
+
+### Code Formatting
+
+```bash
+./format-code.sh
+```
+
+### Project Structure
 
 ```
 src/
-├── Api/Controllers/     # REST API endpoints
-├── Core/               # Business logic interfaces
-├── Data/Repositories/  # Data access layer
-├── Services/           # Business logic implementation
-└── Models/             # Data models and DTOs
+├── Controllers/     # API endpoints
+├── Core/           # Business logic & models
+├── Repository/     # Data access layer
+├── Services/       # Business services
+└── Program.cs      # Application entry point
 ```
-
-## API Overview
-
-### Authentication
-- `POST /api/user/login` - User authentication
-- `POST /api/user/register` - User registration
-
-### Core Entities
-- **Users** - System users management
-- **Organizations** - Client organizations
-- **Activities** - Customer interactions
-- **Plans** - Work planning and scheduling
-
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
