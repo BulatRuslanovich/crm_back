@@ -10,8 +10,9 @@ using CrmBack.Repository;
 using Dapper;
 using Microsoft.Extensions.Caching.Distributed;
 
-public class ActivRepository(IDbConnection dbConnection, IDistributedCache cache) 
-    : BaseRepository<ActivEntity, int>(dbConnection, cache), IActivRepository {
+public class ActivRepository(IDbConnection dbConnection, IDistributedCache cache)
+    : BaseRepository<ActivEntity, int>(dbConnection, cache), IActivRepository
+{
 
     public async Task<IEnumerable<HumReadActivPayload>> GetAllHumActivsByUserIdAsync(
         int userId,

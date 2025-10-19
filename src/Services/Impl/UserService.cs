@@ -58,7 +58,7 @@ public class UserService(IUserRepository userRepository, IActivRepository activR
 
     public async Task<LoginResponsePayload> Login(LoginUserPayload payload, CancellationToken ct = default)
     {
-        var user = (await userRepository.FindByAsync("login", payload.Login, ct: ct)).FirstOrDefault() 
+        var user = (await userRepository.FindByAsync("login", payload.Login, ct: ct)).FirstOrDefault()
             ?? throw new UnauthorizedAccessException("Invalid login or password.");
         if (!BCrypt.Net.BCrypt.Verify(payload.Password, user.password_hash))
             throw new UnauthorizedAccessException("Invalid login or password.");
@@ -93,7 +93,7 @@ public class UserService(IUserRepository userRepository, IActivRepository activR
     public async Task<List<HumReadActivPayload>> GetActivs(int userId, CancellationToken ct = default)
     {
         var humActivs = await activRepository.GetAllHumActivsByUserIdAsync(userId, ct);
-        
+
         return humActivs.ToList();
     }
 

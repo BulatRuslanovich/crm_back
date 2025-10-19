@@ -5,7 +5,6 @@ using System.Data;
 using System.Text.Json;
 using CrmBack.Core.Utils;
 using Dapper;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Caching.Distributed;
 
 
@@ -83,7 +82,7 @@ public class BaseRepository<TEntity, TKey>(IDbConnection dbConnection, IDistribu
     {
         if (page < 1) page = 1;
         if (pageSize < 1 || pageSize > 1000) pageSize = 10;
-        
+
         // Проверка существования колонки для сортировки
         if (!string.IsNullOrEmpty(orderByColumn) && !columns.Contains(orderByColumn))
         {
@@ -111,7 +110,7 @@ public class BaseRepository<TEntity, TKey>(IDbConnection dbConnection, IDistribu
         }
 
         var whereClause = whereConditions.Count > 0 ? "WHERE " + string.Join(" AND ", whereConditions) : "";
-        
+
         var orderByClause = "";
         if (!string.IsNullOrEmpty(orderByColumn))
         {
@@ -152,7 +151,7 @@ public class BaseRepository<TEntity, TKey>(IDbConnection dbConnection, IDistribu
         }
 
         var filters = new Dictionary<string, object>();
-        
+
         if (exactMatch)
         {
             filters[column] = value;
@@ -171,7 +170,7 @@ public class BaseRepository<TEntity, TKey>(IDbConnection dbConnection, IDistribu
             parameters["searchValue"] = $"%{value}%";
 
             var whereClause = "WHERE " + string.Join(" AND ", whereConditions);
-            
+
             var orderByClause = !string.IsNullOrEmpty(orderByColumn) && columns.Contains(orderByColumn)
                 ? $"ORDER BY {orderByColumn} {(orderByDescending ? "DESC" : "ASC")}"
                 : $"ORDER BY {keyColumn} DESC";
@@ -234,7 +233,7 @@ public class BaseRepository<TEntity, TKey>(IDbConnection dbConnection, IDistribu
         }
 
         var whereClause = "WHERE " + string.Join(" AND ", whereConditions);
-        
+
         var orderByClause = !string.IsNullOrEmpty(orderByColumn) && columns.Contains(orderByColumn)
             ? $"ORDER BY {orderByColumn} {(orderByDescending ? "DESC" : "ASC")}"
             : $"ORDER BY {keyColumn} DESC";
