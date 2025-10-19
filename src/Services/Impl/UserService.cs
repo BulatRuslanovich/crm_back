@@ -12,7 +12,7 @@ using CrmBack.Core.Utils.Mapper;
 using CrmBack.Repository;
 using Microsoft.IdentityModel.Tokens;
 
-public class UserService(IUserRepository userRepository, IActivRepository activRepository, IPlanRepository planRepository, IOrgRepository orgRepository, IConfiguration configuration) : IUserService
+public class UserService(IUserRepository userRepository, IActivRepository activRepository, IPlanRepository planRepository, IConfiguration configuration) : IUserService
 {
     public async Task<ReadUserPayload?> GetById(int id, CancellationToken ct = default)
     {

@@ -345,7 +345,7 @@ public class BaseRepository<TEntity, TKey>(IDbConnection dbConnection, IDistribu
     public virtual async Task<long> CountAsync(bool includeDeleted = false, CancellationToken ct = default)
     {
         var whereClause = includeDeleted ? "" : "WHERE NOT is_deleted";
-        var sql = $"SELECT COUNT(*) FROM {tableName} {whereClause}";
+        var sql = $"SELECT COUNT(1) FROM {tableName} {whereClause}";
 
         return await ExecuteScalarAsync<long>(sql, new { }, ct);
     }
