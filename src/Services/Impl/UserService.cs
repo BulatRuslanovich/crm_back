@@ -5,12 +5,14 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using CrmBack.Core.Models.Entities;
+using CrmBack.Core.Models.Payload.Activ;
+using CrmBack.Core.Models.Payload.Plan;
 using CrmBack.Core.Models.Payload.User;
 using CrmBack.Core.Utils.Mapper;
 using CrmBack.Repository;
 using Microsoft.IdentityModel.Tokens;
 
-public class UserService(IUserRepository userRepository, IConfiguration configuration) : IUserService
+public class UserService(IUserRepository userRepository, IActivRepository activRepository, IPlanRepository planRepository, IOrgRepository orgRepository, IConfiguration configuration) : IUserService
 {
     public async Task<ReadUserPayload?> GetById(int id, CancellationToken ct = default)
     {
@@ -56,14 +58,12 @@ public class UserService(IUserRepository userRepository, IConfiguration configur
 
     public async Task<LoginResponsePayload> Login(LoginUserPayload payload, CancellationToken ct = default)
     {
-        var user = await userRepository.GetByLoginAsync(payload.Login, ct);
-
-        if (user == null || !BCrypt.Net.BCrypt.Verify(payload.Password, user.password_hash))
+        var user = (await userRepository.FindByAsync("login", payload.Login, ct: ct)).FirstOrDefault() 
+            ?? throw new UnauthorizedAccessException("Invalid login or password.");
+        if (!BCrypt.Net.BCrypt.Verify(payload.Password, user.password_hash))
             throw new UnauthorizedAccessException("Invalid login or password.");
 
-
         var token = GenerateJwtToken(user);
-
         var userPayload = user.ToReadPayload();
         return new LoginResponsePayload(token, userPayload);
     }
@@ -88,5 +88,18 @@ public class UserService(IUserRepository userRepository, IConfiguration configur
             signingCredentials: creds);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    public async Task<List<HumReadActivPayload>> GetActivs(int userId, CancellationToken ct = default)
+    {
+        var humActivs = await activRepository.GetAllHumActivsByUserIdAsync(userId, ct);
+        
+        return humActivs.ToList();
+    }
+
+    public async Task<List<ReadPlanPayload>> GetPlans(int userId, CancellationToken ct = default)
+    {
+        var plans = await planRepository.FindByAsync("usr_id", userId, ct: ct);
+        return [.. plans.Select(p => p.ToReadPayload())];
     }
 }

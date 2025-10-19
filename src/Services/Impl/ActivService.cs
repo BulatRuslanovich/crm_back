@@ -2,6 +2,7 @@ namespace CrmBack.Services.Impl;
 
 using CrmBack.Core.Models.Entities;
 using CrmBack.Core.Models.Payload.Activ;
+using CrmBack.Core.Models.Status;
 using CrmBack.Core.Utils.Mapper;
 using CrmBack.Repository;
 
@@ -50,5 +51,18 @@ public class ActivService(IActivRepository activRepository) : IActivService
     public async Task<bool> Delete(int id, CancellationToken ct = default)
     {
         return await activRepository.SoftDeleteAsync(id, ct).ConfigureAwait(false);
+    }
+
+    public async Task<List<ReadActivPayload>> GetByUserId(int userId, CancellationToken ct = default)
+    {
+        var filters = new Dictionary<string, object> { { "usr_id", userId } };
+        var activs = await activRepository.FindAllAsync(filters: filters, ct: ct);
+        return [.. activs.Select(a => a.ToReadPayload())];
+    }
+
+    public async Task<List<ReadStatusPayload>> GetAllStatus(CancellationToken ct = default)
+    {
+        var statuses = await activRepository.GetAllStatusAsync(ct).ConfigureAwait(false);
+        return [.. statuses.Select(s => s.ToReadPayload())];
     }
 }

@@ -5,11 +5,13 @@ using System.Data;
 using System.Text.Json;
 using CrmBack.Core.Utils;
 using Dapper;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Caching.Distributed;
 
 
 public class BaseRepository<TEntity, TKey>(IDbConnection dbConnection, IDistributedCache cache) where TEntity : class where TKey : notnull
 {
+    protected readonly IDbConnection dbConnection = dbConnection;
     private readonly string tableName = EntityMetadataExtractor.ExtractMetadata<TEntity>().tableName;
     private readonly string keyColumn = EntityMetadataExtractor.ExtractMetadata<TEntity>().keyColumn;
     private readonly string[] columns = EntityMetadataExtractor.ExtractMetadata<TEntity>().columns;
@@ -68,6 +70,186 @@ public class BaseRepository<TEntity, TKey>(IDbConnection dbConnection, IDistribu
         var offset = (page - 1) * pageSize;
 
         return await QueryAsync(sql, new { pageSize, offset }, ct);
+    }
+
+    public virtual async Task<IEnumerable<TEntity>> FindAllAsync(
+        Dictionary<string, object>? filters = null,
+        string? orderByColumn = null,
+        bool orderByDescending = false,
+        bool includeDeleted = false,
+        int page = 1,
+        int pageSize = 10,
+        CancellationToken ct = default)
+    {
+        if (page < 1) page = 1;
+        if (pageSize < 1 || pageSize > 1000) pageSize = 10;
+        
+        // Проверка существования колонки для сортировки
+        if (!string.IsNullOrEmpty(orderByColumn) && !columns.Contains(orderByColumn))
+        {
+            throw new ArgumentException($"Column '{orderByColumn}' does not exist in table '{tableName}'");
+        }
+
+        var whereConditions = new List<string>();
+        var parameters = new Dictionary<string, object>();
+
+        if (!includeDeleted)
+        {
+            whereConditions.Add("NOT is_deleted");
+        }
+
+        if (filters != null)
+        {
+            foreach (var filter in filters)
+            {
+                if (columns.Contains(filter.Key))
+                {
+                    whereConditions.Add($"{filter.Key} = @{filter.Key}");
+                    parameters[filter.Key] = filter.Value;
+                }
+            }
+        }
+
+        var whereClause = whereConditions.Count > 0 ? "WHERE " + string.Join(" AND ", whereConditions) : "";
+        
+        var orderByClause = "";
+        if (!string.IsNullOrEmpty(orderByColumn))
+        {
+            orderByClause = $"ORDER BY {orderByColumn} {(orderByDescending ? "DESC" : "ASC")}";
+        }
+        else
+        {
+            orderByClause = $"ORDER BY {keyColumn} DESC";
+        }
+
+        var sql = $@"
+            SELECT {string.Join(", ", columns)}
+            FROM {tableName}
+            {whereClause}
+            {orderByClause}
+            LIMIT @pageSize OFFSET @offset";
+
+        parameters["pageSize"] = pageSize;
+        parameters["offset"] = (page - 1) * pageSize;
+
+        return await QueryAsync(sql, parameters, ct);
+    }
+
+    public virtual async Task<IEnumerable<TEntity>> FindByAsync(
+        string column,
+        object value,
+        bool exactMatch = true,
+        string? orderByColumn = null,
+        bool orderByDescending = false,
+        bool includeDeleted = false,
+        int page = 1,
+        int pageSize = 10,
+        CancellationToken ct = default)
+    {
+        if (!columns.Contains(column))
+        {
+            throw new ArgumentException($"Column '{column}' does not exist in table '{tableName}'");
+        }
+
+        var filters = new Dictionary<string, object>();
+        
+        if (exactMatch)
+        {
+            filters[column] = value;
+        }
+        else
+        {
+            var whereConditions = new List<string>();
+            var parameters = new Dictionary<string, object>();
+
+            if (!includeDeleted)
+            {
+                whereConditions.Add("NOT is_deleted");
+            }
+
+            whereConditions.Add($"{column} ILIKE @searchValue");
+            parameters["searchValue"] = $"%{value}%";
+
+            var whereClause = "WHERE " + string.Join(" AND ", whereConditions);
+            
+            var orderByClause = !string.IsNullOrEmpty(orderByColumn) && columns.Contains(orderByColumn)
+                ? $"ORDER BY {orderByColumn} {(orderByDescending ? "DESC" : "ASC")}"
+                : $"ORDER BY {keyColumn} DESC";
+
+            var sql = $@"
+                SELECT {string.Join(", ", columns)}
+                FROM {tableName}
+                {whereClause}
+                {orderByClause}
+                LIMIT @pageSize OFFSET @offset";
+
+            parameters["pageSize"] = pageSize;
+            parameters["offset"] = (page - 1) * pageSize;
+
+            return await QueryAsync(sql, parameters, ct);
+        }
+
+        return await FindAllAsync(filters, orderByColumn, orderByDescending, includeDeleted, page, pageSize, ct);
+    }
+
+    public virtual async Task<IEnumerable<TEntity>> FindByRangeAsync(
+        string column,
+        object? minValue = null,
+        object? maxValue = null,
+        string? orderByColumn = null,
+        bool orderByDescending = false,
+        bool includeDeleted = false,
+        int page = 1,
+        int pageSize = 10,
+        CancellationToken ct = default)
+    {
+        if (!columns.Contains(column))
+        {
+            throw new ArgumentException($"Column '{column}' does not exist in table '{tableName}'");
+        }
+
+        if (minValue == null && maxValue == null)
+        {
+            throw new ArgumentException("At least one of minValue or maxValue must be provided");
+        }
+
+        var whereConditions = new List<string>();
+        var parameters = new Dictionary<string, object>();
+
+        if (!includeDeleted)
+        {
+            whereConditions.Add("NOT is_deleted");
+        }
+
+        if (minValue != null)
+        {
+            whereConditions.Add($"{column} >= @minValue");
+            parameters["minValue"] = minValue;
+        }
+
+        if (maxValue != null)
+        {
+            whereConditions.Add($"{column} <= @maxValue");
+            parameters["maxValue"] = maxValue;
+        }
+
+        var whereClause = "WHERE " + string.Join(" AND ", whereConditions);
+        
+        var orderByClause = !string.IsNullOrEmpty(orderByColumn) && columns.Contains(orderByColumn)
+            ? $"ORDER BY {orderByColumn} {(orderByDescending ? "DESC" : "ASC")}"
+            : $"ORDER BY {keyColumn} DESC";
+
+        var sql = $@"
+            SELECT {string.Join(", ", columns)}
+            FROM {tableName}
+            {whereClause}
+            {orderByClause}
+            LIMIT @pageSize OFFSET @offset";
+
+        parameters["pageSize"] = pageSize;
+        parameters["offset"] = (page - 1) * pageSize;
+
+        return await QueryAsync(sql, parameters, ct);
     }
 
     public virtual async Task<TKey?> CreateAsync(TEntity entity, CancellationToken ct = default)

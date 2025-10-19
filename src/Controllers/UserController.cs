@@ -1,5 +1,7 @@
 namespace CrmBack.Controllers;
 
+using CrmBack.Core.Models.Payload.Activ;
+using CrmBack.Core.Models.Payload.Plan;
 using CrmBack.Core.Models.Payload.User;
 using CrmBack.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -31,5 +33,19 @@ public class UserController(IUserService userService) : BaseApiController<ReadUs
         if (response == null) return BadRequest("Failed to register user");
 
         return Ok(response);
+    }
+
+    [HttpGet("{id:int}/activ")]
+    public async Task<ActionResult<List<HumReadActivPayload>>> GetActivs(int id)
+    {
+        var activs = await userService.GetActivs(id, HttpContext.RequestAborted);
+        return Ok(activs);
+    }
+
+    [HttpGet("{id:int}/plan")]
+    public async Task<ActionResult<List<ReadPlanPayload>>> GetPlans(int id)
+    {
+        var plans = await userService.GetPlans(id, HttpContext.RequestAborted);
+        return Ok(plans);
     }
 }
