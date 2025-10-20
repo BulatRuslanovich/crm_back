@@ -48,9 +48,17 @@ public abstract class BaseApiController<RPayload, CPayload, UPayload>(IService<R
     public async Task<ActionResult<bool>> Update(int id, [FromBody] UPayload payload)
     {
         if (!ValidateId(id) || !ModelState.IsValid) return BadRequest();
-        var updated = await service.Update(id, payload, HttpContext.RequestAborted);
-        if (!updated) return NotFound();
-        return Ok(true);
+        
+        try
+        {
+            var updated = await service.Update(id, payload, HttpContext.RequestAborted);
+            if (!updated) return NotFound();
+            return Ok(true);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
     }
 
     [Authorize]

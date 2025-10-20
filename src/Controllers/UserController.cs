@@ -16,11 +16,15 @@ public class UserController(IUserService userService) : BaseApiController<ReadUs
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
-        var response = await userService.Login(payload, HttpContext.RequestAborted);
-
-        if (response == null) return Unauthorized("Invalid username or password");
-
-        return Ok(response);
+        try
+        {
+            var response = await userService.Login(payload, HttpContext.RequestAborted);
+            return Ok(response);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
     }
 
     [HttpPost("register")]
@@ -28,11 +32,16 @@ public class UserController(IUserService userService) : BaseApiController<ReadUs
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
-        var response = await userService.Create(payload, HttpContext.RequestAborted);
-
-        if (response == null) return BadRequest("Failed to register user");
-
-        return Ok(response);
+        try
+        {
+            var response = await userService.Create(payload, HttpContext.RequestAborted);
+            if (response == null) return BadRequest(new { message = "Failed to register user" });
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpGet("{id:int}/activ")]

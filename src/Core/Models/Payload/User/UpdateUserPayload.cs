@@ -16,5 +16,6 @@ public record UpdateUserPayload
     [MinLength(5, ErrorMessage = "Login cannot be less 5 character")]
     [MaxLength(20, ErrorMessage = "Login cannot be over 20 character")]
     string? Login,
-    string? Password
+    string? Password,
+    string? CurrentPassword
 );

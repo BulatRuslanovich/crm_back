@@ -40,6 +40,20 @@ public class UserService(IUserRepository userRepository, IActivRepository activR
         var existing = await userRepository.GetByIdAsync(id, ct).ConfigureAwait(false);
         if (existing == null) return false;
 
+        // Если обновляется пароль, проверяем текущий пароль
+        if (!string.IsNullOrEmpty(payload.Password))
+        {
+            if (string.IsNullOrEmpty(payload.CurrentPassword))
+            {
+                throw new UnauthorizedAccessException("Текущий пароль обязателен для смены пароля");
+            }
+            
+            if (!BCrypt.Net.BCrypt.Verify(payload.CurrentPassword, existing.password_hash))
+            {
+                throw new UnauthorizedAccessException("Неверный текущий пароль");
+            }
+        }
+
         var newEntity = new UserEntity(
             usr_id: id,
             first_name: payload.FirstName ?? existing.first_name,

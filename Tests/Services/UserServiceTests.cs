@@ -110,7 +110,7 @@ public class UserServiceTests : BaseServiceTest
         // Arrange
         var userId = 1;
         var existingUser = new UserEntity(1, "John", "Doe", "Smith", "john.doe", "hashed_password", false);
-        var updatePayload = new UpdateUserPayload("JohnUpdated", "DoeUpdated", "SmithUpdated", null, null);
+        var updatePayload = new UpdateUserPayload("JohnUpdated", "DoeUpdated", "SmithUpdated", null, null, null);
 
         _mockUserRepository.Setup(r => r.GetByIdAsync(userId, CancellationToken))
             .ReturnsAsync(existingUser);
@@ -130,7 +130,7 @@ public class UserServiceTests : BaseServiceTest
     {
         // Arrange
         var userId = 1;
-        var updatePayload = new UpdateUserPayload("JohnUpdated", "DoeUpdated", "SmithUpdated", null, null);
+        var updatePayload = new UpdateUserPayload("JohnUpdated", "DoeUpdated", "SmithUpdated", null, null, null);
 
         _mockUserRepository.Setup(r => r.GetByIdAsync(userId, CancellationToken))
             .ReturnsAsync((UserEntity?)null);
