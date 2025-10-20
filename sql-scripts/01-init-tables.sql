@@ -8,8 +8,6 @@ CREATE TABLE usr
     password_hash VARCHAR(255) NOT NULL,
     created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_by    VARCHAR(100),
-    updated_by    VARCHAR(100),
     is_deleted    BOOLEAN   DEFAULT FALSE
 );
 
@@ -19,8 +17,6 @@ CREATE TABLE policy
     policy_name VARCHAR(100) NOT NULL UNIQUE,
     created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_by  VARCHAR(100),
-    updated_by  VARCHAR(100),
     is_deleted  BOOLEAN   DEFAULT FALSE
 );
 
@@ -30,7 +26,6 @@ CREATE TABLE usr_policy
     usr_id        INT NOT NULL REFERENCES usr (usr_id),
     policy_id     INT NOT NULL REFERENCES policy (policy_id),
     created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_by    VARCHAR(100),
     UNIQUE (usr_id, policy_id)
 );
 
@@ -44,8 +39,6 @@ CREATE TABLE org
     address    TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_by VARCHAR(100),
-    updated_by VARCHAR(100),
     is_deleted BOOLEAN   DEFAULT FALSE
 );
 
@@ -55,8 +48,6 @@ CREATE TABLE status
     name       VARCHAR(50) NOT NULL UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_by VARCHAR(100),
-    updated_by VARCHAR(100),
     is_deleted BOOLEAN   DEFAULT FALSE
 );
 
@@ -72,8 +63,6 @@ CREATE TABLE activ
     description TEXT,
     created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_by  VARCHAR(100),
-    updated_by  VARCHAR(100),
     is_deleted  BOOLEAN   DEFAULT FALSE
 );
 
@@ -86,8 +75,6 @@ CREATE TABLE plan
     end_date   DATE NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_by VARCHAR(100),
-    updated_by VARCHAR(100),
     is_deleted BOOLEAN   DEFAULT FALSE,
     CHECK (end_date >= start_date)
 );
@@ -139,9 +126,9 @@ CREATE TRIGGER plan_updated_at
     FOR EACH ROW
 EXECUTE FUNCTION update_updated_at();
 
-INSERT INTO status (name, created_by, updated_by)
-VALUES ('Запланирован', 'system', 'system'),
-       ('Открыт', 'system', 'system'),
-       ('Отменен', 'system', 'system'),
-       ('Завершен', 'system', 'system');
+INSERT INTO status (name)
+VALUES ('Запланирован'),
+       ('Открыт'),
+       ('Сохранен'),
+       ('Закрыт');
 
