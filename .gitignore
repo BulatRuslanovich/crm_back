@@ -3,6 +3,8 @@
 
 
 .env
+sql-scripts/03-organizations-from-csv.sql
+sql-scripts/04-activities-from-csv.sql
 
 **/coverage/**/*
 # User-specific files
