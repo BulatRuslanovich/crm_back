@@ -47,7 +47,7 @@ public class UserService(IUserRepository userRepository, IActivRepository activR
             {
                 throw new UnauthorizedAccessException("Текущий пароль обязателен для смены пароля");
             }
-            
+
             if (!BCrypt.Net.BCrypt.Verify(payload.CurrentPassword, existing.password_hash))
             {
                 throw new UnauthorizedAccessException("Неверный текущий пароль");

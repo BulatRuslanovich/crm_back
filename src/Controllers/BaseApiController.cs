@@ -48,7 +48,7 @@ public abstract class BaseApiController<RPayload, CPayload, UPayload>(IService<R
     public async Task<ActionResult<bool>> Update(int id, [FromBody] UPayload payload)
     {
         if (!ValidateId(id) || !ModelState.IsValid) return BadRequest();
-        
+
         try
         {
             var updated = await service.Update(id, payload, HttpContext.RequestAborted);
