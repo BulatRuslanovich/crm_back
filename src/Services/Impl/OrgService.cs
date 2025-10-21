@@ -27,8 +27,9 @@ public class OrgService(IOrgRepository orgRepository) : IOrgService
 
     public async Task<List<ReadOrgPayload>> GetAll(bool isDeleted, int page, int pageSize, string? searchTerm = null, CancellationToken ct = default)
     {
-        if (searchTerm != null) {
-            
+        if (searchTerm != null)
+        {
+
 
             var findedOrgs = await orgRepository.FindByAsync("name", searchTerm, exactMatch: false, ct: ct);
             return [.. findedOrgs.Select(o => o.ToReadPayload())];

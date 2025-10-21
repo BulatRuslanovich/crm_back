@@ -68,7 +68,7 @@ public class OrgServiceTests : BaseServiceTest
             .ReturnsAsync(orgs);
 
         // Act
-        var result = await _orgService.GetAll(false, 1, 10, CancellationToken);
+        var result = await _orgService.GetAll(false, 1, 10, null, CancellationToken);
 
         // Assert
         result.Should().HaveCount(2);

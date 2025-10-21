@@ -65,7 +65,7 @@ public class PlanServiceTests : BaseServiceTest
             .ReturnsAsync(plans);
 
         // Act
-        var result = await _planService.GetAll(false, 1, 10, CancellationToken);
+        var result = await _planService.GetAll(false, 1, 10, null, CancellationToken);
 
         // Assert
         result.Should().HaveCount(2);

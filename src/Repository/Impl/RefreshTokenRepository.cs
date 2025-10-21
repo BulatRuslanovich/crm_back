@@ -2,8 +2,8 @@ namespace CrmBack.Repository.Impl;
 
 using System.Data;
 using CrmBack.Core.Models.Entities;
-using Microsoft.Extensions.Caching.Distributed;
 using Dapper;
+using Microsoft.Extensions.Caching.Distributed;
 
 public class RefreshTokenRepository(IDbConnection dbConnection, IDistributedCache cache) : BaseRepository<RefreshTokenEntity, int>(dbConnection, cache), IRefreshTokenRepository
 {
@@ -27,7 +27,7 @@ public class RefreshTokenRepository(IDbConnection dbConnection, IDistributedCach
             WHERE is_revoked = false AND expires_at > NOW()";
 
         var tokens = await dbConnection.QueryAsync<RefreshTokenEntity>(sql);
-        
+
         foreach (var token in tokens)
         {
             if (BCrypt.Net.BCrypt.Verify(refreshToken, token.token_hash))
@@ -35,7 +35,7 @@ public class RefreshTokenRepository(IDbConnection dbConnection, IDistributedCach
                 return token;
             }
         }
-        
+
         return null;
     }
 

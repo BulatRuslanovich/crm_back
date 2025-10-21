@@ -14,6 +14,7 @@ public class UserServiceTests : BaseServiceTest
     private readonly Mock<IUserRepository> _mockUserRepository;
     private readonly Mock<IActivRepository> _mockActivRepository;
     private readonly Mock<IPlanRepository> _mockPlanRepository;
+    private readonly Mock<IRefreshTokenRepository> _mockRefreshTokenRepository;
     private readonly UserService _userService;
 
     public UserServiceTests()
@@ -21,7 +22,8 @@ public class UserServiceTests : BaseServiceTest
         _mockUserRepository = new Mock<IUserRepository>();
         _mockActivRepository = new Mock<IActivRepository>();
         _mockPlanRepository = new Mock<IPlanRepository>();
-        _userService = new UserService(_mockUserRepository.Object, _mockActivRepository.Object, _mockPlanRepository.Object, MockConfiguration.Object);
+        _mockRefreshTokenRepository = new Mock<IRefreshTokenRepository>();
+        _userService = new UserService(_mockUserRepository.Object, _mockActivRepository.Object, _mockPlanRepository.Object, _mockRefreshTokenRepository.Object, MockConfiguration.Object);
     }
 
     [Fact]
@@ -73,7 +75,7 @@ public class UserServiceTests : BaseServiceTest
             .ReturnsAsync(users);
 
         // Act
-        var result = await _userService.GetAll(false, 1, 10, CancellationToken);
+        var result = await _userService.GetAll(false, 1, 10, null, CancellationToken);
 
         // Assert
         result.Should().HaveCount(2);
@@ -174,7 +176,7 @@ public class UserServiceTests : BaseServiceTest
 
         // Assert
         result.Should().NotBeNull();
-        result.Token.Should().NotBeNullOrEmpty();
+        result.AccessToken.Should().NotBeNullOrEmpty();
         result.User.Should().NotBeNull();
         result.User.Login.Should().Be("john.doe");
     }

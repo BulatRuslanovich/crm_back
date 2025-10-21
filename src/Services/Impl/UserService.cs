@@ -3,8 +3,8 @@ namespace CrmBack.Services.Impl;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
 using System.Security.Cryptography;
+using System.Text;
 using CrmBack.Core.Models.Entities;
 using CrmBack.Core.Models.Payload.Activ;
 using CrmBack.Core.Models.Payload.Plan;
@@ -86,7 +86,7 @@ public class UserService(IUserRepository userRepository,
         var accessToken = GenerateJwtToken(user);
         var refreshToken = await GenerateRefreshTokenAsync(user.usr_id, ct);
         var userPayload = user.ToReadPayload();
-        
+
         return new LoginResponsePayload(accessToken, refreshToken, userPayload);
     }
 
@@ -117,10 +117,10 @@ public class UserService(IUserRepository userRepository,
         var randomBytes = new byte[64];
         using var rng = RandomNumberGenerator.Create();
         rng.GetBytes(randomBytes);
-        
+
         var refreshToken = Convert.ToBase64String(randomBytes);
         var tokenHash = BCrypt.Net.BCrypt.HashPassword(refreshToken);
-        
+
         var refreshTokenEntity = new RefreshTokenEntity(
             token_id: 0,
             usr_id: userId,
@@ -129,7 +129,7 @@ public class UserService(IUserRepository userRepository,
             created_at: DateTime.Now,
             is_revoked: false
         );
-        
+
         await refreshTokenRepository.CreateAsync(refreshTokenEntity, ct);
         return refreshToken;
     }

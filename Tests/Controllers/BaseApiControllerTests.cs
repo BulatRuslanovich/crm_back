@@ -91,7 +91,7 @@ public class BaseApiControllerTests
             new(1, "Org 1", "1234567890", 55.7558, 37.6176, "Address 1"),
             new(2, "Org 2", "0987654321", 55.7558, 37.6176, "Address 2")
         };
-        _mockOrgService.Setup(s => s.GetAll(false, 1, 10, _cancellationToken))
+        _mockOrgService.Setup(s => s.GetAll(false, 1, 10, null, _cancellationToken))
             .ReturnsAsync(orgs);
 
         // Act
@@ -102,7 +102,7 @@ public class BaseApiControllerTests
         var okResult = result.Result as OkObjectResult;
         okResult.Should().NotBeNull();
         okResult!.Value.Should().BeEquivalentTo(orgs);
-        _mockOrgService.Verify(s => s.GetAll(false, 1, 10, _cancellationToken), Times.Once);
+        _mockOrgService.Verify(s => s.GetAll(false, 1, 10, null, _cancellationToken), Times.Once);
     }
 
     [Fact]
@@ -116,7 +116,7 @@ public class BaseApiControllerTests
         var badRequestResult = result.Result as BadRequestObjectResult;
         badRequestResult.Should().NotBeNull();
         badRequestResult!.Value.Should().Be("Invalid pagination parameters");
-        _mockOrgService.Verify(s => s.GetAll(It.IsAny<bool>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+        _mockOrgService.Verify(s => s.GetAll(It.IsAny<bool>(), It.IsAny<int>(), It.IsAny<int>(), null, It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -130,7 +130,7 @@ public class BaseApiControllerTests
         var badRequestResult = result.Result as BadRequestObjectResult;
         badRequestResult.Should().NotBeNull();
         badRequestResult!.Value.Should().Be("Invalid pagination parameters");
-        _mockOrgService.Verify(s => s.GetAll(It.IsAny<bool>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+        _mockOrgService.Verify(s => s.GetAll(It.IsAny<bool>(), It.IsAny<int>(), It.IsAny<int>(), null, It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -144,7 +144,7 @@ public class BaseApiControllerTests
         var badRequestResult = result.Result as BadRequestObjectResult;
         badRequestResult.Should().NotBeNull();
         badRequestResult!.Value.Should().Be("Invalid pagination parameters");
-        _mockOrgService.Verify(s => s.GetAll(It.IsAny<bool>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+        _mockOrgService.Verify(s => s.GetAll(It.IsAny<bool>(), It.IsAny<int>(), It.IsAny<int>(), null, It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

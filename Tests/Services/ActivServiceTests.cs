@@ -67,7 +67,7 @@ public class ActivServiceTests : BaseServiceTest
             .ReturnsAsync(activs);
 
         // Act
-        var result = await _activService.GetAll(false, 1, 10, CancellationToken);
+        var result = await _activService.GetAll(false, 1, 10, null, CancellationToken);
 
         // Assert
         result.Should().HaveCount(2);
