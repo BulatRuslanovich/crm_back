@@ -151,6 +151,7 @@ static void ConfigureApplicationServices(IServiceCollection services)
     services.AddScoped<IActivRepository, ActivRepository>();
     services.AddScoped<IOrgRepository, OrgRepository>();
     services.AddScoped<IPlanRepository, PlanRepository>();
+    services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
     services.AddScoped<IUserService, UserService>();
     services.AddScoped<IActivService, ActivService>();
