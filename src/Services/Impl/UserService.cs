@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Security.Cryptography;
 using CrmBack.Core.Models.Entities;
 using CrmBack.Core.Models.Payload.Activ;
 using CrmBack.Core.Models.Payload.Plan;
@@ -12,7 +13,11 @@ using CrmBack.Core.Utils.Mapper;
 using CrmBack.Repository;
 using Microsoft.IdentityModel.Tokens;
 
-public class UserService(IUserRepository userRepository, IActivRepository activRepository, IPlanRepository planRepository, IConfiguration configuration) : IUserService
+public class UserService(IUserRepository userRepository,
+ IActivRepository activRepository,
+  IPlanRepository planRepository,
+   IRefreshTokenRepository refreshTokenRepository,
+    IConfiguration configuration) : IUserService
 {
     public async Task<ReadUserPayload?> GetById(int id, CancellationToken ct = default)
     {
@@ -20,7 +25,7 @@ public class UserService(IUserRepository userRepository, IActivRepository activR
         return user?.ToReadPayload();
     }
 
-    public async Task<List<ReadUserPayload>> GetAll(bool isDeleted, int page, int pageSize, CancellationToken ct = default)
+    public async Task<List<ReadUserPayload>> GetAll(bool isDeleted, int page, int pageSize, string? searchTerm = null, CancellationToken ct = default)
     {
         var users = await userRepository.GetAllAsync(isDeleted, page, pageSize, ct).ConfigureAwait(false);
 
@@ -40,7 +45,6 @@ public class UserService(IUserRepository userRepository, IActivRepository activR
         var existing = await userRepository.GetByIdAsync(id, ct).ConfigureAwait(false);
         if (existing == null) return false;
 
-        // Если обновляется пароль, проверяем текущий пароль
         if (!string.IsNullOrEmpty(payload.Password))
         {
             if (string.IsNullOrEmpty(payload.CurrentPassword))
@@ -77,9 +81,13 @@ public class UserService(IUserRepository userRepository, IActivRepository activR
         if (!BCrypt.Net.BCrypt.Verify(payload.Password, user.password_hash))
             throw new UnauthorizedAccessException("Invalid login or password.");
 
-        var token = GenerateJwtToken(user);
+        await refreshTokenRepository.RevokeAllUserTokensAsync(user.usr_id, ct);
+
+        var accessToken = GenerateJwtToken(user);
+        var refreshToken = await GenerateRefreshTokenAsync(user.usr_id, ct);
         var userPayload = user.ToReadPayload();
-        return new LoginResponsePayload(token, userPayload);
+        
+        return new LoginResponsePayload(accessToken, refreshToken, userPayload);
     }
 
     private string GenerateJwtToken(UserEntity user)
@@ -102,6 +110,50 @@ public class UserService(IUserRepository userRepository, IActivRepository activR
             signingCredentials: creds);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    private async Task<string> GenerateRefreshTokenAsync(int userId, CancellationToken ct = default)
+    {
+        var randomBytes = new byte[64];
+        using var rng = RandomNumberGenerator.Create();
+        rng.GetBytes(randomBytes);
+        
+        var refreshToken = Convert.ToBase64String(randomBytes);
+        var tokenHash = BCrypt.Net.BCrypt.HashPassword(refreshToken);
+        
+        var refreshTokenEntity = new RefreshTokenEntity(
+            token_id: 0,
+            usr_id: userId,
+            token_hash: tokenHash,
+            expires_at: DateTime.Now.AddDays(30),
+            created_at: DateTime.Now,
+            is_revoked: false
+        );
+        
+        await refreshTokenRepository.CreateAsync(refreshTokenEntity, ct);
+        return refreshToken;
+    }
+
+    public async Task<RefreshTokenPayload> RefreshTokenAsync(string refreshToken, CancellationToken ct = default)
+    {
+        var storedToken = await refreshTokenRepository.FindValidTokenAsync(refreshToken, ct) ?? throw new UnauthorizedAccessException("Invalid refresh token");
+        var user = await userRepository.GetByIdAsync(storedToken.usr_id, ct) ?? throw new UnauthorizedAccessException("User not found");
+
+        await refreshTokenRepository.RevokeTokenAsync(storedToken.token_hash, ct);
+
+        var newAccessToken = GenerateJwtToken(user);
+        var newRefreshToken = await GenerateRefreshTokenAsync(user.usr_id, ct);
+
+        return new RefreshTokenPayload(newRefreshToken, newAccessToken);
+    }
+
+    public async Task RevokeRefreshTokenAsync(string refreshToken, CancellationToken ct = default)
+    {
+        var storedToken = await refreshTokenRepository.FindValidTokenAsync(refreshToken, ct);
+        if (storedToken != null)
+        {
+            await refreshTokenRepository.RevokeTokenAsync(storedToken.token_hash, ct);
+        }
     }
 
     public async Task<List<HumReadActivPayload>> GetActivs(int userId, CancellationToken ct = default)

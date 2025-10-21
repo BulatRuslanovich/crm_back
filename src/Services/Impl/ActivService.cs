@@ -14,7 +14,7 @@ public class ActivService(IActivRepository activRepository) : IActivService
         return activ?.ToReadPayload();
     }
 
-    public async Task<List<ReadActivPayload>> GetAll(bool isDeleted, int page, int pageSize, CancellationToken ct = default)
+    public async Task<List<ReadActivPayload>> GetAll(bool isDeleted, int page, int pageSize, string? searchTerm = null, CancellationToken ct = default)
     {
         var actives = await activRepository.GetAllAsync(isDeleted, page, pageSize, ct).ConfigureAwait(false);
 

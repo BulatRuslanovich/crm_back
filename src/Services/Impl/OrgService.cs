@@ -25,8 +25,15 @@ public class OrgService(IOrgRepository orgRepository) : IOrgService
         return await orgRepository.SoftDeleteAsync(id, ct).ConfigureAwait(false);
     }
 
-    public async Task<List<ReadOrgPayload>> GetAll(bool isDeleted, int page, int pageSize, CancellationToken ct = default)
+    public async Task<List<ReadOrgPayload>> GetAll(bool isDeleted, int page, int pageSize, string? searchTerm = null, CancellationToken ct = default)
     {
+        if (searchTerm != null) {
+            
+
+            var findedOrgs = await orgRepository.FindByAsync("name", searchTerm, exactMatch: false, ct: ct);
+            return [.. findedOrgs.Select(o => o.ToReadPayload())];
+        }
+
         var orgs = await orgRepository.GetAllAsync(isDeleted, page, pageSize, ct).ConfigureAwait(false);
         return [.. orgs.Select(o => o.ToReadPayload())];
     }
