@@ -1,4 +1,6 @@
 using CrmBack.Core.Utils.Health;
+using CrmBack.DAO;
+using CrmBack.DAO.Impl;
 using CrmBack.Data;
 using CrmBack.Services;
 using CrmBack.Services.Impl;
@@ -145,6 +147,11 @@ static void ConfigureDatabase(IServiceCollection services, IConfiguration config
 
 static void ConfigureApplicationServices(IServiceCollection services)
 {
+    services.AddScoped<IUserDAO, UserDAO>();
+    services.AddScoped<IActivDAO, ActivDAO>();
+    services.AddScoped<IOrgDAO, OrgDAO>();
+    services.AddScoped<IPlanDAO, PlanDAO>();
+
     services.AddScoped<IUserService, UserService>();
     services.AddScoped<IActivService, ActivService>();
     services.AddScoped<IOrgService, OrgService>();
@@ -161,7 +168,7 @@ static void ConfigureMiddleware(WebApplication app)
             if (errorFeature != null)
             {
                 context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-                await context.Response.WriteAsJsonAsync(new { error = "An unexpected error occurred" });
+                await context.Response.WriteAsJsonAsync(new { error = "Ops, error ;)" });
                 Log.Error(errorFeature.Error, "Unhandled exception in {Path}", context.Request.Path);
             }
         });
