@@ -5,7 +5,7 @@ using CrmBack.Services;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/org")]
 public class OrgController(IOrgService orgService)
 : BaseApiController<ReadOrgDto, CreateOrgDto, UpdateOrgDto>(orgService)
 { }

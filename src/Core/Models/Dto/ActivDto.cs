@@ -18,16 +18,10 @@ public class CreateActivDto
     public string? Description { get; set; }
 }
 
-public class HumReadActivDto
+public class HumReadActivDto : ReadActivDto
 {
-    public int ActivId { get; set; }
-    public int UsrId { get; set; }
     public string OrgName { get; set; } = string.Empty;
     public string StatusName { get; set; } = string.Empty;
-    public DateTime VisitDate { get; set; }
-    public TimeSpan StartTime { get; set; }
-    public TimeSpan EndTime { get; set; }
-    public string? Description { get; set; }
 };
 
 public class ReadActivDto
@@ -85,7 +79,7 @@ public static class ActivMapper
     {
         UsrId = payload.UsrId,
         OrgId = payload.OrgId,
-        StatusId = 1, // По умолчанию первый статус
+        StatusId = 1,
         VisitDate = payload.VisitDate,
         StartTime = payload.StartTime,
         EndTime = payload.EndTime,

@@ -15,5 +15,7 @@ public interface IUserDAO
 
     public Task<bool> Delete(int id, CancellationToken ct = default);
 
+    public Task<UserWithPoliciesDto?> FetchByLogin(LoginUserDto dto, CancellationToken ct = default);
+
     public Task<List<HumReadActivDto>> FetchHumActivs(int userId, CancellationToken ct = default);
 }

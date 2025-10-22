@@ -60,34 +60,47 @@ static void ConfigureCors(IServiceCollection services)
 
 static void ConfigureAuthentication(WebApplicationBuilder builder)
 {
-    // var jwtKey = builder.Configuration["Jwt:Key"]
-    //     ?? throw new InvalidOperationException("JWT Key is not configured");
-    // var jwtIssuer = builder.Configuration["Jwt:Issuer"]
-    //     ?? throw new InvalidOperationException("JWT Issuer is not configured");
-    // var jwtAudience = builder.Configuration["Jwt:Audience"]
-    //     ?? throw new InvalidOperationException("JWT Audience is not configured");
+    var jwtKey = builder.Configuration["Jwt:Key"]
+        ?? throw new InvalidOperationException("JWT Key is not configured");
+    var jwtIssuer = builder.Configuration["Jwt:Issuer"]
+        ?? throw new InvalidOperationException("JWT Issuer is not configured");
+    var jwtAudience = builder.Configuration["Jwt:Audience"]
+        ?? throw new InvalidOperationException("JWT Audience is not configured");
 
-    // builder.Services
-    //     .AddAuthentication(options =>
-    //     {
-    //         options.DefaultAuthenticateScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
-    //         options.DefaultChallengeScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
-    //     })
-    //     .AddJwtBearer(options =>
-    //     {
-    //         options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
-    //         {
-    //             ValidateIssuer = true,
-    //             ValidateAudience = true,
-    //             ValidateLifetime = true,
-    //             ValidateIssuerSigningKey = true,
-    //             ValidIssuer = jwtIssuer,
-    //             ValidAudience = jwtAudience,
-    //             IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
-    //                 System.Text.Encoding.UTF8.GetBytes(jwtKey)),
-    //             ClockSkew = TimeSpan.FromSeconds(30)
-    //         };
-    //     });
+    builder.Services
+        .AddAuthentication(options =>
+        {
+            options.DefaultAuthenticateScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
+        })
+        .AddJwtBearer(options =>
+        {
+            options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                ValidIssuer = jwtIssuer,
+                ValidAudience = jwtAudience,
+                IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
+                    System.Text.Encoding.UTF8.GetBytes(jwtKey)),
+                ClockSkew = TimeSpan.FromSeconds(30)
+            };
+        });
+
+     builder.Services.AddAuthorization(options =>
+    {
+        options.AddPolicy("Representative", policy => policy.RequireRole("Representative"));
+        options.AddPolicy("Manager", policy => policy.RequireRole("Manager"));
+        options.AddPolicy("Director", policy => policy.RequireRole("Director"));
+        options.AddPolicy("Admin", policy => policy.RequireRole("Admin"));
+        
+        options.AddPolicy("ManagerOrAbove", policy => 
+            policy.RequireRole("Manager", "Director", "Admin"));
+        options.AddPolicy("DirectorOrAbove", policy => 
+            policy.RequireRole("Director", "Admin"));
+    });
 }
 
 static void ConfigureSwagger(IServiceCollection services)
@@ -156,6 +169,8 @@ static void ConfigureApplicationServices(IServiceCollection services)
     services.AddScoped<IActivService, ActivService>();
     services.AddScoped<IOrgService, OrgService>();
     services.AddScoped<IPlanService, PlanService>();
+
+    services.AddScoped<IJwtService, JwtService>();
 }
 
 static void ConfigureMiddleware(WebApplication app)

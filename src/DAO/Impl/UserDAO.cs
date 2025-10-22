@@ -93,4 +93,27 @@ public class UserDAO(AppDBContext context) : IUserDAO
 
         return [.. activs.Select(a => a.ToHumReadDto())];
     }
+
+    public async Task<UserWithPoliciesDto?> FetchByLogin(LoginUserDto dto, CancellationToken ct = default)
+    {
+        var user = await context.User.FirstOrDefaultAsync(u => u.Login == dto.Login && !u.IsDeleted, ct);
+
+        if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Login, user.PasswordHash)) return null;
+
+        var usrPolicies =  await context.UserPolicies
+        .Where(up => up.UsrId == user.UsrId)
+        .Include(up => up.Policy)
+        .Select(up => up.Policy)
+        .Where(p => !p.IsDeleted)
+        .ToListAsync(ct);
+
+        return new UserWithPoliciesDto() {
+            UsrId = user.UsrId,
+            Login = user.Login,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            MiddleName = user.MiddleName,
+            Policies = [.. usrPolicies.Select(p => p.ToReadDto())]
+        };
+    }
 }

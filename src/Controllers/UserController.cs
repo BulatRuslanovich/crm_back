@@ -5,7 +5,7 @@ using CrmBack.Services;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/usr")]
 public class UserController(IUserService userService) : BaseApiController<ReadUserDto, CreateUserDto, UpdateUserDto>(userService)
 {
     [HttpPost("login")]

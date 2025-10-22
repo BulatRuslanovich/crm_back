@@ -5,7 +5,7 @@ using CrmBack.Services;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/plan")]
 public class PlanController(IPlanService planService)
 : BaseApiController<ReadPlanDto, CreatePlanDto, UpdatePlanDto>(planService)
 { }

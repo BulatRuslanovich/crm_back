@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 
 namespace CrmBack.Services.Impl;
-public class UserService(IUserDAO dao) : IUserService
+public class UserService(IUserDAO dao, IJwtService jwt) : IUserService
 {
     public async Task<ReadUserDto?> GetById(int id, CancellationToken ct = default) =>
         await dao.FetchById(id, ct);
@@ -25,23 +25,22 @@ public class UserService(IUserDAO dao) : IUserService
     public async Task<bool> Update(int id, UpdateUserDto dto, CancellationToken ct = default) =>
         await dao.Update(id, dto, ct);
 
-
-
-    public async Task<LoginResponseDto> Login(LoginUserDto Dto, CancellationToken ct = default)
+    public async Task<LoginResponseDto> Login(LoginUserDto dto, CancellationToken ct = default)
     {
-        // var user = await context.User
-        //     .FirstOrDefaultAsync(u => u.Login == Dto.Login && !u.IsDeleted, ct);
+        var user = await dao.FetchByLogin(dto, ct) ?? throw new UnauthorizedAccessException("Invalid login or password");
 
-        // if (user == null || !BCrypt.Net.BCrypt.Verify(Dto.Password, user.PasswordHash))
-        //     throw new UnauthorizedAccessException("Invalid login or password");
+        var accessToken = jwt.GenerateAccessToken(user.UsrId, user.Login, [.. user.Policies.Select(p => p.PolicyName)]);
+        var refreshToken = jwt.GenerateRefreshToken();
 
-        // return new LoginResponseDto(
-        //     UserId: user.UsrId,
-        //     Token: "dummy_token", // Заменить на реальную генерацию JWT
-        //     RefreshToken: "dummy_refresh_token" // Заменить на реальную генерацию
-        // );
+        //TODO: save token in db
 
-        return new LoginResponseDto();
+        return new LoginResponseDto{
+            Token = accessToken,
+            RefreshToken = refreshToken,
+            UserId = user.UsrId,
+            Login = user.Login,
+            Roles = [.. user.Policies.Select(p => p.PolicyName)]
+        };
     }
 
     public async Task<List<HumReadActivDto>> GetActivs(int userId, CancellationToken ct = default) =>

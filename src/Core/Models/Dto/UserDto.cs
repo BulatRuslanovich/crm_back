@@ -45,8 +45,25 @@ public class LoginUserDto
 
 public class LoginResponseDto
 {
-    public string Token { get; set; } = string.Empty;
+   public string Token { get; set; } = string.Empty;
+    public string RefreshToken { get; set; } = string.Empty;
+    public int UserId { get; set; }
+    public string Login { get; set; } = string.Empty;
+    public List<string> Roles { get; set; } = [];
 }
+
+public class UserWithPoliciesDto : ReadUserDto
+{
+    public List<PolicyDto> Policies { get; set; } = [];
+}
+
+public class PolicyDto
+{
+    public int PolicyId { get; set; }
+    public string PolicyName { get; set; } = string.Empty;
+}
+
+
 
 public static class UserMapper
 {
@@ -66,5 +83,10 @@ public static class UserMapper
         MiddleName = dto.MiddleName,
         Login = dto.Login,
         PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password)
+    };
+
+    public static PolicyDto ToReadDto(this PolicyEntity entity) => new() {
+        PolicyId = entity.PolicyId,
+        PolicyName = entity.PolicyName
     };
 }
