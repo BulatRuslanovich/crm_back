@@ -1,11 +1,8 @@
-using System.Data;
 using CrmBack.Core.Utils.Health;
-using CrmBack.Repository;
-using CrmBack.Repository.Impl;
+using CrmBack.Data;
 using CrmBack.Services;
 using CrmBack.Services.Impl;
-using Dapper;
-using Npgsql;
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -24,7 +21,6 @@ ConfigureApplicationServices(builder.Services);
 
 var app = builder.Build();
 
-DefaultTypeMap.MatchNamesWithUnderscores = true;
 
 ConfigureMiddleware(app);
 
@@ -39,9 +35,9 @@ static void ConfigureLogging(WebApplicationBuilder builder)
                 theme: Serilog.Sinks.SystemConsole.Themes.AnsiConsoleTheme.Code,
                 outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {LogType:l} {Message:lj}{NewLine}{Exception}")
             .WriteTo.Debug()
-            .MinimumLevel.Warning()
-            .MinimumLevel.Override("CrmBack.Data", Serilog.Events.LogEventLevel.Debug)
-            .MinimumLevel.Override("CrmBack.Api.Middleware", Serilog.Events.LogEventLevel.Debug)
+            .MinimumLevel.Information()
+            .MinimumLevel.Override("CrmBack.Data", Serilog.Events.LogEventLevel.Information)
+            .MinimumLevel.Override("CrmBack.Api.Middleware", Serilog.Events.LogEventLevel.Information)
             .MinimumLevel.Override("Microsoft.AspNetCore", Serilog.Events.LogEventLevel.Information);
     });
 }
@@ -52,7 +48,7 @@ static void ConfigureCors(IServiceCollection services)
     {
         options.AddPolicy("AllowSwagger", policy =>
         {
-            policy.WithOrigins("http://localhost:5555", "https://localhost:5556", "http://localhost:3000")
+            policy.WithOrigins("http://localhost:3000")
                   .AllowAnyMethod()
                   .AllowAnyHeader()
                   .AllowCredentials();
@@ -62,34 +58,34 @@ static void ConfigureCors(IServiceCollection services)
 
 static void ConfigureAuthentication(WebApplicationBuilder builder)
 {
-    var jwtKey = builder.Configuration["Jwt:Key"]
-        ?? throw new InvalidOperationException("JWT Key is not configured");
-    var jwtIssuer = builder.Configuration["Jwt:Issuer"]
-        ?? throw new InvalidOperationException("JWT Issuer is not configured");
-    var jwtAudience = builder.Configuration["Jwt:Audience"]
-        ?? throw new InvalidOperationException("JWT Audience is not configured");
+    // var jwtKey = builder.Configuration["Jwt:Key"]
+    //     ?? throw new InvalidOperationException("JWT Key is not configured");
+    // var jwtIssuer = builder.Configuration["Jwt:Issuer"]
+    //     ?? throw new InvalidOperationException("JWT Issuer is not configured");
+    // var jwtAudience = builder.Configuration["Jwt:Audience"]
+    //     ?? throw new InvalidOperationException("JWT Audience is not configured");
 
-    builder.Services
-        .AddAuthentication(options =>
-        {
-            options.DefaultAuthenticateScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
-            options.DefaultChallengeScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
-        })
-        .AddJwtBearer(options =>
-        {
-            options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
-            {
-                ValidateIssuer = true,
-                ValidateAudience = true,
-                ValidateLifetime = true,
-                ValidateIssuerSigningKey = true,
-                ValidIssuer = jwtIssuer,
-                ValidAudience = jwtAudience,
-                IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
-                    System.Text.Encoding.UTF8.GetBytes(jwtKey)),
-                ClockSkew = TimeSpan.FromSeconds(30)
-            };
-        });
+    // builder.Services
+    //     .AddAuthentication(options =>
+    //     {
+    //         options.DefaultAuthenticateScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
+    //         options.DefaultChallengeScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
+    //     })
+    //     .AddJwtBearer(options =>
+    //     {
+    //         options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+    //         {
+    //             ValidateIssuer = true,
+    //             ValidateAudience = true,
+    //             ValidateLifetime = true,
+    //             ValidateIssuerSigningKey = true,
+    //             ValidIssuer = jwtIssuer,
+    //             ValidAudience = jwtAudience,
+    //             IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
+    //                 System.Text.Encoding.UTF8.GetBytes(jwtKey)),
+    //             ClockSkew = TimeSpan.FromSeconds(30)
+    //         };
+    //     });
 }
 
 static void ConfigureSwagger(IServiceCollection services)
@@ -132,11 +128,13 @@ static void ConfigureSwagger(IServiceCollection services)
 
 static void ConfigureDatabase(IServiceCollection services, IConfiguration configuration)
 {
-    services.AddScoped<IDbConnection>(sp =>
+    services.AddDbContext<AppDBContext>(op =>
     {
-        var connectionString = configuration.GetConnectionString("DbConnectionString")
-            ?? throw new InvalidOperationException("Database connection string is not configured");
-        return new NpgsqlConnection(connectionString);
+        op.UseNpgsql(configuration.GetConnectionString("DbConnectionString"));
+
+        // Логирование SQL запросов
+        op.EnableSensitiveDataLogging();
+        op.EnableDetailedErrors();
     });
 
     services.AddStackExchangeRedisCache(options =>
@@ -147,12 +145,6 @@ static void ConfigureDatabase(IServiceCollection services, IConfiguration config
 
 static void ConfigureApplicationServices(IServiceCollection services)
 {
-    services.AddScoped<IUserRepository, UserRepository>();
-    services.AddScoped<IActivRepository, ActivRepository>();
-    services.AddScoped<IOrgRepository, OrgRepository>();
-    services.AddScoped<IPlanRepository, PlanRepository>();
-    services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
-
     services.AddScoped<IUserService, UserService>();
     services.AddScoped<IActivService, ActivService>();
     services.AddScoped<IOrgService, OrgService>();

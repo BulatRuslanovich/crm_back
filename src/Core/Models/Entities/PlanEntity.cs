@@ -1,13 +1,44 @@
-using CrmBack.Core.Utils.Attributes;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace CrmBack.Core.Models.Entities;
 
 [Table("plan")]
-public record PlanEntity(
-    [Column(IsKey = true, IsUpdatable = false)] int plan_id,
-    [Column] int usr_id,
-    [Column] int org_id,
-    [Column] DateTime start_date,
-    [Column] DateTime end_date,
-    [Column(IsInsertable = false, IsUpdatable = false)] bool is_deleted
-);
+public class PlanEntity
+{
+    [Key]
+    [Column("plan_id")]
+    public int PlanId { get; set; }
+
+    [Column("usr_id")]
+    [Required]
+    public int UsrId { get; set; }
+
+    [Column("org_id")]
+    [Required]
+    public int OrgId { get; set; }
+
+    [Column("start_date", TypeName = "date")]
+    [Required]
+    public DateTime StartDate { get; set; }
+
+    [Column("end_date", TypeName = "date")]
+    [Required]
+    public DateTime EndDate { get; set; }
+
+    [Column("created_at")]
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    [Column("updated_at")]
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    [Column("is_deleted")]
+    public bool IsDeleted { get; set; } = false;
+
+    // Navigation properties
+    [ForeignKey("UsrId")]
+    public virtual UserEntity User { get; set; } = null!;
+
+    [ForeignKey("OrgId")]
+    public virtual OrgEntity Organization { get; set; } = null!;
+}

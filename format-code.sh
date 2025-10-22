@@ -19,9 +19,6 @@ dotnet build --verbosity quiet
 echo "✨ Форматирование кода..."
 dotnet format src/CrmBack.csproj --verbosity quiet
 
-echo "🎯 Форматирование тестов..."
-dotnet format Tests/Tests.csproj --verbosity quiet
-
 echo "✅ Форматирование завершено!"
 echo ""
 echo "💡 Полезные команды:"

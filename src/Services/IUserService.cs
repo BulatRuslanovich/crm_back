@@ -1,15 +1,11 @@
 namespace CrmBack.Services;
 
 using System.Threading;
-using CrmBack.Core.Models.Payload.Activ;
-using CrmBack.Core.Models.Payload.Plan;
-using CrmBack.Core.Models.Payload.User;
+using CrmBack.Core.Models.Dto;
 
-public interface IUserService : IService<ReadUserPayload, CreateUserPayload, UpdateUserPayload>
+
+public interface IUserService : IService<ReadUserDto, CreateUserDto, UpdateUserDto>
 {
-    public Task<LoginResponsePayload> Login(LoginUserPayload payload, CancellationToken ct = default);
-    public Task<RefreshTokenPayload> RefreshTokenAsync(string refreshToken, CancellationToken ct = default);
-    public Task RevokeRefreshTokenAsync(string refreshToken, CancellationToken ct = default);
-    public Task<List<HumReadActivPayload>> GetActivs(int userId, CancellationToken ct = default);
-    public Task<List<ReadPlanPayload>> GetPlans(int userId, CancellationToken ct = default);
+    public Task<LoginResponseDto> Login(LoginUserDto Dto, CancellationToken ct = default);
+    public Task<List<HumReadActivDto>> GetActivs(int userId, CancellationToken ct = default);
 }

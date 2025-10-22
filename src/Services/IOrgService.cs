@@ -1,5 +1,5 @@
+using CrmBack.Core.Models.Dto;
+
 namespace CrmBack.Services;
 
-using CrmBack.Core.Models.Payload.Org;
-
-public interface IOrgService : IService<ReadOrgPayload, CreateOrgPayload, UpdateOrgPayload> { }
+public interface IOrgService : IService<ReadOrgDto, CreateOrgDto, UpdateOrgDto> { }

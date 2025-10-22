@@ -1,11 +1,11 @@
 namespace CrmBack.Controllers;
 
-using CrmBack.Core.Models.Payload.Plan;
+using CrmBack.Core.Models.Dto;
 using CrmBack.Services;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
-[Route("api/plan")]
+[Route("api/[controller]")]
 public class PlanController(IPlanService planService)
-: BaseApiController<ReadPlanPayload, CreatePlanPayload, UpdatePlanPayload>(planService)
+: BaseApiController<ReadPlanDto, CreatePlanDto, UpdatePlanDto>(planService)
 { }

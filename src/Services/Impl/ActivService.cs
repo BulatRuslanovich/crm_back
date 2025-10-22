@@ -1,68 +1,85 @@
 namespace CrmBack.Services.Impl;
 
-using CrmBack.Core.Models.Entities;
-using CrmBack.Core.Models.Payload.Activ;
-using CrmBack.Core.Models.Status;
-using CrmBack.Core.Utils.Mapper;
-using CrmBack.Repository;
+using CrmBack.Core.Models.Dto;
+using CrmBack.Data;
+using Microsoft.EntityFrameworkCore;
 
-public class ActivService(IActivRepository activRepository) : IActivService
+public class ActivService(AppDBContext context) : IActivService
 {
-    public async Task<ReadActivPayload?> GetById(int id, CancellationToken ct = default)
+    public async Task<ReadActivDto?> GetById(int id, CancellationToken ct = default)
     {
-        var activ = await activRepository.GetByIdAsync(id, ct).ConfigureAwait(false);
-        return activ?.ToReadPayload();
+        var res = await context.Activ
+            .FirstOrDefaultAsync(a => a.ActivId == id && !a.IsDeleted, ct);
+        return res?.ToReadDto();
     }
 
-    public async Task<List<ReadActivPayload>> GetAll(bool isDeleted, int page, int pageSize, string? searchTerm = null, CancellationToken ct = default)
+    public async Task<List<ReadActivDto>> GetAll(bool isDeleted, int page, int pageSize, string? searchTerm = null, CancellationToken ct = default)
     {
-        var actives = await activRepository.GetAllAsync(isDeleted, page, pageSize, ct).ConfigureAwait(false);
+        var query = context.Activ.AsQueryable();
 
-        return [.. actives.Select(u => u.ToReadPayload())];
+        if (!isDeleted)
+        {
+            query.Where(a => !a.IsDeleted);
+        }
+
+        var res = await query
+            .OrderByDescending(a => a.CreatedAt) // Добавляем OrderBy перед Skip/Take
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+
+        return [.. res.Select(r => r.ToReadDto())];
     }
 
-    public async Task<ReadActivPayload?> Create(CreateActivPayload payload, CancellationToken ct = default)
+    public async Task<ReadActivDto?> Create(CreateActivDto Dto, CancellationToken ct = default)
     {
-        var activId = await activRepository.CreateAsync(payload.ToEntity(), ct).ConfigureAwait(false);
-        var activDto = await activRepository.GetByIdAsync(activId, ct).ConfigureAwait(false);
-        return activDto?.ToReadPayload();
+        var entity = Dto.ToEntity();
+        context.Activ.Add(entity);
+        await context.SaveChangesAsync(ct);
+        return entity.ToReadDto();
     }
 
-    public async Task<bool> Update(int id, UpdateActivPayload payload, CancellationToken ct = default)
+    public async Task<bool> Update(int id, UpdateActivDto Dto, CancellationToken ct = default)
     {
-        var existing = await activRepository.GetByIdAsync(id, ct).ConfigureAwait(false);
-        if (existing == null) return false;
+        var existing = await context.Activ.FindAsync([id], ct);
+        if (existing == null || existing.IsDeleted) return false;
 
-        var newEntity = new ActivEntity(
-            activ_id: id,
-            usr_id: existing.usr_id,
-            org_id: existing.org_id,
-            status_id: payload.StatusId ?? existing.status_id,
-            visit_date: payload.VisitDate ?? existing.visit_date,
-            start_time: payload.StartTime ?? existing.start_time,
-            end_time: payload.EndTime ?? existing.end_time,
-            description: payload.Description ?? existing.description,
-            is_deleted: existing.is_deleted
-        );
+        if (Dto.StatusId.HasValue)
+            existing.StatusId = Dto.StatusId.Value;
 
-        return await activRepository.UpdateAsync(newEntity, ct).ConfigureAwait(false);
+        if (Dto.VisitDate.HasValue)
+            existing.VisitDate = Dto.VisitDate.Value;
+
+        if (Dto.StartTime.HasValue)
+            existing.StartTime = Dto.StartTime.Value;
+
+        if (Dto.EndTime.HasValue)
+            existing.EndTime = Dto.EndTime.Value;
+
+        if (Dto.Description != null)
+            existing.Description = Dto.Description;
+
+        await context.SaveChangesAsync(ct);
+        return true;
     }
 
     public async Task<bool> Delete(int id, CancellationToken ct = default)
     {
-        return await activRepository.SoftDeleteAsync(id, ct).ConfigureAwait(false);
+        var entity = await context.Activ.FindAsync([id], ct);
+        if (entity == null || entity.IsDeleted) return false;
+
+        entity.IsDeleted = true;
+        await context.SaveChangesAsync(ct);
+        return true;
     }
 
-    public async Task<List<ReadActivPayload>> GetByUserId(int userId, CancellationToken ct = default)
+    public async Task<List<ReadActivDto>> GetByUserId(int userId, CancellationToken ct = default)
     {
-        var filters = new Dictionary<string, object> { { "usr_id", userId } };
-        var activs = await activRepository.FindAllAsync(filters: filters, ct: ct);
-        return [.. activs.Select(a => a.ToReadPayload())];
-    }
+        var res = await context.Activ
+            .Where(a => a.UsrId == userId && !a.IsDeleted)
+            .OrderByDescending(a => a.VisitDate)
+            .ToListAsync(ct);
 
-    public async Task<List<ReadStatusPayload>> GetAllStatus(CancellationToken ct = default)
-    {
-        var statuses = await activRepository.GetAllStatusAsync(ct).ConfigureAwait(false);
-        return [.. statuses.Select(s => s.ToReadPayload())];
+        return [.. res.Select(a => a.ToReadDto())];
     }
 }

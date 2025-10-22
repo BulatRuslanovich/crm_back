@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 public abstract class BaseApiController<RPayload, CPayload, UPayload>(IService<RPayload, CPayload, UPayload> service) : ControllerBase
 {
-    [Authorize]
+    // [Authorize]
     [HttpGet("{id:int}")]
     public async Task<ActionResult<RPayload>> GetById(int id)
     {
@@ -17,7 +17,7 @@ public abstract class BaseApiController<RPayload, CPayload, UPayload>(IService<R
         return Ok(data);
     }
 
-    [Authorize]
+    // [Authorize]
     [HttpGet]
     public async Task<ActionResult<List<RPayload>>> GetAll([FromQuery] bool isDeleted = false, [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string? searchTerm = null)
     {
@@ -25,7 +25,7 @@ public abstract class BaseApiController<RPayload, CPayload, UPayload>(IService<R
         return Ok(await service.GetAll(isDeleted, page, pageSize, searchTerm, HttpContext.RequestAborted));
     }
 
-    [Authorize]
+    // [Authorize]
     [HttpPost]
     public async Task<ActionResult<RPayload>> Create([FromBody] CPayload payload)
     {
@@ -43,7 +43,7 @@ public abstract class BaseApiController<RPayload, CPayload, UPayload>(IService<R
         return CreatedAtAction(nameof(GetById), new { id }, data);
     }
 
-    [Authorize]
+    // [Authorize]
     [HttpPut("{id:int}")]
     public async Task<ActionResult<bool>> Update(int id, [FromBody] UPayload payload)
     {
@@ -61,7 +61,7 @@ public abstract class BaseApiController<RPayload, CPayload, UPayload>(IService<R
         }
     }
 
-    [Authorize]
+    // [Authorize]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)
     {

@@ -1,12 +1,12 @@
 
-using CrmBack.Core.Models.Payload.Activ;
-using CrmBack.Core.Models.Status;
+using CrmBack.Core.Models.Dto;
 using CrmBack.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CrmBack.Controllers;
 
 [ApiController]
-[Route("api/activ")]
+[Route("api/[controller]")]
 public class ActivController(IActivService activService)
-: BaseApiController<ReadActivPayload, CreateActivPayload, UpdateActivPayload>(activService) { }
+: BaseApiController<ReadActivDto, CreateActivDto, UpdateActivDto>(activService)
+{ }

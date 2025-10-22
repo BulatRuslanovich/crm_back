@@ -1,11 +1,11 @@
 namespace CrmBack.Controllers;
 
-using CrmBack.Core.Models.Payload.Org;
+using CrmBack.Core.Models.Dto;
 using CrmBack.Services;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
-[Route("api/org")]
+[Route("api/[controller]")]
 public class OrgController(IOrgService orgService)
-: BaseApiController<ReadOrgPayload, CreateOrgPayload, UpdateOrgPayload>(orgService)
+: BaseApiController<ReadOrgDto, CreateOrgDto, UpdateOrgDto>(orgService)
 { }

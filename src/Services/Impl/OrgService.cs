@@ -1,60 +1,85 @@
 namespace CrmBack.Services.Impl;
 
-using CrmBack.Core.Models.Entities;
-using CrmBack.Core.Models.Payload.Org;
-using CrmBack.Core.Utils.Mapper;
-using CrmBack.Repository;
+using CrmBack.Core.Models.Dto;
+using CrmBack.Data;
+using Microsoft.EntityFrameworkCore;
 
-public class OrgService(IOrgRepository orgRepository) : IOrgService
+public class OrgService(AppDBContext context) : IOrgService
 {
-    public async Task<ReadOrgPayload?> GetById(int id, CancellationToken ct = default)
+    public async Task<ReadOrgDto?> GetById(int id, CancellationToken ct = default)
     {
-        var org = await orgRepository.GetByIdAsync(id, ct).ConfigureAwait(false);
-        return org?.ToReadPayload();
+        var org = await context.Org
+            .FirstOrDefaultAsync(o => o.OrgId == id && !o.IsDeleted, ct);
+
+        return org?.ToReadDto();
     }
 
-    public async Task<ReadOrgPayload?> Create(CreateOrgPayload payload, CancellationToken ct = default)
+    public async Task<List<ReadOrgDto>> GetAll(bool isDeleted, int page, int pageSize, string? searchTerm = null, CancellationToken ct = default)
     {
-        var orgId = await orgRepository.CreateAsync(payload.ToEntity(), ct).ConfigureAwait(false);
-        var org = await orgRepository.GetByIdAsync(orgId, ct).ConfigureAwait(false);
-        return org?.ToReadPayload();
+        var query = context.Org.AsQueryable();
+
+        if (!isDeleted)
+        {
+            query.Where(o => !o.IsDeleted);
+        }
+
+        if (!string.IsNullOrEmpty(searchTerm))
+        {
+            query = query.Where(o =>
+                o.Name.Contains(searchTerm) ||
+                o.Inn!.Contains(searchTerm) ||
+                o.Address!.Contains(searchTerm));
+        }
+
+        var orgs = await query
+            .OrderBy(o => o.Name)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+
+        return [.. orgs.Select(o => o.ToReadDto())];
+    }
+
+    public async Task<ReadOrgDto?> Create(CreateOrgDto Dto, CancellationToken ct = default)
+    {
+        var entity = Dto.ToEntity();
+        context.Org.Add(entity);
+        await context.SaveChangesAsync(ct);
+
+        return entity.ToReadDto();
+    }
+
+    public async Task<bool> Update(int id, UpdateOrgDto Dto, CancellationToken ct = default)
+    {
+        var existing = await context.Org.FindAsync([id], ct);
+        if (existing == null || existing.IsDeleted) return false;
+
+        if (!string.IsNullOrEmpty(Dto.Name))
+            existing.Name = Dto.Name;
+
+        if (!string.IsNullOrEmpty(Dto.INN))
+            existing.Inn = Dto.INN;
+
+        if (Dto.Latitude.HasValue)
+            existing.Latitude = Dto.Latitude.Value;
+
+        if (Dto.Longitude.HasValue)
+            existing.Longitude = Dto.Longitude.Value;
+
+        if (!string.IsNullOrEmpty(Dto.Address))
+            existing.Address = Dto.Address;
+
+        await context.SaveChangesAsync(ct);
+        return true;
     }
 
     public async Task<bool> Delete(int id, CancellationToken ct = default)
     {
-        return await orgRepository.SoftDeleteAsync(id, ct).ConfigureAwait(false);
-    }
+        var entity = await context.Org.FindAsync([id], ct);
+        if (entity == null || entity.IsDeleted) return false;
 
-    public async Task<List<ReadOrgPayload>> GetAll(bool isDeleted, int page, int pageSize, string? searchTerm = null, CancellationToken ct = default)
-    {
-        if (searchTerm != null)
-        {
-
-
-            var findedOrgs = await orgRepository.FindByAsync("name", searchTerm, exactMatch: false, ct: ct);
-            return [.. findedOrgs.Select(o => o.ToReadPayload())];
-        }
-
-        var orgs = await orgRepository.GetAllAsync(isDeleted, page, pageSize, ct).ConfigureAwait(false);
-        return [.. orgs.Select(o => o.ToReadPayload())];
-    }
-
-    public async Task<bool> Update(int id, UpdateOrgPayload payload, CancellationToken ct = default)
-    {
-        var existing = await orgRepository.GetByIdAsync(id, ct).ConfigureAwait(false);
-
-        if (existing == null) return false;
-
-        var newEntity = new OrgEntity(
-            org_id: id,
-            name: payload.Name ?? existing.name,
-            inn: payload.INN ?? existing.inn,
-            latitude: payload.Latitude ?? existing.latitude,
-            longitude: payload.Longitude ?? existing.longitude,
-            address: payload.Address ?? existing.address,
-            is_deleted: existing.is_deleted
-        );
-
-        return await orgRepository.UpdateAsync(newEntity, ct).ConfigureAwait(false);
+        entity.IsDeleted = true;
+        await context.SaveChangesAsync(ct);
+        return true;
     }
 }

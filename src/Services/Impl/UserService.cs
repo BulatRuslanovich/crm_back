@@ -1,171 +1,124 @@
+using BCrypt.Net;
+using CrmBack.Core.Models.Dto;
+using CrmBack.Data;
+using Microsoft.EntityFrameworkCore;
+
+
 namespace CrmBack.Services.Impl;
-
-using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
-using CrmBack.Core.Models.Entities;
-using CrmBack.Core.Models.Payload.Activ;
-using CrmBack.Core.Models.Payload.Plan;
-using CrmBack.Core.Models.Payload.User;
-using CrmBack.Core.Utils.Mapper;
-using CrmBack.Repository;
-using Microsoft.IdentityModel.Tokens;
-
-public class UserService(IUserRepository userRepository,
- IActivRepository activRepository,
-  IPlanRepository planRepository,
-   IRefreshTokenRepository refreshTokenRepository,
-    IConfiguration configuration) : IUserService
+public class UserService(AppDBContext context) : IUserService
 {
-    public async Task<ReadUserPayload?> GetById(int id, CancellationToken ct = default)
+    public async Task<ReadUserDto?> GetById(int id, CancellationToken ct = default)
     {
-        var user = await userRepository.GetByIdAsync(id, ct).ConfigureAwait(false);
-        return user?.ToReadPayload();
+        var user = await context.User
+            .FirstOrDefaultAsync(u => u.UsrId == id && !u.IsDeleted, ct);
+
+        return user?.ToReadDto();
     }
 
-    public async Task<List<ReadUserPayload>> GetAll(bool isDeleted, int page, int pageSize, string? searchTerm = null, CancellationToken ct = default)
+    public async Task<List<ReadUserDto>> GetAll(bool isDeleted, int page, int pageSize, string? searchTerm = null, CancellationToken ct = default)
     {
-        var users = await userRepository.GetAllAsync(isDeleted, page, pageSize, ct).ConfigureAwait(false);
+        var query = context.User.AsQueryable();
 
-        return [.. users.Select(u => u.ToReadPayload())];
-    }
-
-    //! there's no point in checking the login's uniqueness, as the field is unique in the database
-    public async Task<ReadUserPayload?> Create(CreateUserPayload payload, CancellationToken ct = default)
-    {
-        var userId = await userRepository.CreateAsync(payload.ToEntity(), ct).ConfigureAwait(false);
-        var userDto = await userRepository.GetByIdAsync(userId, ct).ConfigureAwait(false);
-        return userDto?.ToReadPayload();
-    }
-
-    public async Task<bool> Update(int id, UpdateUserPayload payload, CancellationToken ct = default)
-    {
-        var existing = await userRepository.GetByIdAsync(id, ct).ConfigureAwait(false);
-        if (existing == null) return false;
-
-        if (!string.IsNullOrEmpty(payload.Password))
+        if (!isDeleted)
         {
-            if (string.IsNullOrEmpty(payload.CurrentPassword))
-            {
-                throw new UnauthorizedAccessException("Текущий пароль обязателен для смены пароля");
-            }
-
-            if (!BCrypt.Net.BCrypt.Verify(payload.CurrentPassword, existing.password_hash))
-            {
-                throw new UnauthorizedAccessException("Неверный текущий пароль");
-            }
+            query.Where(o => !o.IsDeleted);
         }
 
-        var newEntity = new UserEntity(
-            usr_id: id,
-            first_name: payload.FirstName ?? existing.first_name,
-            last_name: payload.LastName ?? existing.last_name,
-            middle_name: payload.MiddleName ?? existing.middle_name,
-            login: payload.Login ?? existing.login,
-            password_hash: string.IsNullOrEmpty(payload.Password) ? existing.password_hash : BCrypt.Net.BCrypt.HashPassword(payload.Password),
-            is_deleted: existing.is_deleted
-        );
-
-        return await userRepository.UpdateAsync(newEntity, ct).ConfigureAwait(false);
-    }
-
-    public async Task<bool> Delete(int id, CancellationToken ct = default) =>
-        await userRepository.SoftDeleteAsync(id, ct).ConfigureAwait(false);
-
-    public async Task<LoginResponsePayload> Login(LoginUserPayload payload, CancellationToken ct = default)
-    {
-        var user = (await userRepository.FindByAsync("login", payload.Login, ct: ct)).FirstOrDefault()
-            ?? throw new UnauthorizedAccessException("Invalid login or password.");
-        if (!BCrypt.Net.BCrypt.Verify(payload.Password, user.password_hash))
-            throw new UnauthorizedAccessException("Invalid login or password.");
-
-        await refreshTokenRepository.RevokeAllUserTokensAsync(user.usr_id, ct);
-
-        var accessToken = GenerateJwtToken(user);
-        var refreshToken = await GenerateRefreshTokenAsync(user.usr_id, ct);
-        var userPayload = user.ToReadPayload();
-
-        return new LoginResponsePayload(accessToken, refreshToken, userPayload);
-    }
-
-    private string GenerateJwtToken(UserEntity user)
-    {
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"] ?? "lol"));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-        var claims = new[]
+        if (!string.IsNullOrEmpty(searchTerm))
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.usr_id.ToString()),
-            new Claim(JwtRegisteredClaimNames.UniqueName, user.login),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-        };
-
-        var token = new JwtSecurityToken(
-            issuer: configuration["Jwt:Issuer"],
-            audience: configuration["Jwt:Audience"],
-            claims: claims,
-            expires: DateTime.Now.AddHours(1),
-            signingCredentials: creds);
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
-    }
-
-    private async Task<string> GenerateRefreshTokenAsync(int userId, CancellationToken ct = default)
-    {
-        var randomBytes = new byte[64];
-        using var rng = RandomNumberGenerator.Create();
-        rng.GetBytes(randomBytes);
-
-        var refreshToken = Convert.ToBase64String(randomBytes);
-        var tokenHash = BCrypt.Net.BCrypt.HashPassword(refreshToken);
-
-        var refreshTokenEntity = new RefreshTokenEntity(
-            token_id: 0,
-            usr_id: userId,
-            token_hash: tokenHash,
-            expires_at: DateTime.Now.AddDays(30),
-            created_at: DateTime.Now,
-            is_revoked: false
-        );
-
-        await refreshTokenRepository.CreateAsync(refreshTokenEntity, ct);
-        return refreshToken;
-    }
-
-    public async Task<RefreshTokenPayload> RefreshTokenAsync(string refreshToken, CancellationToken ct = default)
-    {
-        var storedToken = await refreshTokenRepository.FindValidTokenAsync(refreshToken, ct) ?? throw new UnauthorizedAccessException("Invalid refresh token");
-        var user = await userRepository.GetByIdAsync(storedToken.usr_id, ct) ?? throw new UnauthorizedAccessException("User not found");
-
-        await refreshTokenRepository.RevokeTokenAsync(storedToken.token_hash, ct);
-
-        var newAccessToken = GenerateJwtToken(user);
-        var newRefreshToken = await GenerateRefreshTokenAsync(user.usr_id, ct);
-
-        return new RefreshTokenPayload(newRefreshToken, newAccessToken);
-    }
-
-    public async Task RevokeRefreshTokenAsync(string refreshToken, CancellationToken ct = default)
-    {
-        var storedToken = await refreshTokenRepository.FindValidTokenAsync(refreshToken, ct);
-        if (storedToken != null)
-        {
-            await refreshTokenRepository.RevokeTokenAsync(storedToken.token_hash, ct);
+            query = query.Where(u =>
+                u.FirstName!.Contains(searchTerm) ||
+                u.LastName!.Contains(searchTerm) ||
+                u.Login.Contains(searchTerm));
         }
+
+        var users = await query
+            .OrderBy(u => u.LastName)
+            .ThenBy(u => u.FirstName)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+
+        return [.. users.Select(u => u.ToReadDto())];
     }
 
-    public async Task<List<HumReadActivPayload>> GetActivs(int userId, CancellationToken ct = default)
+    public async Task<ReadUserDto?> Create(CreateUserDto dto, CancellationToken ct = default)
     {
-        var humActivs = await activRepository.GetAllHumActivsByUserIdAsync(userId, ct);
+        var entity = dto.ToEntity();
+        context.User.Add(entity);
+        await context.SaveChangesAsync(ct);
 
-        return humActivs.ToList();
+        return entity.ToReadDto();
     }
 
-    public async Task<List<ReadPlanPayload>> GetPlans(int userId, CancellationToken ct = default)
+    public async Task<bool> Update(int id, UpdateUserDto dto, CancellationToken ct = default)
     {
-        var plans = await planRepository.FindByAsync("usr_id", userId, ct: ct);
-        return [.. plans.Select(p => p.ToReadPayload())];
+        var existing = await context.User.FindAsync([id], ct);
+        if (existing == null || existing.IsDeleted) return false;
+
+        if (!string.IsNullOrEmpty(dto.Password) && !string.IsNullOrEmpty(dto.CurrentPassword))
+        {
+            if (!BCrypt.Net.BCrypt.Verify(dto.CurrentPassword, existing.PasswordHash))
+                throw new UnauthorizedAccessException("Current password is incorrect");
+            else
+                existing.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
+        }
+
+        existing.FirstName = dto.FirstName ?? existing.FirstName;
+        existing.LastName = dto.LastName ?? existing.LastName;
+        existing.MiddleName = dto.MiddleName ?? existing.MiddleName;
+        existing.Login = dto.Login ?? existing.Login;
+
+        await context.SaveChangesAsync(ct);
+        return true;
+    }
+
+    public async Task<bool> Delete(int id, CancellationToken ct = default)
+    {
+        var entity = await context.User.FindAsync([id], ct);
+        if (entity == null || entity.IsDeleted) return false;
+
+        entity.IsDeleted = true;
+        await context.SaveChangesAsync(ct);
+        return true;
+    }
+
+    public async Task<LoginResponseDto> Login(LoginUserDto Dto, CancellationToken ct = default)
+    {
+        var user = await context.User
+            .FirstOrDefaultAsync(u => u.Login == Dto.Login && !u.IsDeleted, ct);
+
+        if (user == null || !BCrypt.Net.BCrypt.Verify(Dto.Password, user.PasswordHash))
+            throw new UnauthorizedAccessException("Invalid login or password");
+
+        // return new LoginResponseDto(
+        //     UserId: user.UsrId,
+        //     Token: "dummy_token", // Заменить на реальную генерацию JWT
+        //     RefreshToken: "dummy_refresh_token" // Заменить на реальную генерацию
+        // );
+
+        return new LoginResponseDto();
+    }
+
+    public async Task<List<HumReadActivDto>> GetActivs(int userId, CancellationToken ct = default)
+    {
+        var activs = await context.Activ
+            .Where(a => a.UsrId == userId && !a.IsDeleted)
+            .Include(a => a.Organization)
+            .Include(a => a.Status)
+            .OrderByDescending(a => a.VisitDate)
+            .ToListAsync(ct);
+
+        return [.. activs.Select(a => a.ToHumReadDto())];
+    }
+
+    public async Task<List<ReadPlanDto>> GetPlans(int userId, CancellationToken ct = default)
+    {
+        var plans = await context.Plan
+            .Where(p => p.UsrId == userId && !p.IsDeleted)
+            .OrderByDescending(p => p.StartDate)
+            .ToListAsync(ct);
+
+        return [.. plans.Select(p => p.ToReadDto())];
     }
 }
