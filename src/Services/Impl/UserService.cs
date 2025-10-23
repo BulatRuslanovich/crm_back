@@ -33,7 +33,7 @@ public class UserService(IUserDAO dao, IJwtService jwt, IRefreshTokenDAO refDao,
 
         var roles = user.Policies.Select(p => p.PolicyName).ToList();
         var accessToken = jwt.GenerateAccessToken(user.UsrId, user.Login, roles);
-        var refreshToken = jwt.GenerateRefreshToken();
+        var refreshToken = jwt.GenerateRefreshToken(user.UsrId);
         var refreshTokenHash = BCrypt.Net.BCrypt.HashPassword(refreshToken);
 
         var ipAddress = NetworkHelper.GetClientIpAddress(httpContext);
@@ -61,7 +61,6 @@ public class UserService(IUserDAO dao, IJwtService jwt, IRefreshTokenDAO refDao,
 
     public async Task<RefreshTokenResponseDto> RefreshToken(string refreshToken, CancellationToken ct = default)
     {
-        // Если refreshToken не передан, пытаемся получить из куки
         if (string.IsNullOrEmpty(refreshToken))
         {
             refreshToken = cookieService.GetRefreshTokenFromCookie() ?? "";
@@ -71,8 +70,9 @@ public class UserService(IUserDAO dao, IJwtService jwt, IRefreshTokenDAO refDao,
             }
         }
 
-        // Ищем токен в базе данных, проверяя каждый сохраненный хеш
-        var storedTokens = await refDao.GetAllTokensAsync(ct);
+        var userId = jwt.GetUserIdFromRefreshToken(refreshToken) ?? throw new UnauthorizedAccessException("Invalid refresh token format");
+
+        var storedTokens = await refDao.GetUserTokensForValidationAsync(userId, ct);
         RefreshTokenEntity? storedToken = null;
         
         foreach (var token in storedTokens)
@@ -84,14 +84,15 @@ public class UserService(IUserDAO dao, IJwtService jwt, IRefreshTokenDAO refDao,
             }
         }
         
-        if (storedToken == null) throw new UnauthorizedAccessException("Invalid refresh token");
+        if (storedToken == null)
+            throw new UnauthorizedAccessException("Invalid refresh token");
         var user = await dao.FetchByIdWithPolicies(storedToken.UsrId, ct) ?? throw new UnauthorizedAccessException("User not found");
         var roles = user.Policies.Select(p => p.PolicyName).ToList();
         var newAccessToken = jwt.GenerateAccessToken(user.UsrId, user.Login, roles);
 
         await refDao.RevokeTokenByIdAsync(storedToken.RefreshTokenId, storedToken.UsrId, ct);
 
-        var newRefreshToken = jwt.GenerateRefreshToken();
+        var newRefreshToken = jwt.GenerateRefreshToken(user.UsrId);
         var newRefreshTokenHash = BCrypt.Net.BCrypt.HashPassword(newRefreshToken);
         var newExpiresAt = DateTime.UtcNow.AddDays(7);
         var newAccessTokenExpiresAt = DateTime.UtcNow.AddHours(1);
