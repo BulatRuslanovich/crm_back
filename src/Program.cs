@@ -89,20 +89,32 @@ static void ConfigureAuthentication(WebApplicationBuilder builder)
                     System.Text.Encoding.UTF8.GetBytes(jwtKey)),
                 ClockSkew = TimeSpan.FromSeconds(30)
             };
+
+            options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+            {
+                OnMessageReceived = context =>
+                {
+                    if (string.IsNullOrEmpty(context.Token))
+                    {
+                        context.Token = context.Request.Cookies["access_token"];
+                    }
+                    return Task.CompletedTask;
+                }
+            };
         });
 
-    builder.Services.AddAuthorization(options =>
-   {
-       options.AddPolicy("Representative", policy => policy.RequireRole("Representative"));
-       options.AddPolicy("Manager", policy => policy.RequireRole("Manager"));
-       options.AddPolicy("Director", policy => policy.RequireRole("Director"));
-       options.AddPolicy("Admin", policy => policy.RequireRole("Admin"));
+     builder.Services.AddAuthorization(options =>
+    {
+        options.AddPolicy("Representative", policy => policy.RequireRole("Representative"));
+        options.AddPolicy("Manager", policy => policy.RequireRole("Manager"));
+        options.AddPolicy("Director", policy => policy.RequireRole("Director"));
+        options.AddPolicy("Admin", policy => policy.RequireRole("Admin"));
 
-       options.AddPolicy("ManagerOrAbove", policy =>
-           policy.RequireRole("Manager", "Director", "Admin"));
-       options.AddPolicy("DirectorOrAbove", policy =>
-           policy.RequireRole("Director", "Admin"));
-   });
+        options.AddPolicy("ManagerOrAbove", policy =>
+            policy.RequireRole("Manager", "Director", "Admin"));
+        options.AddPolicy("DirectorOrAbove", policy =>
+            policy.RequireRole("Director", "Admin"));
+    });
 }
 
 static void ConfigureSwagger(IServiceCollection services)
