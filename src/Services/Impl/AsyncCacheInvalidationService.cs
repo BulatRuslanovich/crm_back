@@ -39,13 +39,6 @@ public class AsyncCacheInvalidationService(ITaggedCacheService taggedCache) : IA
         }
     }
 
-    public void Dispose()
-    {
-        _cancellationTokenSource.Cancel();
-        _cancellationTokenSource.Dispose();
-        _semaphore.Dispose();
-    }
-
     private record CacheInvalidationTask
     {
         public string Tag { get; init; } = string.Empty;
