@@ -1,4 +1,3 @@
-using CrmBack.Core.Utils.Health;
 using CrmBack.Core.Utils.Middleware;
 using CrmBack.DAO;
 using CrmBack.DAO.Impl;
