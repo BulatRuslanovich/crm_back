@@ -12,4 +12,5 @@ public class AppDBContext(DbContextOptions options) : DbContext(options)
     public DbSet<PolicyEntity> Policy { get; set; }
     public DbSet<StatusEntity> Status { get; set; }
     public DbSet<UserPolicyEntity> UserPolicies { get; set; }
+    public DbSet<RefreshTokenEntity> RefreshTokens { get; set; }
 }

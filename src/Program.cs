@@ -164,6 +164,7 @@ static void ConfigureApplicationServices(IServiceCollection services)
     services.AddScoped<IActivDAO, ActivDAO>();
     services.AddScoped<IOrgDAO, OrgDAO>();
     services.AddScoped<IPlanDAO, PlanDAO>();
+    services.AddScoped<IRefreshTokenDAO, RefreshTokenDAO>();
 
     services.AddScoped<IUserService, UserService>();
     services.AddScoped<IActivService, ActivService>();

@@ -45,11 +45,41 @@ public class LoginUserDto
 
 public class LoginResponseDto
 {
-   public string Token { get; set; } = string.Empty;
+    public string Token { get; set; } = string.Empty;
     public string RefreshToken { get; set; } = string.Empty;
     public int UserId { get; set; }
     public string Login { get; set; } = string.Empty;
     public List<string> Roles { get; set; } = [];
+    public DateTime ExpiresAt { get; set; }
+}
+
+public class RefreshTokenRequestDto
+{
+    [Required]
+    public string RefreshToken { get; set; } = string.Empty;
+}
+
+public class RefreshTokenResponseDto
+{
+    public string AccessToken { get; set; } = string.Empty;
+    public string RefreshToken { get; set; } = string.Empty;
+    public DateTime ExpiresAt { get; set; }
+}
+
+public class RevokeTokenRequestDto
+{
+    [Required]
+    public string RefreshToken { get; set; } = string.Empty;
+}
+
+public class ActiveSessionDto
+{
+    public int RefreshTokenId { get; set; }
+    public string DeviceInfo { get; set; } = string.Empty;
+    public string IpAddress { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+    public DateTime ExpiresAt { get; set; }
+    public bool IsCurrentSession { get; set; }
 }
 
 public class UserWithPoliciesDto : ReadUserDto

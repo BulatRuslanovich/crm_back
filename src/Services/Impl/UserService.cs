@@ -1,12 +1,13 @@
 using BCrypt.Net;
 using CrmBack.Core.Models.Dto;
+using CrmBack.Core.Utils;
 using CrmBack.DAO;
 using CrmBack.Data;
 using Microsoft.EntityFrameworkCore;
 
 
 namespace CrmBack.Services.Impl;
-public class UserService(IUserDAO dao, IJwtService jwt) : IUserService
+public class UserService(IUserDAO dao, IJwtService jwt, IRefreshTokenDAO refDao) : IUserService
 {
     public async Task<ReadUserDto?> GetById(int id, CancellationToken ct = default) =>
         await dao.FetchById(id, ct);
@@ -25,25 +26,93 @@ public class UserService(IUserDAO dao, IJwtService jwt) : IUserService
     public async Task<bool> Update(int id, UpdateUserDto dto, CancellationToken ct = default) =>
         await dao.Update(id, dto, ct);
 
-    public async Task<LoginResponseDto> Login(LoginUserDto dto, CancellationToken ct = default)
+    public async Task<LoginResponseDto> Login(LoginUserDto dto, HttpContext httpContext, CancellationToken ct = default)
     {
         var user = await dao.FetchByLogin(dto, ct) ?? throw new UnauthorizedAccessException("Invalid login or password");
 
-        var accessToken = jwt.GenerateAccessToken(user.UsrId, user.Login, [.. user.Policies.Select(p => p.PolicyName)]);
+        var roles = user.Policies.Select(p => p.PolicyName).ToList();
+        var accessToken = jwt.GenerateAccessToken(user.UsrId, user.Login, roles);
         var refreshToken = jwt.GenerateRefreshToken();
+        var refreshTokenHash = BCrypt.Net.BCrypt.HashPassword(refreshToken);
+        
+        var ipAddress = NetworkHelper.GetClientIpAddress(httpContext);
+        var deviceInfo = DeviceInfoHelper.ParseDeviceInfo(httpContext);
+        
+        var expiresAt = DateTime.UtcNow.AddDays(7);
+        await refDao.CreateAsync(user.UsrId, refreshTokenHash, expiresAt, deviceInfo.ToJsonString(), ipAddress, ct);
 
-        //TODO: save token in db
-
-        return new LoginResponseDto{
+        return new LoginResponseDto
+        {
             Token = accessToken,
             RefreshToken = refreshToken,
             UserId = user.UsrId,
             Login = user.Login,
-            Roles = [.. user.Policies.Select(p => p.PolicyName)]
+            Roles = roles,
+            ExpiresAt = DateTime.UtcNow.AddHours(1)
         };
     }
 
     public async Task<List<HumReadActivDto>> GetActivs(int userId, CancellationToken ct = default) =>
         await dao.FetchHumActivs(userId, ct);
 
+    public async Task<RefreshTokenResponseDto> RefreshToken(string refreshToken, CancellationToken ct = default)
+    {
+        var tokenHash = BCrypt.Net.BCrypt.HashPassword(refreshToken);
+        
+        var storedToken = await refDao.GetByTokenHashAsync(tokenHash, ct);
+        if (storedToken == null)
+            throw new UnauthorizedAccessException("Invalid refresh token");
+
+        var user = await dao.FetchByLogin(new LoginUserDto { Login = storedToken.User.Login }, ct) ?? throw new UnauthorizedAccessException("User not found");
+        var roles = user.Policies.Select(p => p.PolicyName).ToList();
+        var newAccessToken = jwt.GenerateAccessToken(user.UsrId, user.Login, roles);
+
+        await refDao.RevokeTokenAsync(tokenHash, ct);
+        
+        var newRefreshToken = jwt.GenerateRefreshToken();
+        var newRefreshTokenHash = BCrypt.Net.BCrypt.HashPassword(newRefreshToken);
+        var newExpiresAt = DateTime.UtcNow.AddDays(7);
+        
+        await refDao.CreateAsync(user.UsrId, newRefreshTokenHash, newExpiresAt, ct: ct);
+
+        return new RefreshTokenResponseDto
+        {
+            AccessToken = newAccessToken,
+            RefreshToken = newRefreshToken,
+            ExpiresAt = DateTime.UtcNow.AddHours(1)
+        };
+    }
+
+    public async Task<bool> RevokeToken(string refreshToken, CancellationToken ct = default)
+    {
+        var tokenHash = BCrypt.Net.BCrypt.HashPassword(refreshToken);
+        return await refDao.RevokeTokenAsync(tokenHash, ct);
+    }
+
+    public async Task<bool> RevokeAllUserTokens(int userId, CancellationToken ct = default) =>
+        await refDao.RevokeAllUserTokensAsync(userId, ct);
+    
+
+    public async Task<bool> Logout(int userId, CancellationToken ct = default) =>
+        await refDao.RevokeAllUserTokensAsync(userId, ct);
+
+    public async Task<List<ActiveSessionDto>> GetActiveSessions(int userId, CancellationToken ct = default)
+    {
+        var tokens = await refDao.GetUserTokensAsync(userId, ct);
+        
+        return [.. tokens.Select(token => new ActiveSessionDto
+        {
+            RefreshTokenId = token.RefreshTokenId,
+            DeviceInfo = token.DeviceInfo ?? "Unknown",
+            IpAddress = token.IpAddress ?? "Unknown",
+            CreatedAt = token.CreatedAt,
+            ExpiresAt = token.ExpiresAt,
+            IsCurrentSession = false //TODO: Можно добавить логику для определения текущей сессии
+        })];
+    }
+
+    public async Task<bool> RevokeSession(int userId, int sessionId, CancellationToken ct = default)
+    {
+        return await refDao.RevokeTokenByIdAsync(sessionId, userId, ct);
+    }
 }
