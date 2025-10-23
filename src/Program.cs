@@ -20,7 +20,7 @@ ConfigureCors(builder.Services);
 ConfigureAuthentication(builder);
 ConfigureSwagger(builder.Services);
 ConfigureDatabase(builder.Services, builder.Configuration);
-ConfigureApplicationServices(builder.Services);
+ConfigureApplicationServices(builder.Services, builder.Configuration);
 
 var app = builder.Build();
 
@@ -177,9 +177,14 @@ static void ConfigureDatabase(IServiceCollection services, IConfiguration config
     });
 }
 
-static void ConfigureApplicationServices(IServiceCollection services)
+static void ConfigureApplicationServices(IServiceCollection services, IConfiguration configuration)
 {
     services.AddHttpContextAccessor();
+
+    // Health Checks
+    services.AddHealthChecks()
+        .AddNpgSql(configuration.GetConnectionString("DbConnectionString")!)
+        .AddRedis(configuration.GetConnectionString("Redis")!);
 
     services.AddScoped<IRedisCacheService, RedisCacheService>();
     services.AddScoped<ITaggedCacheService, TaggedCacheService>();
@@ -239,6 +244,7 @@ static void ConfigureMiddleware(WebApplication app)
 
     app.UseAuthentication();
     app.UseAuthorization();
-    app.UseHealthCheck();
+    app.MapHealthChecks("/health");
+    
     app.MapControllers();
 }
