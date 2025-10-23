@@ -44,13 +44,11 @@ public class UserController(IUserService userService) : BaseApiController<ReadUs
     }
 
     [HttpPost("refresh")]
-    public async Task<ActionResult<RefreshTokenResponseDto>> RefreshToken([FromBody] RefreshTokenRequestDto request)
+    public async Task<ActionResult<RefreshTokenResponseDto>> RefreshToken()
     {
-        if (!ModelState.IsValid) return BadRequest(ModelState);
-
         try
         {
-            var response = await userService.RefreshToken(request.RefreshToken, HttpContext.RequestAborted);
+            var response = await userService.RefreshToken("", HttpContext.RequestAborted);
             return Ok(response);
         }
         catch (UnauthorizedAccessException ex)
@@ -101,7 +99,7 @@ public class UserController(IUserService userService) : BaseApiController<ReadUs
             return BadRequest(new { message = ex.Message });
         }
     }
-    
+
 
     [HttpGet("{id:int}/activ")]
     public async Task<ActionResult<List<HumReadActivDto>>> GetActivs(int id)
