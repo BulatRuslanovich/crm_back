@@ -4,6 +4,9 @@ using CrmBack.DAO.Impl;
 using CrmBack.Data;
 using CrmBack.Services;
 using CrmBack.Services.Impl;
+using CrmBack.Core.Validators;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using StackExchange.Redis;
@@ -185,6 +188,14 @@ static void ConfigureApplicationServices(IServiceCollection services, IConfigura
     services.AddHealthChecks()
         .AddNpgSql(configuration.GetConnectionString("DbConnectionString")!)
         .AddRedis(configuration.GetConnectionString("Redis")!);
+
+    // FluentValidation
+    services.AddValidatorsFromAssemblyContaining<LoginUserDtoValidator>();
+    services.AddFluentValidationAutoValidation(config =>
+    {
+        config.DisableDataAnnotationsValidation = true;
+    });
+    services.AddFluentValidationClientsideAdapters();
 
     services.AddScoped<IRedisCacheService, RedisCacheService>();
     services.AddScoped<ITaggedCacheService, TaggedCacheService>();
