@@ -9,11 +9,9 @@ using Microsoft.AspNetCore.RateLimiting;
 
 [ApiController]
 [Route("api/usr")]
-[EnableRateLimiting("AuthenticatedPolicy")]
 public class UserController(IUserService userService) : BaseApiController<ReadUserDto, CreateUserDto, UpdateUserDto>(userService)
 {
     [HttpPost("login")]
-    [EnableRateLimiting("LoginPolicy")]
     public async Task<ActionResult<LoginResponseDto>> Login([FromBody] LoginUserDto Dto)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -30,7 +28,6 @@ public class UserController(IUserService userService) : BaseApiController<ReadUs
     }
 
     [HttpPost("register")]
-    [EnableRateLimiting("RegisterPolicy")]
     public async Task<ActionResult<ReadUserDto>> Register([FromBody] CreateUserDto Dto)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -48,7 +45,6 @@ public class UserController(IUserService userService) : BaseApiController<ReadUs
     }
 
     [HttpPost("refresh")]
-    [EnableRateLimiting("RefreshPolicy")]
     public async Task<ActionResult<RefreshTokenResponseDto>> RefreshToken()
     {
         try
@@ -107,6 +103,7 @@ public class UserController(IUserService userService) : BaseApiController<ReadUs
 
 
     [HttpGet("{id:int}/activ")]
+    [Authorize]
     public async Task<ActionResult<List<HumReadActivDto>>> GetActivs(int id)
     {
         var activs = await userService.GetActivs(id, HttpContext.RequestAborted);

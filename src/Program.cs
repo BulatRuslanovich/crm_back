@@ -1,17 +1,15 @@
 using CrmBack.Core.Utils.Middleware;
-using CrmBack.Core.Utils.RateLimiting;
+using CrmBack.Core.Validators;
 using CrmBack.DAO;
 using CrmBack.DAO.Impl;
 using CrmBack.Data;
 using CrmBack.Services;
 using CrmBack.Services.Impl;
-using CrmBack.Core.Validators;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using StackExchange.Redis;
-using Microsoft.AspNetCore.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -191,55 +189,22 @@ static void ConfigureApplicationServices(IServiceCollection services, IConfigura
         .AddNpgSql(configuration.GetConnectionString("DbConnectionString")!)
         .AddRedis(configuration.GetConnectionString("Redis")!);
 
+    //TODO: в будущем довести до ума
     // Rate Limiting
     services.AddRateLimiter(options =>
     {
-        // Политика для логина - 5 попыток в минуту
-        options.AddSlidingWindowLimiter("LoginPolicy", opt =>
-        {
-            opt.PermitLimit = 5;
-            opt.Window = TimeSpan.FromMinutes(1);
-            opt.SegmentsPerWindow = 6;
-            opt.QueueProcessingOrder = System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
-            opt.QueueLimit = 2;
-        });
 
-        // Политика для регистрации - 3 попытки в минуту
-        options.AddSlidingWindowLimiter("RegisterPolicy", opt =>
-        {
-            opt.PermitLimit = 3;
-            opt.Window = TimeSpan.FromMinutes(1);
-            opt.SegmentsPerWindow = 6;
-            opt.QueueProcessingOrder = System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
-            opt.QueueLimit = 1;
-        });
-
-        // Политика для refresh токенов - 10 попыток в минуту
-        options.AddSlidingWindowLimiter("RefreshPolicy", opt =>
-        {
-            opt.PermitLimit = 10;
-            opt.Window = TimeSpan.FromMinutes(1);
-            opt.SegmentsPerWindow = 6;
-            opt.QueueProcessingOrder = System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
-            opt.QueueLimit = 3;
-        });
-
-        // Политика для аутентифицированных пользователей
-        options.AddPolicy("AuthenticatedPolicy", new AuthenticatedUserRateLimiter());
-
-        // Глобальный Rate Limiter по IP (защита от DDoS)
         options.GlobalLimiter = System.Threading.RateLimiting.PartitionedRateLimiter.Create<HttpContext, string>(context =>
         {
-            // Используем IP + User-Agent для более точной идентификации устройства
             var ipAddress = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
             var userAgent = context.Request.Headers.UserAgent.ToString();
             var deviceKey = $"{ipAddress}:{userAgent.GetHashCode()}";
-            
+
             return System.Threading.RateLimiting.RateLimitPartition.GetSlidingWindowLimiter(
                 partitionKey: deviceKey,
                 factory: _ => new System.Threading.RateLimiting.SlidingWindowRateLimiterOptions
                 {
-                    PermitLimit = 500, // 500 запросов в минуту на устройство
+                    PermitLimit = 100,
                     Window = TimeSpan.FromMinutes(1),
                     SegmentsPerWindow = 6,
                     QueueProcessingOrder = System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst,
@@ -316,6 +281,6 @@ static void ConfigureMiddleware(WebApplication app)
     app.UseAuthentication();
     app.UseAuthorization();
     app.MapHealthChecks("/health");
-    
+
     app.MapControllers();
 }
