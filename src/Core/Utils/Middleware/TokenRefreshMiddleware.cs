@@ -20,7 +20,6 @@ public class TokenRefreshMiddleware(RequestDelegate next)
 
                 if (token.ValidTo <= DateTime.UtcNow.AddMinutes(5))
                 {
-                    // Пытаемся обновить токен
                     var refreshToken = cookieService.GetRefreshTokenFromCookie();
                     if (!string.IsNullOrEmpty(refreshToken))
                     {

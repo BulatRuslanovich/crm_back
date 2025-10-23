@@ -1,4 +1,4 @@
-namespace CrmBack.Core.Utils.Health;
+namespace CrmBack.Core.Utils.Middleware;
 
 public static class MiddlewareExtensions
 {

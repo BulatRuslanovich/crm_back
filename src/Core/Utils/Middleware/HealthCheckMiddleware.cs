@@ -1,5 +1,5 @@
 
-namespace CrmBack.Core.Utils.Health;
+namespace CrmBack.Core.Utils.Middleware;
 
 using System.Diagnostics;
 using System.Text.Json;
