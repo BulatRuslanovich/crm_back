@@ -1,6 +1,6 @@
+using System.Text.Json;
 using Microsoft.Extensions.Caching.Distributed;
 using StackExchange.Redis;
-using System.Text.Json;
 
 namespace CrmBack.Services.Impl;
 
@@ -41,7 +41,7 @@ public class RedisCacheService(IDistributedCache cache, IConnectionMultiplexer r
     {
         var keys = new List<string>();
         var server = redis.GetServer(redis.GetEndPoints().First());
-        
+
         await foreach (var key in server.KeysAsync(pattern: pattern))
         {
             keys.Add(key.ToString());
