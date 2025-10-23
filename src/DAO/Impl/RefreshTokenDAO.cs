@@ -6,18 +6,11 @@ namespace CrmBack.DAO.Impl;
 
 public class RefreshTokenDAO(AppDBContext context) : IRefreshTokenDAO
 {
-    public async Task<RefreshTokenEntity?> GetByTokenHashAsync(string tokenHash, CancellationToken ct = default)
+    public async Task<List<RefreshTokenEntity>> GetUserTokensForValidationAsync(int userId, CancellationToken ct = default)
     {
         return await context.RefreshTokens
             .Include(rt => rt.User)
-            .FirstOrDefaultAsync(rt => rt.TokenHash == tokenHash && !rt.IsRevoked && rt.ExpiresAt > DateTime.UtcNow, ct);
-    }
-
-    public async Task<List<RefreshTokenEntity>> GetAllTokensAsync(CancellationToken ct = default)
-    {
-        return await context.RefreshTokens
-            .Include(rt => rt.User)
-            .Where(rt => !rt.IsRevoked && rt.ExpiresAt > DateTime.UtcNow)
+            .Where(rt => rt.UsrId == userId && !rt.IsRevoked && rt.ExpiresAt > DateTime.UtcNow)
             .ToListAsync(ct);
     }
 
@@ -64,33 +57,12 @@ public class RefreshTokenDAO(AppDBContext context) : IRefreshTokenDAO
         return true;
     }
 
-    public async Task<bool> RevokeExpiredTokensAsync(CancellationToken ct = default)
-    {
-        var expiredTokens = await context.RefreshTokens
-            .Where(rt => rt.ExpiresAt <= DateTime.UtcNow && !rt.IsRevoked)
-            .ToListAsync(ct);
-
-        foreach (var token in expiredTokens)
-        {
-            token.IsRevoked = true;
-        }
-
-        await context.SaveChangesAsync(ct);
-        return true;
-    }
-
     public async Task<List<RefreshTokenEntity>> GetUserTokensAsync(int userId, CancellationToken ct = default)
     {
         return await context.RefreshTokens
             .Where(rt => rt.UsrId == userId && !rt.IsRevoked && rt.ExpiresAt > DateTime.UtcNow)
             .OrderByDescending(rt => rt.CreatedAt)
             .ToListAsync(ct);
-    }
-
-    public async Task<RefreshTokenEntity?> GetUserTokenByHashAsync(int userId, string tokenHash, CancellationToken ct = default)
-    {
-        return await context.RefreshTokens
-            .FirstOrDefaultAsync(rt => rt.UsrId == userId && rt.TokenHash == tokenHash && !rt.IsRevoked && rt.ExpiresAt > DateTime.UtcNow, ct);
     }
 
     public async Task<bool> RevokeTokenByIdAsync(int tokenId, int userId, CancellationToken ct = default)
