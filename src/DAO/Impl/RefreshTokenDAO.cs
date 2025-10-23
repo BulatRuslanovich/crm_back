@@ -13,6 +13,14 @@ public class RefreshTokenDAO(AppDBContext context) : IRefreshTokenDAO
             .FirstOrDefaultAsync(rt => rt.TokenHash == tokenHash && !rt.IsRevoked && rt.ExpiresAt > DateTime.UtcNow, ct);
     }
 
+    public async Task<List<RefreshTokenEntity>> GetAllTokensAsync(CancellationToken ct = default)
+    {
+        return await context.RefreshTokens
+            .Include(rt => rt.User)
+            .Where(rt => !rt.IsRevoked && rt.ExpiresAt > DateTime.UtcNow)
+            .ToListAsync(ct);
+    }
+
     public async Task<RefreshTokenEntity> CreateAsync(int userId, string tokenHash, DateTime expiresAt, string? deviceInfo = null, string? ipAddress = null, CancellationToken ct = default)
     {
         var refreshToken = new RefreshTokenEntity
