@@ -74,7 +74,7 @@ public class UserService(IUserDAO dao, IJwtService jwt, IRefreshTokenDAO refDao,
 
         var storedTokens = await refDao.GetUserTokensForValidationAsync(userId, ct);
         RefreshTokenEntity? storedToken = null;
-        
+
         foreach (var token in storedTokens)
         {
             if (BCrypt.Net.BCrypt.Verify(refreshToken, token.TokenHash))
@@ -83,7 +83,7 @@ public class UserService(IUserDAO dao, IJwtService jwt, IRefreshTokenDAO refDao,
                 break;
             }
         }
-        
+
         if (storedToken == null)
             throw new UnauthorizedAccessException("Invalid refresh token");
         var user = await dao.FetchByIdWithPolicies(storedToken.UsrId, ct) ?? throw new UnauthorizedAccessException("User not found");

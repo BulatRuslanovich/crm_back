@@ -102,18 +102,18 @@ static void ConfigureAuthentication(WebApplicationBuilder builder)
             };
         });
 
-     builder.Services.AddAuthorization(options =>
-    {
-        options.AddPolicy("Representative", policy => policy.RequireRole("Representative"));
-        options.AddPolicy("Manager", policy => policy.RequireRole("Manager"));
-        options.AddPolicy("Director", policy => policy.RequireRole("Director"));
-        options.AddPolicy("Admin", policy => policy.RequireRole("Admin"));
+    builder.Services.AddAuthorization(options =>
+   {
+       options.AddPolicy("Representative", policy => policy.RequireRole("Representative"));
+       options.AddPolicy("Manager", policy => policy.RequireRole("Manager"));
+       options.AddPolicy("Director", policy => policy.RequireRole("Director"));
+       options.AddPolicy("Admin", policy => policy.RequireRole("Admin"));
 
-        options.AddPolicy("ManagerOrAbove", policy =>
-            policy.RequireRole("Manager", "Director", "Admin"));
-        options.AddPolicy("DirectorOrAbove", policy =>
-            policy.RequireRole("Director", "Admin"));
-    });
+       options.AddPolicy("ManagerOrAbove", policy =>
+           policy.RequireRole("Manager", "Director", "Admin"));
+       options.AddPolicy("DirectorOrAbove", policy =>
+           policy.RequireRole("Director", "Admin"));
+   });
 }
 
 static void ConfigureSwagger(IServiceCollection services)

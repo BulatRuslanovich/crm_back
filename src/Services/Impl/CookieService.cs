@@ -54,7 +54,7 @@ public class CookieService(IHttpContextAccessor httpContextAccessor) : ICookieSe
     {
         var httpContext = httpContextAccessor.HttpContext;
         var token = httpContext?.Request.Cookies[RefreshTokenCookieName];
-        
+
         // Отладочная информация
         if (httpContext != null)
         {
@@ -62,7 +62,7 @@ public class CookieService(IHttpContextAccessor httpContextAccessor) : ICookieSe
             Console.WriteLine($"Looking for cookie: {RefreshTokenCookieName}");
             Console.WriteLine($"Found token: {(string.IsNullOrEmpty(token) ? "null" : "exists")}");
         }
-        
+
         return token;
     }
 
