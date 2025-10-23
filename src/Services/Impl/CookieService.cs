@@ -53,7 +53,17 @@ public class CookieService(IHttpContextAccessor httpContextAccessor) : ICookieSe
     public string? GetRefreshTokenFromCookie()
     {
         var httpContext = httpContextAccessor.HttpContext;
-        return httpContext?.Request.Cookies[RefreshTokenCookieName];
+        var token = httpContext?.Request.Cookies[RefreshTokenCookieName];
+        
+        // Отладочная информация
+        if (httpContext != null)
+        {
+            Console.WriteLine($"Available cookies: {string.Join(", ", httpContext.Request.Cookies.Keys)}");
+            Console.WriteLine($"Looking for cookie: {RefreshTokenCookieName}");
+            Console.WriteLine($"Found token: {(string.IsNullOrEmpty(token) ? "null" : "exists")}");
+        }
+        
+        return token;
     }
 
     public void ClearAuthCookies()
