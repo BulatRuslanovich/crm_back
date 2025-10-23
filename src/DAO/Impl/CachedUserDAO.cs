@@ -1,6 +1,6 @@
 using CrmBack.Core.Models.Dto;
 using CrmBack.Data;
-using CrmBack.Services.Impl;
+using CrmBack.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace CrmBack.DAO.Impl;
@@ -63,8 +63,8 @@ public class CachedUserDAO(AppDBContext context, ITaggedCacheService cache, IAsy
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(ct);
-        
-        var res =  users.Select(u => u.ToReadDto()).ToList();
+
+        var res = users.Select(u => u.ToReadDto()).ToList();
 
         await cache.SetAsync(cacheKey, res, [UserListTag], _cacheExpiration, ct);
 
@@ -77,7 +77,7 @@ public class CachedUserDAO(AppDBContext context, ITaggedCacheService cache, IAsy
 
         var cachedData = await cache.GetAsync<ReadUserDto>(cacheKey, ct);
         if (cachedData != null) return cachedData;
-        
+
         var user = await context.User
             .FirstOrDefaultAsync(u => u.UsrId == id && !u.IsDeleted, ct);
 
@@ -129,16 +129,17 @@ public class CachedUserDAO(AppDBContext context, ITaggedCacheService cache, IAsy
     {
         var user = await context.User.FirstOrDefaultAsync(u => u.Login == dto.Login && !u.IsDeleted, ct);
 
-        if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Login, user.PasswordHash)) return null;
+        if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash)) return null;
 
-        var usrPolicies =  await context.UserPolicies
+        var usrPolicies = await context.UserPolicies
         .Where(up => up.UsrId == user.UsrId)
         .Include(up => up.Policy)
         .Select(up => up.Policy)
         .Where(p => !p.IsDeleted)
         .ToListAsync(ct);
 
-        return new UserWithPoliciesDto() {
+        return new UserWithPoliciesDto()
+        {
             UsrId = user.UsrId,
             Login = user.Login,
             FirstName = user.FirstName,
