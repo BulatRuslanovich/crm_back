@@ -1,12 +1,12 @@
-using System.Data;
-using CrmBack.Core.Utils.Health;
-using CrmBack.Repository;
-using CrmBack.Repository.Impl;
+using CrmBack.Core.Utils.Middleware;
+using CrmBack.DAO;
+using CrmBack.DAO.Impl;
+using CrmBack.Data;
 using CrmBack.Services;
 using CrmBack.Services.Impl;
-using Dapper;
-using Npgsql;
+using Microsoft.EntityFrameworkCore;
 using Serilog;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,7 +24,6 @@ ConfigureApplicationServices(builder.Services);
 
 var app = builder.Build();
 
-DefaultTypeMap.MatchNamesWithUnderscores = true;
 
 ConfigureMiddleware(app);
 
@@ -39,9 +38,9 @@ static void ConfigureLogging(WebApplicationBuilder builder)
                 theme: Serilog.Sinks.SystemConsole.Themes.AnsiConsoleTheme.Code,
                 outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {LogType:l} {Message:lj}{NewLine}{Exception}")
             .WriteTo.Debug()
-            .MinimumLevel.Warning()
-            .MinimumLevel.Override("CrmBack.Data", Serilog.Events.LogEventLevel.Debug)
-            .MinimumLevel.Override("CrmBack.Api.Middleware", Serilog.Events.LogEventLevel.Debug)
+            .MinimumLevel.Information()
+            .MinimumLevel.Override("CrmBack.Data", Serilog.Events.LogEventLevel.Information)
+            .MinimumLevel.Override("CrmBack.Api.Middleware", Serilog.Events.LogEventLevel.Information)
             .MinimumLevel.Override("Microsoft.AspNetCore", Serilog.Events.LogEventLevel.Information);
     });
 }
@@ -52,7 +51,7 @@ static void ConfigureCors(IServiceCollection services)
     {
         options.AddPolicy("AllowSwagger", policy =>
         {
-            policy.WithOrigins("http://localhost:5555", "https://localhost:5556", "http://localhost:3000")
+            policy.WithOrigins("http://localhost:3000")
                   .AllowAnyMethod()
                   .AllowAnyHeader()
                   .AllowCredentials();
@@ -89,7 +88,32 @@ static void ConfigureAuthentication(WebApplicationBuilder builder)
                     System.Text.Encoding.UTF8.GetBytes(jwtKey)),
                 ClockSkew = TimeSpan.FromSeconds(30)
             };
+
+            options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+            {
+                OnMessageReceived = context =>
+                {
+                    if (string.IsNullOrEmpty(context.Token))
+                    {
+                        context.Token = context.Request.Cookies["access_token"];
+                    }
+                    return Task.CompletedTask;
+                }
+            };
         });
+
+    builder.Services.AddAuthorization(options =>
+   {
+       options.AddPolicy("Representative", policy => policy.RequireRole("Representative"));
+       options.AddPolicy("Manager", policy => policy.RequireRole("Manager"));
+       options.AddPolicy("Director", policy => policy.RequireRole("Director"));
+       options.AddPolicy("Admin", policy => policy.RequireRole("Admin"));
+
+       options.AddPolicy("ManagerOrAbove", policy =>
+           policy.RequireRole("Manager", "Director", "Admin"));
+       options.AddPolicy("DirectorOrAbove", policy =>
+           policy.RequireRole("Director", "Admin"));
+   });
 }
 
 static void ConfigureSwagger(IServiceCollection services)
@@ -132,31 +156,49 @@ static void ConfigureSwagger(IServiceCollection services)
 
 static void ConfigureDatabase(IServiceCollection services, IConfiguration configuration)
 {
-    services.AddScoped<IDbConnection>(sp =>
+    services.AddDbContext<AppDBContext>(op =>
     {
-        var connectionString = configuration.GetConnectionString("DbConnectionString")
-            ?? throw new InvalidOperationException("Database connection string is not configured");
-        return new NpgsqlConnection(connectionString);
+        op.UseNpgsql(configuration.GetConnectionString("DbConnectionString"));
+
+        op.EnableSensitiveDataLogging();
+        op.EnableDetailedErrors();
     });
 
     services.AddStackExchangeRedisCache(options =>
     {
         options.Configuration = configuration.GetConnectionString("Redis");
+        options.InstanceName = "CrmBack";
+    });
+
+    services.AddSingleton<IConnectionMultiplexer>(provider =>
+    {
+        var configuration = provider.GetRequiredService<IConfiguration>();
+        return ConnectionMultiplexer.Connect(configuration.GetConnectionString("Redis")!);
     });
 }
 
 static void ConfigureApplicationServices(IServiceCollection services)
 {
-    services.AddScoped<IUserRepository, UserRepository>();
-    services.AddScoped<IActivRepository, ActivRepository>();
-    services.AddScoped<IOrgRepository, OrgRepository>();
-    services.AddScoped<IPlanRepository, PlanRepository>();
-    services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+    services.AddHttpContextAccessor();
+
+    services.AddScoped<IRedisCacheService, RedisCacheService>();
+    services.AddScoped<ITaggedCacheService, TaggedCacheService>();
+    services.AddScoped<IAsyncCacheInvalidationService, AsyncCacheInvalidationService>();
+
+    services.AddScoped<ICookieService, CookieService>();
+
+    services.AddScoped<IUserDAO, CachedUserDAO>();
+    services.AddScoped<IActivDAO, ActivDAO>();
+    services.AddScoped<IOrgDAO, OrgDAO>();
+    services.AddScoped<IPlanDAO, PlanDAO>();
+    services.AddScoped<IRefreshTokenDAO, RefreshTokenDAO>();
 
     services.AddScoped<IUserService, UserService>();
     services.AddScoped<IActivService, ActivService>();
     services.AddScoped<IOrgService, OrgService>();
     services.AddScoped<IPlanService, PlanService>();
+
+    services.AddScoped<IJwtService, JwtService>();
 }
 
 static void ConfigureMiddleware(WebApplication app)
@@ -169,7 +211,7 @@ static void ConfigureMiddleware(WebApplication app)
             if (errorFeature != null)
             {
                 context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-                await context.Response.WriteAsJsonAsync(new { error = "An unexpected error occurred" });
+                await context.Response.WriteAsJsonAsync(new { error = "Ops, error ;)" });
                 Log.Error(errorFeature.Error, "Unhandled exception in {Path}", context.Request.Path);
             }
         });
@@ -177,6 +219,8 @@ static void ConfigureMiddleware(WebApplication app)
 
     app.UseSerilogRequestLogging();
     app.UseCors("AllowSwagger");
+
+    app.UseMiddleware<TokenRefreshMiddleware>();
 
     if (app.Environment.IsDevelopment())
     {

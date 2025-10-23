@@ -1,15 +1,15 @@
 namespace CrmBack.Services;
 
 using System.Threading;
-using CrmBack.Core.Models.Payload.Activ;
-using CrmBack.Core.Models.Payload.Plan;
-using CrmBack.Core.Models.Payload.User;
+using CrmBack.Core.Models.Dto;
 
-public interface IUserService : IService<ReadUserPayload, CreateUserPayload, UpdateUserPayload>
+public interface IUserService : IService<ReadUserDto, CreateUserDto, UpdateUserDto>
 {
-    public Task<LoginResponsePayload> Login(LoginUserPayload payload, CancellationToken ct = default);
-    public Task<RefreshTokenPayload> RefreshTokenAsync(string refreshToken, CancellationToken ct = default);
-    public Task RevokeRefreshTokenAsync(string refreshToken, CancellationToken ct = default);
-    public Task<List<HumReadActivPayload>> GetActivs(int userId, CancellationToken ct = default);
-    public Task<List<ReadPlanPayload>> GetPlans(int userId, CancellationToken ct = default);
+    public Task<LoginResponseDto> Login(LoginUserDto Dto, HttpContext httpContext, CancellationToken ct = default);
+    public Task<List<HumReadActivDto>> GetActivs(int userId, CancellationToken ct = default);
+    public Task<RefreshTokenResponseDto> RefreshToken(string refreshToken, CancellationToken ct = default);
+    public Task<bool> RevokeToken(string refreshToken, CancellationToken ct = default);
+    public Task<bool> Logout(int userId, CancellationToken ct = default);
+    public Task<List<ActiveSessionDto>> GetActiveSessions(int userId, CancellationToken ct = default);
+    public Task<bool> RevokeSession(int userId, int sessionId, CancellationToken ct = default);
 }

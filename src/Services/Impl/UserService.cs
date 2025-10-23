@@ -1,171 +1,147 @@
-namespace CrmBack.Services.Impl;
-
-using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
+using BCrypt.Net;
+using CrmBack.Core.Models.Dto;
 using CrmBack.Core.Models.Entities;
-using CrmBack.Core.Models.Payload.Activ;
-using CrmBack.Core.Models.Payload.Plan;
-using CrmBack.Core.Models.Payload.User;
-using CrmBack.Core.Utils.Mapper;
-using CrmBack.Repository;
-using Microsoft.IdentityModel.Tokens;
+using CrmBack.Core.Utils;
+using CrmBack.DAO;
+using CrmBack.Data;
+using Microsoft.EntityFrameworkCore;
 
-public class UserService(IUserRepository userRepository,
- IActivRepository activRepository,
-  IPlanRepository planRepository,
-   IRefreshTokenRepository refreshTokenRepository,
-    IConfiguration configuration) : IUserService
+
+namespace CrmBack.Services.Impl;
+public class UserService(IUserDAO dao, IJwtService jwt, IRefreshTokenDAO refDao, ICookieService cookieService) : IUserService
 {
-    public async Task<ReadUserPayload?> GetById(int id, CancellationToken ct = default)
-    {
-        var user = await userRepository.GetByIdAsync(id, ct).ConfigureAwait(false);
-        return user?.ToReadPayload();
-    }
+    public async Task<ReadUserDto?> GetById(int id, CancellationToken ct = default) =>
+        await dao.FetchById(id, ct);
 
-    public async Task<List<ReadUserPayload>> GetAll(bool isDeleted, int page, int pageSize, string? searchTerm = null, CancellationToken ct = default)
-    {
-        var users = await userRepository.GetAllAsync(isDeleted, page, pageSize, ct).ConfigureAwait(false);
+    public async Task<List<ReadUserDto>> GetAll(bool isDeleted, int page, int pageSize, string? searchTerm = null, CancellationToken ct = default) =>
+        await dao.FetchAll(isDeleted, page, pageSize, searchTerm, ct);
 
-        return [.. users.Select(u => u.ToReadPayload())];
-    }
+    public async Task<ReadUserDto?> Create(CreateUserDto dto, CancellationToken ct = default) =>
+        await dao.Create(dto, ct);
 
-    //! there's no point in checking the login's uniqueness, as the field is unique in the database
-    public async Task<ReadUserPayload?> Create(CreateUserPayload payload, CancellationToken ct = default)
-    {
-        var userId = await userRepository.CreateAsync(payload.ToEntity(), ct).ConfigureAwait(false);
-        var userDto = await userRepository.GetByIdAsync(userId, ct).ConfigureAwait(false);
-        return userDto?.ToReadPayload();
-    }
-
-    public async Task<bool> Update(int id, UpdateUserPayload payload, CancellationToken ct = default)
-    {
-        var existing = await userRepository.GetByIdAsync(id, ct).ConfigureAwait(false);
-        if (existing == null) return false;
-
-        if (!string.IsNullOrEmpty(payload.Password))
-        {
-            if (string.IsNullOrEmpty(payload.CurrentPassword))
-            {
-                throw new UnauthorizedAccessException("Текущий пароль обязателен для смены пароля");
-            }
-
-            if (!BCrypt.Net.BCrypt.Verify(payload.CurrentPassword, existing.password_hash))
-            {
-                throw new UnauthorizedAccessException("Неверный текущий пароль");
-            }
-        }
-
-        var newEntity = new UserEntity(
-            usr_id: id,
-            first_name: payload.FirstName ?? existing.first_name,
-            last_name: payload.LastName ?? existing.last_name,
-            middle_name: payload.MiddleName ?? existing.middle_name,
-            login: payload.Login ?? existing.login,
-            password_hash: string.IsNullOrEmpty(payload.Password) ? existing.password_hash : BCrypt.Net.BCrypt.HashPassword(payload.Password),
-            is_deleted: existing.is_deleted
-        );
-
-        return await userRepository.UpdateAsync(newEntity, ct).ConfigureAwait(false);
-    }
 
     public async Task<bool> Delete(int id, CancellationToken ct = default) =>
-        await userRepository.SoftDeleteAsync(id, ct).ConfigureAwait(false);
+        await dao.Delete(id, ct);
 
-    public async Task<LoginResponsePayload> Login(LoginUserPayload payload, CancellationToken ct = default)
+
+    public async Task<bool> Update(int id, UpdateUserDto dto, CancellationToken ct = default) =>
+        await dao.Update(id, dto, ct);
+
+    public async Task<LoginResponseDto> Login(LoginUserDto dto, HttpContext httpContext, CancellationToken ct = default)
     {
-        var user = (await userRepository.FindByAsync("login", payload.Login, ct: ct)).FirstOrDefault()
-            ?? throw new UnauthorizedAccessException("Invalid login or password.");
-        if (!BCrypt.Net.BCrypt.Verify(payload.Password, user.password_hash))
-            throw new UnauthorizedAccessException("Invalid login or password.");
+        var user = await dao.FetchByLogin(dto, ct) ?? throw new UnauthorizedAccessException("Invalid login or password");
 
-        await refreshTokenRepository.RevokeAllUserTokensAsync(user.usr_id, ct);
+        var roles = user.Policies.Select(p => p.PolicyName).ToList();
+        var accessToken = jwt.GenerateAccessToken(user.UsrId, user.Login, roles);
+        var refreshToken = jwt.GenerateRefreshToken(user.UsrId);
+        var refreshTokenHash = BCrypt.Net.BCrypt.HashPassword(refreshToken);
 
-        var accessToken = GenerateJwtToken(user);
-        var refreshToken = await GenerateRefreshTokenAsync(user.usr_id, ct);
-        var userPayload = user.ToReadPayload();
+        var ipAddress = NetworkHelper.GetClientIpAddress(httpContext);
+        var deviceInfo = DeviceInfoHelper.ParseDeviceInfo(httpContext);
 
-        return new LoginResponsePayload(accessToken, refreshToken, userPayload);
-    }
+        var expiresAt = DateTime.UtcNow.AddDays(7);
+        var accessTokenExpiresAt = DateTime.UtcNow.AddHours(1);
 
-    private string GenerateJwtToken(UserEntity user)
-    {
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"] ?? "lol"));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        await refDao.CreateAsync(user.UsrId, refreshTokenHash, expiresAt, deviceInfo.ToJsonString(), ipAddress, ct);
 
-        var claims = new[]
+        cookieService.SetAccessTokenCookie(accessToken, accessTokenExpiresAt);
+        cookieService.SetRefreshTokenCookie(refreshToken, expiresAt);
+
+        return new LoginResponseDto
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.usr_id.ToString()),
-            new Claim(JwtRegisteredClaimNames.UniqueName, user.login),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            UserId = user.UsrId,
+            Login = user.Login,
+            Roles = roles,
+            ExpiresAt = accessTokenExpiresAt
         };
-
-        var token = new JwtSecurityToken(
-            issuer: configuration["Jwt:Issuer"],
-            audience: configuration["Jwt:Audience"],
-            claims: claims,
-            expires: DateTime.Now.AddHours(1),
-            signingCredentials: creds);
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    private async Task<string> GenerateRefreshTokenAsync(int userId, CancellationToken ct = default)
+    public async Task<List<HumReadActivDto>> GetActivs(int userId, CancellationToken ct = default) =>
+        await dao.FetchHumActivs(userId, ct);
+
+    public async Task<RefreshTokenResponseDto> RefreshToken(string refreshToken, CancellationToken ct = default)
     {
-        var randomBytes = new byte[64];
-        using var rng = RandomNumberGenerator.Create();
-        rng.GetBytes(randomBytes);
-
-        var refreshToken = Convert.ToBase64String(randomBytes);
-        var tokenHash = BCrypt.Net.BCrypt.HashPassword(refreshToken);
-
-        var refreshTokenEntity = new RefreshTokenEntity(
-            token_id: 0,
-            usr_id: userId,
-            token_hash: tokenHash,
-            expires_at: DateTime.Now.AddDays(30),
-            created_at: DateTime.Now,
-            is_revoked: false
-        );
-
-        await refreshTokenRepository.CreateAsync(refreshTokenEntity, ct);
-        return refreshToken;
-    }
-
-    public async Task<RefreshTokenPayload> RefreshTokenAsync(string refreshToken, CancellationToken ct = default)
-    {
-        var storedToken = await refreshTokenRepository.FindValidTokenAsync(refreshToken, ct) ?? throw new UnauthorizedAccessException("Invalid refresh token");
-        var user = await userRepository.GetByIdAsync(storedToken.usr_id, ct) ?? throw new UnauthorizedAccessException("User not found");
-
-        await refreshTokenRepository.RevokeTokenAsync(storedToken.token_hash, ct);
-
-        var newAccessToken = GenerateJwtToken(user);
-        var newRefreshToken = await GenerateRefreshTokenAsync(user.usr_id, ct);
-
-        return new RefreshTokenPayload(newRefreshToken, newAccessToken);
-    }
-
-    public async Task RevokeRefreshTokenAsync(string refreshToken, CancellationToken ct = default)
-    {
-        var storedToken = await refreshTokenRepository.FindValidTokenAsync(refreshToken, ct);
-        if (storedToken != null)
+        if (string.IsNullOrEmpty(refreshToken))
         {
-            await refreshTokenRepository.RevokeTokenAsync(storedToken.token_hash, ct);
+            refreshToken = cookieService.GetRefreshTokenFromCookie() ?? "";
+            if (string.IsNullOrEmpty(refreshToken))
+            {
+                throw new UnauthorizedAccessException("Refresh token not found in cookies");
+            }
         }
+
+        var userId = jwt.GetUserIdFromRefreshToken(refreshToken) ?? throw new UnauthorizedAccessException("Invalid refresh token format");
+
+        var storedTokens = await refDao.GetUserTokensForValidationAsync(userId, ct);
+        RefreshTokenEntity? storedToken = null;
+
+        foreach (var token in storedTokens)
+        {
+            if (BCrypt.Net.BCrypt.Verify(refreshToken, token.TokenHash))
+            {
+                storedToken = token;
+                break;
+            }
+        }
+
+        if (storedToken == null)
+            throw new UnauthorizedAccessException("Invalid refresh token");
+        var user = await dao.FetchByIdWithPolicies(storedToken.UsrId, ct) ?? throw new UnauthorizedAccessException("User not found");
+        var roles = user.Policies.Select(p => p.PolicyName).ToList();
+        var newAccessToken = jwt.GenerateAccessToken(user.UsrId, user.Login, roles);
+
+        await refDao.RevokeTokenByIdAsync(storedToken.RefreshTokenId, storedToken.UsrId, ct);
+
+        var newRefreshToken = jwt.GenerateRefreshToken(user.UsrId);
+        var newRefreshTokenHash = BCrypt.Net.BCrypt.HashPassword(newRefreshToken);
+        var newExpiresAt = DateTime.UtcNow.AddDays(7);
+        var newAccessTokenExpiresAt = DateTime.UtcNow.AddHours(1);
+
+        await refDao.CreateAsync(user.UsrId, newRefreshTokenHash, newExpiresAt, ct: ct);
+
+        cookieService.SetAccessTokenCookie(newAccessToken, newAccessTokenExpiresAt);
+        cookieService.SetRefreshTokenCookie(newRefreshToken, newExpiresAt);
+
+        return new RefreshTokenResponseDto
+        {
+            ExpiresAt = newAccessTokenExpiresAt
+        };
     }
 
-    public async Task<List<HumReadActivPayload>> GetActivs(int userId, CancellationToken ct = default)
+    public async Task<bool> RevokeToken(string refreshToken, CancellationToken ct = default)
     {
-        var humActivs = await activRepository.GetAllHumActivsByUserIdAsync(userId, ct);
-
-        return humActivs.ToList();
+        var tokenHash = BCrypt.Net.BCrypt.HashPassword(refreshToken);
+        return await refDao.RevokeTokenAsync(tokenHash, ct);
     }
 
-    public async Task<List<ReadPlanPayload>> GetPlans(int userId, CancellationToken ct = default)
+    public async Task<bool> RevokeAllUserTokens(int userId, CancellationToken ct = default) =>
+        await refDao.RevokeAllUserTokensAsync(userId, ct);
+
+
+    public async Task<bool> Logout(int userId, CancellationToken ct = default)
     {
-        var plans = await planRepository.FindByAsync("usr_id", userId, ct: ct);
-        return [.. plans.Select(p => p.ToReadPayload())];
+        var success = await refDao.RevokeAllUserTokensAsync(userId, ct);
+        cookieService.ClearAuthCookies();
+        return success;
+    }
+
+    public async Task<List<ActiveSessionDto>> GetActiveSessions(int userId, CancellationToken ct = default)
+    {
+        var tokens = await refDao.GetUserTokensAsync(userId, ct);
+
+        return [.. tokens.Select(token => new ActiveSessionDto
+        {
+            RefreshTokenId = token.RefreshTokenId,
+            DeviceInfo = token.DeviceInfo ?? "Unknown",
+            IpAddress = token.IpAddress ?? "Unknown",
+            CreatedAt = token.CreatedAt,
+            ExpiresAt = token.ExpiresAt,
+            IsCurrentSession = false //TODO: Можно добавить логику для определения текущей сессии
+        })];
+    }
+
+    public async Task<bool> RevokeSession(int userId, int sessionId, CancellationToken ct = default)
+    {
+        return await refDao.RevokeTokenByIdAsync(sessionId, userId, ct);
     }
 }
