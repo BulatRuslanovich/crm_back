@@ -151,8 +151,6 @@ public class CachedUserDAO(AppDBContext context, ITaggedCacheService cache, IAsy
 
     public async Task<UserWithPoliciesDto?> FetchByIdWithPolicies(int id, CancellationToken ct = default)
     {
-        // Для этого метода не используем кэш, так как он нужен для refresh токенов
-        // и должен всегда возвращать актуальные данные
         var user = await context.User.FirstOrDefaultAsync(u => u.UsrId == id && !u.IsDeleted, ct);
         if (user == null) return null;
 
