@@ -1,4 +1,5 @@
 using CrmBack.Core.Utils.Health;
+using CrmBack.Core.Utils.Middleware;
 using CrmBack.DAO;
 using CrmBack.DAO.Impl;
 using CrmBack.Data;
@@ -90,18 +91,18 @@ static void ConfigureAuthentication(WebApplicationBuilder builder)
             };
         });
 
-     builder.Services.AddAuthorization(options =>
-    {
-        options.AddPolicy("Representative", policy => policy.RequireRole("Representative"));
-        options.AddPolicy("Manager", policy => policy.RequireRole("Manager"));
-        options.AddPolicy("Director", policy => policy.RequireRole("Director"));
-        options.AddPolicy("Admin", policy => policy.RequireRole("Admin"));
-        
-        options.AddPolicy("ManagerOrAbove", policy => 
-            policy.RequireRole("Manager", "Director", "Admin"));
-        options.AddPolicy("DirectorOrAbove", policy => 
-            policy.RequireRole("Director", "Admin"));
-    });
+    builder.Services.AddAuthorization(options =>
+   {
+       options.AddPolicy("Representative", policy => policy.RequireRole("Representative"));
+       options.AddPolicy("Manager", policy => policy.RequireRole("Manager"));
+       options.AddPolicy("Director", policy => policy.RequireRole("Director"));
+       options.AddPolicy("Admin", policy => policy.RequireRole("Admin"));
+
+       options.AddPolicy("ManagerOrAbove", policy =>
+           policy.RequireRole("Manager", "Director", "Admin"));
+       options.AddPolicy("DirectorOrAbove", policy =>
+           policy.RequireRole("Director", "Admin"));
+   });
 }
 
 static void ConfigureSwagger(IServiceCollection services)
@@ -148,7 +149,6 @@ static void ConfigureDatabase(IServiceCollection services, IConfiguration config
     {
         op.UseNpgsql(configuration.GetConnectionString("DbConnectionString"));
 
-        // Логирование SQL запросов
         op.EnableSensitiveDataLogging();
         op.EnableDetailedErrors();
     });
@@ -168,10 +168,13 @@ static void ConfigureDatabase(IServiceCollection services, IConfiguration config
 
 static void ConfigureApplicationServices(IServiceCollection services)
 {
+    services.AddHttpContextAccessor();
 
     services.AddScoped<IRedisCacheService, RedisCacheService>();
     services.AddScoped<ITaggedCacheService, TaggedCacheService>();
     services.AddScoped<IAsyncCacheInvalidationService, AsyncCacheInvalidationService>();
+
+    services.AddScoped<ICookieService, CookieService>();
 
     services.AddScoped<IUserDAO, CachedUserDAO>();
     services.AddScoped<IActivDAO, ActivDAO>();
@@ -205,6 +208,8 @@ static void ConfigureMiddleware(WebApplication app)
 
     app.UseSerilogRequestLogging();
     app.UseCors("AllowSwagger");
+
+    app.UseMiddleware<TokenRefreshMiddleware>();
 
     if (app.Environment.IsDevelopment())
     {
