@@ -38,64 +38,41 @@ public class JwtService(IConfiguration configuration) : IJwtService
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    public string GenerateRefreshToken()
+    public string GenerateRefreshToken(int userId)
     {
-        return Guid.NewGuid().ToString();
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.NameIdentifier, userId.ToString()),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
+        };
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_key));
+        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var token = new JwtSecurityToken(
+            issuer: _issuer,
+            audience: _audience,
+            claims: claims,
+            expires: DateTime.UtcNow.AddDays(7), // Refresh токен живет 7 дней
+            signingCredentials: credentials
+        );
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    public List<string>? GetRolesFromToken(string token)
+    public int? GetUserIdFromRefreshToken(string refreshToken)
     {
         try
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var jwt = tokenHandler.ReadJwtToken(token);
-            return jwt.Claims.Where(x => x.Type == ClaimTypes.Role).Select(x => x.Value).ToList();
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    public int? GetUserIdFromToken(string token)
-    {
-        try
-        {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var jwt = tokenHandler.ReadJwtToken(token);
+            var jwt = tokenHandler.ReadJwtToken(refreshToken);
             var userIdClaim = jwt.Claims.FirstOrDefault(x => x.Type == ClaimTypes.NameIdentifier);
             return userIdClaim != null ? int.Parse(userIdClaim.Value) : null;
         }
         catch
         {
             return null;
-        }
-    }
-
-    public bool ValidateToken(string token)
-    {
-        try
-        {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_key));
-
-            tokenHandler.ValidateToken(token, new TokenValidationParameters
-            {
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = key,
-                ValidateIssuer = true,
-                ValidIssuer = _issuer,
-                ValidateAudience = true,
-                ValidAudience = _audience,
-                ValidateLifetime = true,
-                ClockSkew = TimeSpan.FromSeconds(30)
-            }, out SecurityToken validatedToken);
-
-            return true;
-        }
-        catch
-        {
-            return false;
         }
     }
 }
