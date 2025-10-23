@@ -5,7 +5,7 @@ public static class DeviceInfoHelper
     public static DeviceInfo ParseDeviceInfo(HttpContext context)
     {
         var userAgent = context.Request.Headers.UserAgent.FirstOrDefault() ?? "";
-        
+
         return new DeviceInfo
         {
             UserAgent = userAgent,
@@ -50,8 +50,8 @@ public static class DeviceInfoHelper
 
     private static bool IsMobileDevice(string userAgent)
     {
-        return userAgent.Contains("Mobile") || 
-               userAgent.Contains("Android") || 
+        return userAgent.Contains("Mobile") ||
+               userAgent.Contains("Android") ||
                userAgent.Contains("iPhone") ||
                userAgent.Contains("iPad");
     }
@@ -71,7 +71,7 @@ public class DeviceInfo
     public string DeviceType { get; set; } = string.Empty;
     public bool IsMobile { get; set; }
     public bool IsBot { get; set; }
-    
+
     public string ToJsonString()
     {
         return System.Text.Json.JsonSerializer.Serialize(this);

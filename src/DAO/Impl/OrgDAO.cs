@@ -64,20 +64,11 @@ public class OrgDAO(AppDBContext context) : IOrgDAO
         var existing = await context.Org.FindAsync([id], ct);
         if (existing == null || existing.IsDeleted) return false;
 
-        if (!string.IsNullOrEmpty(dto.Name))
-            existing.Name = dto.Name;
-
-        if (!string.IsNullOrEmpty(dto.INN))
-            existing.Inn = dto.INN;
-
-        if (dto.Latitude.HasValue)
-            existing.Latitude = dto.Latitude.Value;
-
-        if (dto.Longitude.HasValue)
-            existing.Longitude = dto.Longitude.Value;
-
-        if (!string.IsNullOrEmpty(dto.Address))
-            existing.Address = dto.Address;
+        existing.Name = dto.Name ?? existing.Name;
+        existing.Inn = dto.INN ?? existing.Inn;
+        existing.Latitude = dto.Latitude ?? existing.Latitude;
+        existing.Longitude = dto.Longitude ?? existing.Longitude;
+        existing.Address = dto.Address ?? existing.Address;
 
         await context.SaveChangesAsync(ct);
         return true;

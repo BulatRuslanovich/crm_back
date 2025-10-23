@@ -14,12 +14,12 @@ public class UserPolicyEntity
     [Required]
     public int UsrId { get; set; }
 
-    [Column("policy_id")]
-    [Required]
-    public int PolicyId { get; set; }
+    // [Column("policy_id")]
+    // [Required]
+    // public int PolicyId { get; set; }
 
-    [Column("created_at")]
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    // [Column("created_at")]
+    // public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation properties
     [ForeignKey("UsrId")]

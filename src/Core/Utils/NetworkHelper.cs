@@ -4,12 +4,10 @@ public static class NetworkHelper
 {
     public static string GetClientIpAddress(HttpContext context)
     {
-        // 1. Cloudflare
         var cfConnectingIp = context.Request.Headers["CF-Connecting-IP"].FirstOrDefault();
         if (!string.IsNullOrEmpty(cfConnectingIp) && IsValidIpAddress(cfConnectingIp))
             return cfConnectingIp;
 
-        // 2. AWS ALB/ELB
         var xAmznTraceId = context.Request.Headers["X-Amzn-Trace-Id"].FirstOrDefault();
         if (!string.IsNullOrEmpty(xAmznTraceId))
         {
@@ -22,11 +20,10 @@ public static class NetworkHelper
             }
         }
 
-        // 3. Стандартные заголовки
         var headers = new[]
         {
             "X-Forwarded-For",
-            "X-Real-IP", 
+            "X-Real-IP",
             "X-Client-IP",
             "X-Forwarded",
             "Forwarded-For",
@@ -44,14 +41,13 @@ public static class NetworkHelper
             }
         }
 
-        // 4. Fallback
         return context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
     }
 
     private static bool IsValidIpAddress(string ip)
     {
         if (string.IsNullOrEmpty(ip)) return false;
-        
+
         if (System.Net.IPAddress.TryParse(ip, out var address))
         {
             return address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork ||

@@ -98,16 +98,17 @@ public class UserDAO(AppDBContext context) : IUserDAO
     {
         var user = await context.User.FirstOrDefaultAsync(u => u.Login == dto.Login && !u.IsDeleted, ct);
 
-        if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Login, user.PasswordHash)) return null;
+        if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash)) return null;
 
-        var usrPolicies =  await context.UserPolicies
+        var usrPolicies = await context.UserPolicies
         .Where(up => up.UsrId == user.UsrId)
         .Include(up => up.Policy)
         .Select(up => up.Policy)
         .Where(p => !p.IsDeleted)
         .ToListAsync(ct);
 
-        return new UserWithPoliciesDto() {
+        return new UserWithPoliciesDto()
+        {
             UsrId = user.UsrId,
             Login = user.Login,
             FirstName = user.FirstName,

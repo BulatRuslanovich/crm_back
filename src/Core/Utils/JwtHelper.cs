@@ -13,19 +13,4 @@ public static class JwtHelper
         }
         return null;
     }
-
-    public static string? GetUserLoginFromContext(HttpContext context)
-    {
-        return context.User.FindFirst(ClaimTypes.Name)?.Value;
-    }
-
-    public static List<string> GetUserRolesFromContext(HttpContext context)
-    {
-        return context.User.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
-    }
-
-    public static bool IsAuthenticated(HttpContext context)
-    {
-        return context.User.Identity?.IsAuthenticated == true;
-    }
 }
