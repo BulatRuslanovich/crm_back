@@ -30,15 +30,7 @@ public class AsyncCacheInvalidationService(ITaggedCacheService taggedCache) : IA
         {
             while (_invalidationQueue.TryDequeue(out var task))
             {
-                try
-                {
-                    await taggedCache.RemoveByTagAsync(task.Tag, task.CancellationToken);
-                }
-                catch (Exception ex)
-                {
-                    // Логируем ошибку, но не прерываем обработку
-                    Console.WriteLine($"Error invalidating cache for tag {task.Tag}: {ex.Message}");
-                }
+                await taggedCache.RemoveByTagAsync(task.Tag, task.CancellationToken);
             }
         }
         finally
@@ -61,8 +53,3 @@ public class AsyncCacheInvalidationService(ITaggedCacheService taggedCache) : IA
     }
 }
 
-public interface IAsyncCacheInvalidationService
-{
-    public void EnqueueInvalidation(string tag, CancellationToken ct = default);
-    public void EnqueueInvalidations(IEnumerable<string> tags, CancellationToken ct = default);
-}
