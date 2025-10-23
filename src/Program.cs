@@ -6,6 +6,7 @@ using CrmBack.Services;
 using CrmBack.Services.Impl;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -155,12 +156,24 @@ static void ConfigureDatabase(IServiceCollection services, IConfiguration config
     services.AddStackExchangeRedisCache(options =>
     {
         options.Configuration = configuration.GetConnectionString("Redis");
+        options.InstanceName = "CrmBack";
+    });
+
+    services.AddSingleton<IConnectionMultiplexer>(provider =>
+    {
+        var configuration = provider.GetRequiredService<IConfiguration>();
+        return ConnectionMultiplexer.Connect(configuration.GetConnectionString("Redis")!);
     });
 }
 
 static void ConfigureApplicationServices(IServiceCollection services)
 {
-    services.AddScoped<IUserDAO, UserDAO>();
+
+    services.AddScoped<IRedisCacheService, RedisCacheService>();
+    services.AddScoped<ITaggedCacheService, TaggedCacheService>();
+    services.AddScoped<IAsyncCacheInvalidationService, AsyncCacheInvalidationService>();
+
+    services.AddScoped<IUserDAO, CachedUserDAO>();
     services.AddScoped<IActivDAO, ActivDAO>();
     services.AddScoped<IOrgDAO, OrgDAO>();
     services.AddScoped<IPlanDAO, PlanDAO>();
