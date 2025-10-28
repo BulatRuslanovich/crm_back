@@ -18,7 +18,7 @@ public class CacheInvalidService(ITagCacheService cache) : ICacheInvalidService
     {
         foreach (var tag in tags)
             queue.Enqueue(new InvalidTask(tag, ct));
-        
+
         _ = Task.Run(ProcessQueue, ctSource.Token);
     }
 
@@ -37,7 +37,7 @@ public class CacheInvalidService(ITagCacheService cache) : ICacheInvalidService
         }
     }
 
-    private record InvalidTask (
+    private record InvalidTask(
         string Tag,
         CancellationToken CancellationToken
     );

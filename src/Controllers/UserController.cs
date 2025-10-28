@@ -5,7 +5,6 @@ using CrmBack.Core.Utils;
 using CrmBack.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
 
 [ApiController]
 [Route("api/usr")]
@@ -32,17 +31,17 @@ public class UserController(IUserService userService) : BaseApiController<ReadUs
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
         var response = await userService.Create(dto, HttpContext.RequestAborted);
-        return response is null 
+        return response is null
             ? BadRequest(new { message = "Failed to register user" })
             : Ok(response);
     }
 
     [HttpPost("refresh")]
-    public async Task<ActionResult<RefreshTokenResponseDto>> RefreshToken()
+    public async Task<ActionResult<bool>> RefreshToken()
     {
         try
         {
-            return Ok(await userService.RefreshToken("", HttpContext.RequestAborted));
+            return Ok(await userService.RefreshToken(ct: HttpContext.RequestAborted));
         }
         catch (UnauthorizedAccessException ex)
         {

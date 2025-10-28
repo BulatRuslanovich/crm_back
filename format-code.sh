@@ -1,7 +1,6 @@
 #!/bin/bash
 
-
-echo "🔧 Форматирование кода в .NET проекте..."
+echo "🔧 Форматирование и анализ кода в .NET проекте..."
 
 cd "$(dirname "$0")"
 
@@ -11,17 +10,27 @@ if ! command -v dotnet &> /dev/null; then
 fi
 
 echo "📦 Восстановление пакетов..."
-dotnet restore
+dotnet restore --verbosity quiet || exit 1
 
-echo "🔍 Анализ кода..."
-dotnet build --verbosity quiet
+echo "🔍 Анализ и сборка проекта..."
+dotnet build --no-restore --verbosity minimal || exit 1
 
-echo "✨ Форматирование кода..."
-dotnet format src/CrmBack.csproj --verbosity quiet
+echo "✨ Форматирование кода согласно .editorconfig..."
+dotnet format src/CrmBack.csproj --verify-no-changes || {
+    echo "❌ Код не соответствует правилам форматирования!"
+    echo "🧹 Применение автоформатирования..."
+    dotnet format src/CrmBack.csproj --verbosity minimal
+}
 
+echo ""
+echo "🔎 Проверка стиля кода (строгие правила)..."
+dotnet format src/CrmBack.csproj --verify-no-changes --verbosity diagnostic 2>&1 | grep -E "(error|warning|violating)" || true
+
+echo ""
 echo "✅ Форматирование завершено!"
 echo ""
 echo "💡 Полезные команды:"
-echo "  dotnet format src/CrmBack.csproj --verify-no-changes  # Проверить форматирование без изменений"
-echo "  dotnet format src/CrmBack.csproj --verbosity diagnostic  # Подробный вывод"
-echo "  dotnet format src/CrmBack.csproj --include-generated  # Включить автогенерированные файлы"
+echo "  dotnet format . --verify-no-changes  # Проверить без изменений"
+echo "  dotnet format . --verbosity diagnostic  # Подробный вывод"
+echo "  dotnet format . --include-generated  # С автогенерированными файлами"
+echo "  dotnet format . --severity error  # Только ошибки"

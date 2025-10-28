@@ -6,7 +6,7 @@ namespace CrmBack.DAO.Impl;
 
 public class RefreshTokenDAO(AppDBContext context) : IRefreshTokenDAO
 {
-    public async Task<List<RefreshTokenEntity>> GetUserTokensForValidationAsync(int userId, CancellationToken ct = default)
+    public async Task<List<RefreshTokenEntity>> GetUserTokens(int userId, CancellationToken ct = default)
     {
         return await context.RefreshTokens
             .Include(rt => rt.User)
@@ -29,7 +29,7 @@ public class RefreshTokenDAO(AppDBContext context) : IRefreshTokenDAO
     }
 
 
-    public async Task<bool> RevokeAllUserTokensAsync(int userId, CancellationToken ct = default)
+    public async Task<bool> RevokeAll(int userId, CancellationToken ct = default)
     {
         var tokens = await context.RefreshTokens
             .Where(rt => rt.UsrId == userId && !rt.IsRevoked)
@@ -41,7 +41,7 @@ public class RefreshTokenDAO(AppDBContext context) : IRefreshTokenDAO
         return true;
     }
 
-    public async Task<bool> RevokeTokenByIdAsync(int tokenId, int userId, CancellationToken ct = default)
+    public async Task<bool> RevokeById(int tokenId, int userId, CancellationToken ct = default)
     {
         var token = await context.RefreshTokens
             .FirstOrDefaultAsync(rt => rt.RefreshTokenId == tokenId && rt.UsrId == userId && !rt.IsRevoked, ct);

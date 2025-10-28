@@ -7,4 +7,5 @@ using Microsoft.AspNetCore.Mvc;
 [ApiController]
 [Route("api/org")]
 public class OrgController(IOrgService orgService)
-: BaseApiController<ReadOrgDto, CreateOrgDto, UpdateOrgDto>(orgService) { }
+: BaseApiController<ReadOrgDto, CreateOrgDto, UpdateOrgDto>(orgService)
+{ }

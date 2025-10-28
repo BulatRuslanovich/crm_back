@@ -7,6 +7,6 @@ public interface IUserService : IService<ReadUserDto, CreateUserDto, UpdateUserD
 {
     public Task<LoginResponseDto> Login(LoginUserDto Dto, CancellationToken ct = default);
     public Task<List<HumReadActivDto>> GetActivs(int userId, CancellationToken ct = default);
-    public Task<RefreshTokenResponseDto> RefreshToken(string refreshToken, CancellationToken ct = default);
+    public Task<bool> RefreshToken(string? refreshToken = null, CancellationToken ct = default);
     public Task<bool> Logout(int userId, CancellationToken ct = default);
 }

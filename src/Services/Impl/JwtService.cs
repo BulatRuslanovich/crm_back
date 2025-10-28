@@ -5,13 +5,13 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace CrmBack.Services.Impl;
 
-public class JwtService(IConfiguration configuration) : IJwtService
+public class JwtService(IConfiguration conf) : IJwtService
 {
-    private readonly string _key = configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key is not configured");
-    private readonly string _issuer = configuration["Jwt:Issuer"] ?? throw new InvalidOperationException("JWT Issuer is not configured");
-    private readonly string _audience = configuration["Jwt:Audience"] ?? throw new InvalidOperationException("JWT Audience is not configured");
+    private readonly string _key = conf["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key is not configured");
+    private readonly string _issuer = conf["Jwt:Issuer"] ?? throw new InvalidOperationException("JWT Issuer is not configured");
+    private readonly string _audience = conf["Jwt:Audience"] ?? throw new InvalidOperationException("JWT Audience is not configured");
 
-    public string GenerateAccessToken(int userId, string login, List<string> roles)
+    public string GenerateAccessTkn(int userId, string login, List<string> roles)
     {
         var claims = new List<Claim>
         {
@@ -24,10 +24,10 @@ public class JwtService(IConfiguration configuration) : IJwtService
 
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
-        return GenerateToken(claims, TimeSpan.FromHours(1));
+        return Generate(claims, TimeSpan.FromHours(1));
     }
 
-    public string GenerateRefreshToken(int userId)
+    public string GenerateRefreshTkn(int userId)
     {
         var claims = new List<Claim>
         {
@@ -36,10 +36,10 @@ public class JwtService(IConfiguration configuration) : IJwtService
             new(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
         };
 
-        return GenerateToken(claims, TimeSpan.FromDays(7));
+        return Generate(claims, TimeSpan.FromDays(7));
     }
 
-    private string GenerateToken(List<Claim> claims, TimeSpan expiration)
+    private string Generate(List<Claim> claims, TimeSpan expiration)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_key));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -55,12 +55,12 @@ public class JwtService(IConfiguration configuration) : IJwtService
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    public int? GetUserIdFromRefreshToken(string refreshToken)
+    public int? GetUsrId(string refTkn)
     {
         try
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var userIdClaim = tokenHandler.ReadJwtToken(refreshToken).Claims
+            var userIdClaim = tokenHandler.ReadJwtToken(refTkn).Claims
                 .FirstOrDefault(x => x.Type == ClaimTypes.NameIdentifier);
             return userIdClaim is not null ? int.Parse(userIdClaim.Value) : null;
         }

@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace CrmBack.Services.Impl;
 
-public class CookieService(IHttpContextAccessor httpContextAccessor) : ICookieService
+public class CookieService(IHttpContextAccessor accessor) : ICookieService
 {
     private const string AccessTokenCookieName = "access_token";
     private const string RefreshTokenCookieName = "refresh_token";
@@ -10,12 +10,12 @@ public class CookieService(IHttpContextAccessor httpContextAccessor) : ICookieSe
     private const bool IsHttpOnly = true;
     private const SameSiteMode SameSite = SameSiteMode.Strict;
 
-    private void SetTokenCookie(string cookieName, string token, DateTime expiresAt)
+    private void SetToken(string name, string token, DateTime expiresAt)
     {
-        var httpContext = httpContextAccessor.HttpContext;
+        var httpContext = accessor.HttpContext;
         if (httpContext is null) return;
 
-        httpContext.Response.Cookies.Append(cookieName, token, new CookieOptions
+        httpContext.Response.Cookies.Append(name, token, new CookieOptions
         {
             HttpOnly = IsHttpOnly,
             Secure = _isSecure,
@@ -25,17 +25,17 @@ public class CookieService(IHttpContextAccessor httpContextAccessor) : ICookieSe
         });
     }
 
-    public void SetAccessTokenCookie(string token, DateTime expiresAt) => SetTokenCookie(AccessTokenCookieName, token, expiresAt);
+    public void SetAccessTkn(string token, DateTime expiresAt) => SetToken(AccessTokenCookieName, token, expiresAt);
 
-    public void SetRefreshTokenCookie(string token, DateTime expiresAt) => SetTokenCookie(RefreshTokenCookieName, token, expiresAt);
+    public void SetRefreshTkn(string token, DateTime expiresAt) => SetToken(RefreshTokenCookieName, token, expiresAt);
 
-    public string? GetAccessTokenFromCookie() => httpContextAccessor.HttpContext?.Request.Cookies[AccessTokenCookieName];
+    public string? GetAccessTkn() => accessor.HttpContext?.Request.Cookies[AccessTokenCookieName];
 
-    public string? GetRefreshTokenFromCookie() => httpContextAccessor.HttpContext?.Request.Cookies[RefreshTokenCookieName];
+    public string? GetRefreshTkn() => accessor.HttpContext?.Request.Cookies[RefreshTokenCookieName];
 
-    public void ClearAuthCookies()
+    public void Clear()
     {
-        var httpContext = httpContextAccessor.HttpContext;
+        var httpContext = accessor.HttpContext;
         if (httpContext is null) return;
 
         var expiredOptions = new CookieOptions

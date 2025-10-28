@@ -29,7 +29,7 @@ public class CachedUserDAO(AppDBContext context, ITagCacheService cache, ICacheI
 
         entity.IsDeleted = true;
         await context.SaveChangesAsync(ct);
-        
+
         invalid.Enqueue([$"user:{id}", UserTag, UserListTag], ct);
 
         return true;

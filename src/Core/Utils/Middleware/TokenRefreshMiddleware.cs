@@ -5,36 +5,23 @@ namespace CrmBack.Core.Utils.Middleware;
 
 public class TokenRefreshMiddleware(RequestDelegate next)
 {
-    public async Task InvokeAsync(HttpContext context, ICookieService cookieService, IUserService userService)
+    public async Task InvokeAsync(HttpContext context, ICookieService cookie, IUserService user)
     {
-        var accessToken = cookieService.GetAccessTokenFromCookie();
+        var accessToken = cookie.GetAccessTkn();
 
         if (!string.IsNullOrEmpty(accessToken))
         {
-            try
-            {
-                var tokenHandler = new JwtSecurityTokenHandler();
-                var token = tokenHandler.ReadJwtToken(accessToken);
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var token = tokenHandler.ReadJwtToken(accessToken);
 
-                if (token.ValidTo <= DateTime.UtcNow.AddMinutes(5))
-                {
-                    var refreshToken = cookieService.GetRefreshTokenFromCookie();
-                    if (!string.IsNullOrEmpty(refreshToken))
-                    {
-                        try
-                        {
-                            await userService.RefreshToken(refreshToken, context.RequestAborted);
-                        }
-                        catch
-                        {
-                            cookieService.ClearAuthCookies();
-                        }
-                    }
-                }
-            }
-            catch
+            if (token.ValidTo <= DateTime.UtcNow.AddMinutes(5))
             {
-                cookieService.ClearAuthCookies();
+                var refTkn = cookie.GetRefreshTkn();
+
+                if (!string.IsNullOrEmpty(refTkn))
+                {
+                    await user.RefreshToken(refTkn, context.RequestAborted);
+                }
             }
         }
 

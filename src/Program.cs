@@ -43,9 +43,9 @@ builder.Services.AddCors(options =>
 });
 
 // JWT Authentication
-var jwtKey = builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key is not configured");
-var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? throw new InvalidOperationException("JWT Issuer is not configured");
-var jwtAudience = builder.Configuration["Jwt:Audience"] ?? throw new InvalidOperationException("JWT Audience is not configured");
+string jwtKey = builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key is not configured");
+string jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? throw new InvalidOperationException("JWT Issuer is not configured");
+string jwtAudience = builder.Configuration["Jwt:Audience"] ?? throw new InvalidOperationException("JWT Audience is not configured");
 
 builder.Services
     .AddAuthentication(options =>
@@ -81,15 +81,13 @@ builder.Services
         };
     });
 
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy("Representative", policy => policy.RequireRole("Representative"));
-    options.AddPolicy("Manager", policy => policy.RequireRole("Manager"));
-    options.AddPolicy("Director", policy => policy.RequireRole("Director"));
-    options.AddPolicy("Admin", policy => policy.RequireRole("Admin"));
-    options.AddPolicy("ManagerOrAbove", policy => policy.RequireRole("Manager", "Director", "Admin"));
-    options.AddPolicy("DirectorOrAbove", policy => policy.RequireRole("Director", "Admin"));
-});
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy("Representative", policy => policy.RequireRole("Representative"))
+    .AddPolicy("Manager", policy => policy.RequireRole("Manager"))
+    .AddPolicy("Director", policy => policy.RequireRole("Director"))
+    .AddPolicy("Admin", policy => policy.RequireRole("Admin"))
+    .AddPolicy("ManagerOrAbove", policy => policy.RequireRole("Manager", "Director", "Admin"))
+    .AddPolicy("DirectorOrAbove", policy => policy.RequireRole("Director", "Admin"));
 
 // Swagger
 builder.Services.AddSwaggerGen(option =>
@@ -157,9 +155,9 @@ builder.Services.AddRateLimiter(options =>
 {
     options.GlobalLimiter = System.Threading.RateLimiting.PartitionedRateLimiter.Create<HttpContext, string>(context =>
     {
-        var ipAddress = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-        var userAgent = context.Request.Headers.UserAgent.ToString();
-        var deviceKey = $"{ipAddress}:{userAgent.GetHashCode()}";
+        string ipAddress = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        string userAgent = context.Request.Headers.UserAgent.ToString();
+        string deviceKey = $"{ipAddress}:{userAgent.GetHashCode()}";
 
         return System.Threading.RateLimiting.RateLimitPartition.GetSlidingWindowLimiter(
             partitionKey: deviceKey,
@@ -177,7 +175,6 @@ builder.Services.AddRateLimiter(options =>
 // FluentValidation
 builder.Services.AddValidatorsFromAssemblyContaining<LoginUserDtoValidator>()
                  .AddValidatorsFromAssemblyContaining<CreateUserDtoValidator>()
-                 .AddValidatorsFromAssemblyContaining<RevokeTokenRequestDtoValidator>()
                  .AddValidatorsFromAssemblyContaining<UpdateUserDtoValidator>();
 
 builder.Services.AddFluentValidationAutoValidation(config =>

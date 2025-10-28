@@ -42,19 +42,7 @@ public class LoginResponseDto
     public int UserId { get; set; }
     public string Login { get; set; } = string.Empty;
     public List<string> Roles { get; set; } = [];
-    public DateTime ExpiresAt { get; set; }
 }
-
-public class RefreshTokenResponseDto
-{
-    public DateTime ExpiresAt { get; set; }
-}
-
-public class RevokeTokenRequestDto
-{
-    public string RefreshToken { get; set; } = string.Empty;
-}
-
 
 public class UserWithPoliciesDto : ReadUserDto
 {
@@ -66,8 +54,6 @@ public class PolicyDto
     public int PolicyId { get; set; }
     public string PolicyName { get; set; } = string.Empty;
 }
-
-
 
 public static class UserMapper
 {
