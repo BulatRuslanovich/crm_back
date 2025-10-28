@@ -16,15 +16,15 @@ echo "🔍 Анализ и сборка проекта..."
 dotnet build --no-restore --verbosity minimal || exit 1
 
 echo "✨ Форматирование кода согласно .editorconfig..."
-dotnet format src/CrmBack.csproj --verify-no-changes || {
+dotnet format CrmBack.sln --verify-no-changes || {
     echo "❌ Код не соответствует правилам форматирования!"
     echo "🧹 Применение автоформатирования..."
-    dotnet format src/CrmBack.csproj --verbosity minimal
+    dotnet format CrmBack.sln --verbosity minimal
 }
 
 echo ""
 echo "🔎 Проверка стиля кода (строгие правила)..."
-dotnet format src/CrmBack.csproj --verify-no-changes --verbosity diagnostic 2>&1 | grep -E "(error|warning|violating)" || true
+dotnet format CrmBack.sln --verify-no-changes --verbosity diagnostic 2>&1 | grep -E "(error|warning|violating)" || true
 
 echo ""
 echo "✅ Форматирование завершено!"

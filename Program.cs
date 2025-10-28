@@ -25,7 +25,6 @@ builder.Host.UseSerilog((context, config) =>
 });
 
 // Services
-builder.Services.AddMemoryCache();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddHttpContextAccessor();
@@ -227,3 +226,5 @@ app.MapHealthChecks("/health");
 app.MapControllers();
 
 app.Run("http://localhost:5555");
+
+public partial class Program { }
