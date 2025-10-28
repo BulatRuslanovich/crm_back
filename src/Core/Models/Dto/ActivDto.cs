@@ -1,19 +1,13 @@
-using System.ComponentModel.DataAnnotations;
 using CrmBack.Core.Models.Entities;
 
 namespace CrmBack.Core.Models.Dto;
 
 public class CreateActivDto
 {
-    [Required]
     public int UsrId { get; set; }
-    [Required]
     public int OrgId { get; set; }
-    [Required]
     public DateTime VisitDate { get; set; }
-    [Required]
     public TimeSpan StartTime { get; set; }
-    [Required]
     public TimeSpan EndTime { get; set; }
     public string? Description { get; set; }
 }
@@ -22,7 +16,7 @@ public class HumReadActivDto : ReadActivDto
 {
     public string OrgName { get; set; } = string.Empty;
     public string StatusName { get; set; } = string.Empty;
-};
+}
 
 public class ReadActivDto
 {
@@ -34,7 +28,7 @@ public class ReadActivDto
     public TimeSpan StartTime { get; set; }
     public TimeSpan EndTime { get; set; }
     public string? Description { get; set; }
-};
+}
 
 public class UpdateActivDto
 {
@@ -43,37 +37,33 @@ public class UpdateActivDto
     public TimeSpan? StartTime { get; set; }
     public TimeSpan? EndTime { get; set; }
     public string? Description { get; set; }
-};
-
+}
 
 public static class ActivMapper
 {
-    public static ReadActivDto ToReadDto(this ActivEntity entity) =>
-         new()
-         {
-             ActivId = entity.ActivId,
-             UsrId = entity.UsrId,
-             OrgId = entity.OrgId,
-             VisitDate = entity.VisitDate,
-             StatusId = entity.StatusId,
-             StartTime = entity.StartTime,
-             EndTime = entity.EndTime,
-             Description = entity.Description ?? string.Empty,
-         };
+    public static ReadActivDto ToReadDto(this ActivEntity entity) => new()
+    {
+        ActivId = entity.ActivId,
+        UsrId = entity.UsrId,
+        OrgId = entity.OrgId,
+        VisitDate = entity.VisitDate,
+        StatusId = entity.StatusId,
+        StartTime = entity.StartTime,
+        EndTime = entity.EndTime,
+        Description = entity.Description ?? string.Empty,
+    };
 
-    public static HumReadActivDto ToHumReadDto(this ActivEntity entity) =>
-        new()
-        {
-            ActivId = entity.ActivId,
-            UsrId = entity.UsrId,
-            OrgName = entity.Organization?.Name ?? string.Empty,
-            VisitDate = entity.VisitDate,
-            StatusName = entity.Status?.Name ?? string.Empty,
-            StartTime = entity.StartTime,
-            EndTime = entity.EndTime,
-            Description = entity.Description ?? string.Empty,
-        };
-
+    public static HumReadActivDto ToHumReadDto(this ActivEntity entity) => new()
+    {
+        ActivId = entity.ActivId,
+        UsrId = entity.UsrId,
+        OrgName = entity.Organization?.Name ?? string.Empty,
+        VisitDate = entity.VisitDate,
+        StatusName = entity.Status?.Name ?? string.Empty,
+        StartTime = entity.StartTime,
+        EndTime = entity.EndTime,
+        Description = entity.Description ?? string.Empty,
+    };
 
     public static ActivEntity ToEntity(this CreateActivDto payload) => new()
     {

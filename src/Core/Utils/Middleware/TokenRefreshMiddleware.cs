@@ -1,7 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
 using CrmBack.Services;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 
 namespace CrmBack.Core.Utils.Middleware;
 

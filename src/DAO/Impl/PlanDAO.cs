@@ -8,32 +8,24 @@ public class PlanDAO(AppDBContext context) : IPlanDAO
 {
     public async Task<ReadPlanDto?> Create(CreatePlanDto dto, CancellationToken ct = default)
     {
-        var userExists = await context.User
-            .AnyAsync(u => u.UsrId == dto.UsrId && !u.IsDeleted, ct);
+        var userExists = await context.User.AnyAsync(u => u.UsrId == dto.UsrId && !u.IsDeleted, ct);
+        if (!userExists) throw new InvalidOperationException("User not found");
 
-        if (!userExists)
-            throw new InvalidOperationException("User not found");
+        var orgExists = await context.Org.AnyAsync(o => o.OrgId == dto.OrgId && !o.IsDeleted, ct);
+        if (!orgExists) throw new InvalidOperationException("Organization not found");
 
-        var orgExists = await context.Org
-            .AnyAsync(o => o.OrgId == dto.OrgId && !o.IsDeleted, ct);
-
-        if (!orgExists)
-            throw new InvalidOperationException("Organization not found");
-
-        if (dto.EndDate < dto.StartDate)
-            throw new InvalidOperationException("End date cannot be earlier than start date");
+        if (dto.EndDate < dto.StartDate) throw new InvalidOperationException("End date cannot be earlier than start date");
 
         var entity = dto.ToEntity();
         context.Plan.Add(entity);
         await context.SaveChangesAsync(ct);
-
         return entity.ToReadDto();
     }
 
     public async Task<bool> Delete(int id, CancellationToken ct = default)
     {
         var entity = await context.Plan.FindAsync([id], ct);
-        if (entity == null || entity.IsDeleted) return false;
+        if (entity is null or { IsDeleted: true }) return false;
 
         entity.IsDeleted = true;
         await context.SaveChangesAsync(ct);
@@ -42,10 +34,7 @@ public class PlanDAO(AppDBContext context) : IPlanDAO
 
     public async Task<List<ReadPlanDto>> FetchAll(bool isDeleted, int page, int pageSize, string? searchTerm = null, CancellationToken ct = default)
     {
-        var query = context.Plan
-            .AsQueryable();
-
-        query = query.Where(p => p.IsDeleted == isDeleted);
+        var query = context.Plan.AsQueryable().Where(p => p.IsDeleted == isDeleted);
 
         if (!string.IsNullOrEmpty(searchTerm))
         {
@@ -61,7 +50,7 @@ public class PlanDAO(AppDBContext context) : IPlanDAO
             .Take(pageSize)
             .ToListAsync(ct);
 
-        return [.. plans.Select(p => p.ToReadDto())];
+        return plans.Select(p => p.ToReadDto()).ToList();
     }
 
     public async Task<ReadPlanDto?> FetchById(int id, CancellationToken ct)
@@ -75,7 +64,7 @@ public class PlanDAO(AppDBContext context) : IPlanDAO
     public async Task<bool> Update(int id, UpdatePlanDto dto, CancellationToken ct = default)
     {
         var existing = await context.Plan.FindAsync([id], ct);
-        if (existing == null || existing.IsDeleted) return false;
+        if (existing is null or { IsDeleted: true }) return false;
 
         existing.StartDate = dto.StartDate ?? existing.StartDate;
         existing.EndDate = dto.EndDate ?? existing.EndDate;

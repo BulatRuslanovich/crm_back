@@ -5,13 +5,9 @@ namespace CrmBack.Core.Models.Dto;
 
 public class CreatePlanDto
 {
-    [Required]
     public int UsrId { get; set; }
-    [Required]
     public int OrgId { get; set; }
-    [Required]
     public DateTime StartDate { get; set; }
-    [Required]
     public DateTime EndDate { get; set; }
 }
 

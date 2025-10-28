@@ -12,14 +12,13 @@ using Microsoft.AspNetCore.RateLimiting;
 public class UserController(IUserService userService) : BaseApiController<ReadUserDto, CreateUserDto, UpdateUserDto>(userService)
 {
     [HttpPost("login")]
-    public async Task<ActionResult<LoginResponseDto>> Login([FromBody] LoginUserDto Dto)
+    public async Task<ActionResult<LoginResponseDto>> Login([FromBody] LoginUserDto dto)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
         try
         {
-            var response = await userService.Login(Dto, HttpContext, HttpContext.RequestAborted);
-            return Ok(response);
+            return Ok(await userService.Login(dto, HttpContext.RequestAborted));
         }
         catch (UnauthorizedAccessException ex)
         {
@@ -28,20 +27,14 @@ public class UserController(IUserService userService) : BaseApiController<ReadUs
     }
 
     [HttpPost("register")]
-    public async Task<ActionResult<ReadUserDto>> Register([FromBody] CreateUserDto Dto)
+    public async Task<ActionResult<ReadUserDto>> Register([FromBody] CreateUserDto dto)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
-        try
-        {
-            var response = await userService.Create(Dto, HttpContext.RequestAborted);
-            if (response == null) return BadRequest(new { message = "Failed to register user" });
-            return Ok(response);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var response = await userService.Create(dto, HttpContext.RequestAborted);
+        return response is null 
+            ? BadRequest(new { message = "Failed to register user" })
+            : Ok(response);
     }
 
     [HttpPost("refresh")]
@@ -49,8 +42,7 @@ public class UserController(IUserService userService) : BaseApiController<ReadUs
     {
         try
         {
-            var response = await userService.RefreshToken("", HttpContext.RequestAborted);
-            return Ok(response);
+            return Ok(await userService.RefreshToken("", HttpContext.RequestAborted));
         }
         catch (UnauthorizedAccessException ex)
         {
@@ -58,102 +50,21 @@ public class UserController(IUserService userService) : BaseApiController<ReadUs
         }
     }
 
-    [HttpPost("revoke")]
-    public async Task<ActionResult> RevokeToken([FromBody] RevokeTokenRequestDto request)
-    {
-        if (!ModelState.IsValid) return BadRequest(ModelState);
-
-        try
-        {
-            var success = await userService.RevokeToken(request.RefreshToken, HttpContext.RequestAborted);
-            if (!success) return BadRequest(new { message = "Failed to revoke token" });
-            return Ok(new { message = "Token revoked successfully" });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-    }
-
     [HttpPost("logout")]
     [Authorize]
     public async Task<ActionResult> Logout()
     {
-        try
-        {
-            var userId = JwtHelper.GetUserIdFromContext(HttpContext);
-            if (userId == null)
-            {
-                return Unauthorized(new { message = "User not authenticated" });
-            }
+        var userId = JwtHelper.GetUserIdFromContext(HttpContext);
+        if (userId is null) return Unauthorized(new { message = "User not authenticated" });
 
-            var success = await userService.Logout(userId.Value, HttpContext.RequestAborted);
-            if (!success)
-            {
-                return BadRequest(new { message = "Failed to logout" });
-            }
-
-            return Ok(new { message = "Logged out successfully" });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var success = await userService.Logout(userId.Value, HttpContext.RequestAborted);
+        return success
+            ? Ok(new { message = "Logged out successfully" })
+            : BadRequest(new { message = "Failed to logout" });
     }
-
 
     [HttpGet("{id:int}/activ")]
     [Authorize]
-    public async Task<ActionResult<List<HumReadActivDto>>> GetActivs(int id)
-    {
-        var activs = await userService.GetActivs(id, HttpContext.RequestAborted);
-        return Ok(activs);
-    }
-
-    [HttpGet("sessions")]
-    [Authorize]
-    public async Task<ActionResult<List<ActiveSessionDto>>> GetActiveSessions()
-    {
-        try
-        {
-            var userId = JwtHelper.GetUserIdFromContext(HttpContext);
-            if (userId == null)
-            {
-                return Unauthorized(new { message = "User not authenticated" });
-            }
-
-            var sessions = await userService.GetActiveSessions(userId.Value, HttpContext.RequestAborted);
-            return Ok(sessions);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-    }
-
-    [HttpDelete("sessions/{sessionId:int}")]
-    [Authorize]
-    public async Task<ActionResult> RevokeSession(int sessionId)
-    {
-        try
-        {
-            var userId = JwtHelper.GetUserIdFromContext(HttpContext);
-            if (userId == null)
-            {
-                return Unauthorized(new { message = "User not authenticated" });
-            }
-
-            var success = await userService.RevokeSession(userId.Value, sessionId, HttpContext.RequestAborted);
-            if (!success)
-            {
-                return BadRequest(new { message = "Failed to revoke session" });
-            }
-
-            return Ok(new { message = "Session revoked successfully" });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-    }
+    public async Task<ActionResult<List<HumReadActivDto>>> GetActivs(int id) =>
+        Ok(await userService.GetActivs(id, HttpContext.RequestAborted));
 }

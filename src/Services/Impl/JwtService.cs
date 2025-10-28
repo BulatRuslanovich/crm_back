@@ -13,9 +13,6 @@ public class JwtService(IConfiguration configuration) : IJwtService
 
     public string GenerateAccessToken(int userId, string login, List<string> roles)
     {
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_key));
-        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, userId.ToString()),
@@ -27,15 +24,7 @@ public class JwtService(IConfiguration configuration) : IJwtService
 
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
-        var token = new JwtSecurityToken(
-            issuer: _issuer,
-            audience: _audience,
-            claims: claims,
-            expires: DateTime.UtcNow.AddHours(1),
-            signingCredentials: credentials
-        );
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
+        return GenerateToken(claims, TimeSpan.FromHours(1));
     }
 
     public string GenerateRefreshToken(int userId)
@@ -47,6 +36,11 @@ public class JwtService(IConfiguration configuration) : IJwtService
             new(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
         };
 
+        return GenerateToken(claims, TimeSpan.FromDays(7));
+    }
+
+    private string GenerateToken(List<Claim> claims, TimeSpan expiration)
+    {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_key));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
@@ -54,7 +48,7 @@ public class JwtService(IConfiguration configuration) : IJwtService
             issuer: _issuer,
             audience: _audience,
             claims: claims,
-            expires: DateTime.UtcNow.AddDays(7), // Refresh токен живет 7 дней
+            expires: DateTime.UtcNow.Add(expiration),
             signingCredentials: credentials
         );
 
@@ -66,9 +60,9 @@ public class JwtService(IConfiguration configuration) : IJwtService
         try
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var jwt = tokenHandler.ReadJwtToken(refreshToken);
-            var userIdClaim = jwt.Claims.FirstOrDefault(x => x.Type == ClaimTypes.NameIdentifier);
-            return userIdClaim != null ? int.Parse(userIdClaim.Value) : null;
+            var userIdClaim = tokenHandler.ReadJwtToken(refreshToken).Claims
+                .FirstOrDefault(x => x.Type == ClaimTypes.NameIdentifier);
+            return userIdClaim is not null ? int.Parse(userIdClaim.Value) : null;
         }
         catch
         {

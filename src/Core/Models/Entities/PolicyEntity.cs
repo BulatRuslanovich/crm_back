@@ -15,12 +15,6 @@ public class PolicyEntity
     [Required]
     public string PolicyName { get; set; } = string.Empty;
 
-    // [Column("created_at")]
-    // public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-    // [Column("updated_at")]
-    // public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-
     [Column("is_deleted")]
     public bool IsDeleted { get; set; } = false;
 

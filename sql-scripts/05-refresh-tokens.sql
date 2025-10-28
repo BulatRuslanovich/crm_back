@@ -4,9 +4,7 @@ CREATE TABLE refresh_tokens (
     token_hash VARCHAR(255) NOT NULL UNIQUE,
     expires_at TIMESTAMP NOT NULL,
     created_at TIMESTAMP DEFAULT NOW(),
-    is_revoked BOOLEAN DEFAULT FALSE,
-    device_info TEXT,
-    ip_address TEXT
+    is_revoked BOOLEAN DEFAULT FALSE
 );
 
 CREATE INDEX idx_refresh_tokens_user_id ON refresh_tokens(usr_id);

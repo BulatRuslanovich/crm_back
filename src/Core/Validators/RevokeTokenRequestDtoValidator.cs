@@ -8,7 +8,6 @@ public class RevokeTokenRequestDtoValidator : AbstractValidator<RevokeTokenReque
     public RevokeTokenRequestDtoValidator()
     {
         RuleFor(x => x.RefreshToken)
-            .NotEmpty()
-            .WithMessage("Refresh токен обязателен");
+            .NotEmpty().WithMessage("Refresh токен обязателен");
     }
 }

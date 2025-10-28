@@ -7,5 +7,4 @@ using Microsoft.AspNetCore.Mvc;
 [ApiController]
 [Route("api/plan")]
 public class PlanController(IPlanService planService)
-: BaseApiController<ReadPlanDto, CreatePlanDto, UpdatePlanDto>(planService)
-{ }
+: BaseApiController<ReadPlanDto, CreatePlanDto, UpdatePlanDto>(planService) { }

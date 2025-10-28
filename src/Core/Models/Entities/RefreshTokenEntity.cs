@@ -23,17 +23,8 @@ public class RefreshTokenEntity
     [Required]
     public DateTime ExpiresAt { get; set; }
 
-    [Column("created_at")]
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
     [Column("is_revoked")]
     public bool IsRevoked { get; set; } = false;
-
-    [Column("device_info")]
-    public string? DeviceInfo { get; set; }
-
-    [Column("ip_address")]
-    public string? IpAddress { get; set; }
 
     // Navigation properties
     [ForeignKey("UsrId")]

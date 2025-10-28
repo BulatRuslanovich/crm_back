@@ -18,7 +18,7 @@ public class OrgDAO(AppDBContext context) : IOrgDAO
     public async Task<bool> Delete(int id, CancellationToken ct = default)
     {
         var entity = await context.Org.FindAsync([id], ct);
-        if (entity == null || entity.IsDeleted) return false;
+        if (entity is null or { IsDeleted: true }) return false;
 
         entity.IsDeleted = true;
         await context.SaveChangesAsync(ct);
@@ -30,9 +30,7 @@ public class OrgDAO(AppDBContext context) : IOrgDAO
         var query = context.Org.AsQueryable();
 
         if (!isDeleted)
-        {
-            query.Where(o => !o.IsDeleted);
-        }
+            query = query.Where(o => !o.IsDeleted);
 
         if (!string.IsNullOrEmpty(searchTerm))
         {
@@ -48,7 +46,7 @@ public class OrgDAO(AppDBContext context) : IOrgDAO
             .Take(pageSize)
             .ToListAsync(ct);
 
-        return [.. orgs.Select(o => o.ToReadDto())];
+        return orgs.Select(o => o.ToReadDto()).ToList();
     }
 
     public async Task<ReadOrgDto?> FetchById(int id, CancellationToken ct)
@@ -62,7 +60,7 @@ public class OrgDAO(AppDBContext context) : IOrgDAO
     public async Task<bool> Update(int id, UpdateOrgDto dto, CancellationToken ct = default)
     {
         var existing = await context.Org.FindAsync([id], ct);
-        if (existing == null || existing.IsDeleted) return false;
+        if (existing is null or { IsDeleted: true }) return false;
 
         existing.Name = dto.Name ?? existing.Name;
         existing.Inn = dto.INN ?? existing.Inn;

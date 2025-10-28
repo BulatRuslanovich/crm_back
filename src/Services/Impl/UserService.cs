@@ -27,25 +27,13 @@ public class UserService(IUserDAO dao, IJwtService jwt, IRefreshTokenDAO refDao,
     public async Task<bool> Update(int id, UpdateUserDto dto, CancellationToken ct = default) =>
         await dao.Update(id, dto, ct);
 
-    public async Task<LoginResponseDto> Login(LoginUserDto dto, HttpContext httpContext, CancellationToken ct = default)
+    public async Task<LoginResponseDto> Login(LoginUserDto dto, CancellationToken ct = default)
     {
-        var user = await dao.FetchByLogin(dto, ct) ?? throw new UnauthorizedAccessException("Invalid login or password");
+        var user = await dao.FetchByLogin(dto, ct) 
+            ?? throw new UnauthorizedAccessException("Invalid login or password");
 
         var roles = user.Policies.Select(p => p.PolicyName).ToList();
-        var accessToken = jwt.GenerateAccessToken(user.UsrId, user.Login, roles);
-        var refreshToken = jwt.GenerateRefreshToken(user.UsrId);
-        var refreshTokenHash = BCrypt.Net.BCrypt.HashPassword(refreshToken);
-
-        var ipAddress = NetworkHelper.GetClientIpAddress(httpContext);
-        var deviceInfo = DeviceInfoHelper.ParseDeviceInfo(httpContext);
-
-        var expiresAt = DateTime.UtcNow.AddDays(7);
-        var accessTokenExpiresAt = DateTime.UtcNow.AddHours(1);
-
-        await refDao.CreateAsync(user.UsrId, refreshTokenHash, expiresAt, deviceInfo.ToJsonString(), ipAddress, ct);
-
-        cookieService.SetAccessTokenCookie(accessToken, accessTokenExpiresAt);
-        cookieService.SetRefreshTokenCookie(refreshToken, expiresAt);
+        var (accessToken, refreshToken, accessTokenExpiresAt) = await CreateTokensAsync(user, ct);
 
         return new LoginResponseDto
         {
@@ -61,87 +49,49 @@ public class UserService(IUserDAO dao, IJwtService jwt, IRefreshTokenDAO refDao,
 
     public async Task<RefreshTokenResponseDto> RefreshToken(string refreshToken, CancellationToken ct = default)
     {
-        if (string.IsNullOrEmpty(refreshToken))
-        {
-            refreshToken = cookieService.GetRefreshTokenFromCookie() ?? "";
-            if (string.IsNullOrEmpty(refreshToken))
-            {
-                throw new UnauthorizedAccessException("Refresh token not found in cookies");
-            }
-        }
+        refreshToken ??= cookieService.GetRefreshTokenFromCookie() 
+            ?? throw new UnauthorizedAccessException("Refresh token not found in cookies");
 
-        var userId = jwt.GetUserIdFromRefreshToken(refreshToken) ?? throw new UnauthorizedAccessException("Invalid refresh token format");
-
+        var userId = jwt.GetUserIdFromRefreshToken(refreshToken) 
+            ?? throw new UnauthorizedAccessException("Invalid refresh token format");
+        
         var storedTokens = await refDao.GetUserTokensForValidationAsync(userId, ct);
-        RefreshTokenEntity? storedToken = null;
+        var storedToken = storedTokens.FirstOrDefault(token => BCrypt.Net.BCrypt.Verify(refreshToken, token.TokenHash))
+            ?? throw new UnauthorizedAccessException("Invalid refresh token");
 
-        foreach (var token in storedTokens)
-        {
-            if (BCrypt.Net.BCrypt.Verify(refreshToken, token.TokenHash))
-            {
-                storedToken = token;
-                break;
-            }
-        }
-
-        if (storedToken == null)
-            throw new UnauthorizedAccessException("Invalid refresh token");
-        var user = await dao.FetchByIdWithPolicies(storedToken.UsrId, ct) ?? throw new UnauthorizedAccessException("User not found");
-        var roles = user.Policies.Select(p => p.PolicyName).ToList();
-        var newAccessToken = jwt.GenerateAccessToken(user.UsrId, user.Login, roles);
-
+        var user = await dao.FetchByIdWithPolicies(storedToken.UsrId, ct) 
+            ?? throw new UnauthorizedAccessException("User not found");
+        
         await refDao.RevokeTokenByIdAsync(storedToken.RefreshTokenId, storedToken.UsrId, ct);
-
-        var newRefreshToken = jwt.GenerateRefreshToken(user.UsrId);
-        var newRefreshTokenHash = BCrypt.Net.BCrypt.HashPassword(newRefreshToken);
-        var newExpiresAt = DateTime.UtcNow.AddDays(7);
-        var newAccessTokenExpiresAt = DateTime.UtcNow.AddHours(1);
-
-        await refDao.CreateAsync(user.UsrId, newRefreshTokenHash, newExpiresAt, ct: ct);
-
-        cookieService.SetAccessTokenCookie(newAccessToken, newAccessTokenExpiresAt);
-        cookieService.SetRefreshTokenCookie(newRefreshToken, newExpiresAt);
-
-        return new RefreshTokenResponseDto
-        {
-            ExpiresAt = newAccessTokenExpiresAt
-        };
+        
+        var (accessToken, newRefreshToken, accessTokenExpiresAt) = await CreateTokensAsync(user, ct);
+        
+        return new RefreshTokenResponseDto { ExpiresAt = accessTokenExpiresAt };
     }
 
-    public async Task<bool> RevokeToken(string refreshToken, CancellationToken ct = default)
+    private async Task<(string accessToken, string refreshToken, DateTime accessTokenExpiresAt)> CreateTokensAsync(
+        UserWithPoliciesDto user, CancellationToken ct)
     {
-        var tokenHash = BCrypt.Net.BCrypt.HashPassword(refreshToken);
-        return await refDao.RevokeTokenAsync(tokenHash, ct);
+        var roles = user.Policies.Select(p => p.PolicyName).ToList();
+        var accessToken = jwt.GenerateAccessToken(user.UsrId, user.Login, roles);
+        var refreshToken = jwt.GenerateRefreshToken(user.UsrId);
+        var refreshTokenHash = BCrypt.Net.BCrypt.HashPassword(refreshToken);
+        
+        var expiresAt = DateTime.UtcNow.AddDays(7);
+        var accessTokenExpiresAt = DateTime.UtcNow.AddHours(1);
+
+        await refDao.CreateAsync(user.UsrId, refreshTokenHash, expiresAt, ct);
+        
+        cookieService.SetAccessTokenCookie(accessToken, accessTokenExpiresAt);
+        cookieService.SetRefreshTokenCookie(refreshToken, expiresAt);
+
+        return (accessToken, refreshToken, accessTokenExpiresAt);
     }
-
-    public async Task<bool> RevokeAllUserTokens(int userId, CancellationToken ct = default) =>
-        await refDao.RevokeAllUserTokensAsync(userId, ct);
-
 
     public async Task<bool> Logout(int userId, CancellationToken ct = default)
     {
         var success = await refDao.RevokeAllUserTokensAsync(userId, ct);
         cookieService.ClearAuthCookies();
         return success;
-    }
-
-    public async Task<List<ActiveSessionDto>> GetActiveSessions(int userId, CancellationToken ct = default)
-    {
-        var tokens = await refDao.GetUserTokensAsync(userId, ct);
-
-        return [.. tokens.Select(token => new ActiveSessionDto
-        {
-            RefreshTokenId = token.RefreshTokenId,
-            DeviceInfo = token.DeviceInfo ?? "Unknown",
-            IpAddress = token.IpAddress ?? "Unknown",
-            CreatedAt = token.CreatedAt,
-            ExpiresAt = token.ExpiresAt,
-            IsCurrentSession = false //TODO: Можно добавить логику для определения текущей сессии
-        })];
-    }
-
-    public async Task<bool> RevokeSession(int userId, int sessionId, CancellationToken ct = default)
-    {
-        return await refDao.RevokeTokenByIdAsync(sessionId, userId, ct);
     }
 }

@@ -2,8 +2,6 @@ namespace CrmBack.Services.Impl;
 
 using CrmBack.Core.Models.Dto;
 using CrmBack.DAO;
-using CrmBack.Data;
-using Microsoft.EntityFrameworkCore;
 
 public class PlanService(IPlanDAO dao) : IPlanService
 {

@@ -18,7 +18,7 @@ public class UserDAO(AppDBContext context) : IUserDAO
     public async Task<bool> Delete(int id, CancellationToken ct = default)
     {
         var entity = await context.User.FindAsync([id], ct);
-        if (entity == null || entity.IsDeleted) return false;
+        if (entity is null or { IsDeleted: true }) return false;
 
         entity.IsDeleted = true;
         await context.SaveChangesAsync(ct);
@@ -30,9 +30,7 @@ public class UserDAO(AppDBContext context) : IUserDAO
         var query = context.User.AsQueryable();
 
         if (!isDeleted)
-        {
-            query.Where(o => !o.IsDeleted);
-        }
+            query = query.Where(o => !o.IsDeleted);
 
         if (!string.IsNullOrEmpty(searchTerm))
         {
@@ -49,7 +47,7 @@ public class UserDAO(AppDBContext context) : IUserDAO
             .Take(pageSize)
             .ToListAsync(ct);
 
-        return [.. users.Select(u => u.ToReadDto())];
+        return users.Select(u => u.ToReadDto()).ToList();
     }
 
     public async Task<ReadUserDto?> FetchById(int id, CancellationToken ct)
@@ -63,7 +61,7 @@ public class UserDAO(AppDBContext context) : IUserDAO
     public async Task<bool> Update(int id, UpdateUserDto dto, CancellationToken ct = default)
     {
         var existing = await context.User.FindAsync([id], ct);
-        if (existing == null || existing.IsDeleted) return false;
+        if (existing is null or { IsDeleted: true }) return false;
 
         if (!string.IsNullOrEmpty(dto.Password) && !string.IsNullOrEmpty(dto.CurrentPassword))
         {
@@ -91,53 +89,53 @@ public class UserDAO(AppDBContext context) : IUserDAO
             .OrderByDescending(a => a.VisitDate)
             .ToListAsync(ct);
 
-        return [.. activs.Select(a => a.ToHumReadDto())];
+        return activs.Select(a => a.ToHumReadDto()).ToList();
     }
 
     public async Task<UserWithPoliciesDto?> FetchByLogin(LoginUserDto dto, CancellationToken ct = default)
     {
         var user = await context.User.FirstOrDefaultAsync(u => u.Login == dto.Login && !u.IsDeleted, ct);
 
-        if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash)) return null;
+        if (user is null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash)) return null;
 
         var usrPolicies = await context.UserPolicies
-        .Where(up => up.UsrId == user.UsrId)
-        .Include(up => up.Policy)
-        .Select(up => up.Policy)
-        .Where(p => !p.IsDeleted)
-        .ToListAsync(ct);
+            .Where(up => up.UsrId == user.UsrId)
+            .Include(up => up.Policy)
+            .Select(up => up.Policy)
+            .Where(p => !p.IsDeleted)
+            .ToListAsync(ct);
 
-        return new UserWithPoliciesDto()
+        return new UserWithPoliciesDto
         {
             UsrId = user.UsrId,
             Login = user.Login,
             FirstName = user.FirstName,
             LastName = user.LastName,
             MiddleName = user.MiddleName,
-            Policies = [.. usrPolicies.Select(p => p.ToReadDto())]
+            Policies = usrPolicies.Select(p => p.ToReadDto()).ToList()
         };
     }
 
     public async Task<UserWithPoliciesDto?> FetchByIdWithPolicies(int id, CancellationToken ct = default)
     {
         var user = await context.User.FirstOrDefaultAsync(u => u.UsrId == id && !u.IsDeleted, ct);
-        if (user == null) return null;
+        if (user is null) return null;
 
         var usrPolicies = await context.UserPolicies
-        .Where(up => up.UsrId == user.UsrId)
-        .Include(up => up.Policy)
-        .Select(up => up.Policy)
-        .Where(p => !p.IsDeleted)
-        .ToListAsync(ct);
+            .Where(up => up.UsrId == user.UsrId)
+            .Include(up => up.Policy)
+            .Select(up => up.Policy)
+            .Where(p => !p.IsDeleted)
+            .ToListAsync(ct);
 
-        return new UserWithPoliciesDto()
+        return new UserWithPoliciesDto
         {
             UsrId = user.UsrId,
             Login = user.Login,
             FirstName = user.FirstName,
             LastName = user.LastName,
             MiddleName = user.MiddleName,
-            Policies = [.. usrPolicies.Select(p => p.ToReadDto())]
+            Policies = usrPolicies.Select(p => p.ToReadDto()).ToList()
         };
     }
 }

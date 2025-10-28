@@ -15,7 +15,7 @@ public class OrgService(IOrgDAO dao) : IOrgService
         await dao.Create(dto, ct);
 
     public async Task<bool> Update(int id, UpdateOrgDto dto, CancellationToken ct = default) =>
-       await dao.Update(id, dto, ct);
+        await dao.Update(id, dto, ct);
 
     public async Task<bool> Delete(int id, CancellationToken ct = default) =>
         await dao.Delete(id, ct);

@@ -18,9 +18,6 @@ public class UserPolicyEntity
     [Required]
     public int PolicyId { get; set; }
 
-    // [Column("created_at")]
-    // public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
     // Navigation properties
     [ForeignKey("UsrId")]
     public virtual UserEntity User { get; set; } = null!;

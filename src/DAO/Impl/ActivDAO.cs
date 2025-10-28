@@ -11,9 +11,7 @@ public class ActivDAO(AppDBContext context) : IActivDAO
         var query = context.Activ.AsQueryable();
 
         if (!isDeleted)
-        {
-            query.Where(a => !a.IsDeleted);
-        }
+            query = query.Where(a => !a.IsDeleted);
 
         var res = await query
             .OrderByDescending(a => a.CreatedAt)
@@ -21,7 +19,7 @@ public class ActivDAO(AppDBContext context) : IActivDAO
             .Take(pageSize)
             .ToListAsync(ct);
 
-        return [.. res.Select(r => r.ToReadDto())];
+        return res.Select(r => r.ToReadDto()).ToList();
     }
 
     public async Task<ReadActivDto?> FetchById(int id, CancellationToken ct)
@@ -42,22 +40,13 @@ public class ActivDAO(AppDBContext context) : IActivDAO
     public async Task<bool> Update(int id, UpdateActivDto dto, CancellationToken ct = default)
     {
         var existing = await context.Activ.FindAsync([id], ct);
-        if (existing == null || existing.IsDeleted) return false;
+        if (existing is null or { IsDeleted: true }) return false;
 
-        if (dto.StatusId.HasValue)
-            existing.StatusId = dto.StatusId.Value;
-
-        if (dto.VisitDate.HasValue)
-            existing.VisitDate = dto.VisitDate.Value;
-
-        if (dto.StartTime.HasValue)
-            existing.StartTime = dto.StartTime.Value;
-
-        if (dto.EndTime.HasValue)
-            existing.EndTime = dto.EndTime.Value;
-
-        if (dto.Description != null)
-            existing.Description = dto.Description;
+        existing.StatusId = dto.StatusId ?? existing.StatusId;
+        existing.VisitDate = dto.VisitDate ?? existing.VisitDate;
+        existing.StartTime = dto.StartTime ?? existing.StartTime;
+        existing.EndTime = dto.EndTime ?? existing.EndTime;
+        existing.Description = dto.Description ?? existing.Description;
 
         await context.SaveChangesAsync(ct);
         return true;
@@ -66,7 +55,7 @@ public class ActivDAO(AppDBContext context) : IActivDAO
     public async Task<bool> Delete(int id, CancellationToken ct = default)
     {
         var entity = await context.Activ.FindAsync([id], ct);
-        if (entity == null || entity.IsDeleted) return false;
+        if (entity is null or { IsDeleted: true }) return false;
 
         entity.IsDeleted = true;
         await context.SaveChangesAsync(ct);
@@ -80,6 +69,6 @@ public class ActivDAO(AppDBContext context) : IActivDAO
             .OrderByDescending(a => a.VisitDate)
             .ToListAsync(ct);
 
-        return [.. res.Select(a => a.ToReadDto())];
+        return res.Select(a => a.ToReadDto()).ToList();
     }
 }

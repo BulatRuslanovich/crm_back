@@ -10,68 +10,35 @@ public class CookieService(IHttpContextAccessor httpContextAccessor) : ICookieSe
     private const bool IsHttpOnly = true;
     private const SameSiteMode SameSite = SameSiteMode.Strict;
 
-    public void SetAccessTokenCookie(string token, DateTime expiresAt)
+    private void SetTokenCookie(string cookieName, string token, DateTime expiresAt)
     {
         var httpContext = httpContextAccessor.HttpContext;
-        if (httpContext == null) return;
+        if (httpContext is null) return;
 
-        var cookieOptions = new CookieOptions
+        httpContext.Response.Cookies.Append(cookieName, token, new CookieOptions
         {
             HttpOnly = IsHttpOnly,
             Secure = _isSecure,
             SameSite = SameSite,
             Expires = expiresAt,
             Path = "/"
-        };
-
-        httpContext.Response.Cookies.Append(AccessTokenCookieName, token, cookieOptions);
+        });
     }
 
-    public void SetRefreshTokenCookie(string token, DateTime expiresAt)
-    {
-        var httpContext = httpContextAccessor.HttpContext;
-        if (httpContext == null) return;
+    public void SetAccessTokenCookie(string token, DateTime expiresAt) => SetTokenCookie(AccessTokenCookieName, token, expiresAt);
 
-        var cookieOptions = new CookieOptions
-        {
-            HttpOnly = IsHttpOnly,
-            Secure = _isSecure,
-            SameSite = SameSite,
-            Expires = expiresAt,
-            Path = "/"
-        };
+    public void SetRefreshTokenCookie(string token, DateTime expiresAt) => SetTokenCookie(RefreshTokenCookieName, token, expiresAt);
 
-        httpContext.Response.Cookies.Append(RefreshTokenCookieName, token, cookieOptions);
-    }
+    public string? GetAccessTokenFromCookie() => httpContextAccessor.HttpContext?.Request.Cookies[AccessTokenCookieName];
 
-    public string? GetAccessTokenFromCookie()
-    {
-        var httpContext = httpContextAccessor.HttpContext;
-        return httpContext?.Request.Cookies[AccessTokenCookieName];
-    }
-
-    public string? GetRefreshTokenFromCookie()
-    {
-        var httpContext = httpContextAccessor.HttpContext;
-        var token = httpContext?.Request.Cookies[RefreshTokenCookieName];
-
-        // Отладочная информация
-        if (httpContext != null)
-        {
-            Console.WriteLine($"Available cookies: {string.Join(", ", httpContext.Request.Cookies.Keys)}");
-            Console.WriteLine($"Looking for cookie: {RefreshTokenCookieName}");
-            Console.WriteLine($"Found token: {(string.IsNullOrEmpty(token) ? "null" : "exists")}");
-        }
-
-        return token;
-    }
+    public string? GetRefreshTokenFromCookie() => httpContextAccessor.HttpContext?.Request.Cookies[RefreshTokenCookieName];
 
     public void ClearAuthCookies()
     {
         var httpContext = httpContextAccessor.HttpContext;
-        if (httpContext == null) return;
+        if (httpContext is null) return;
 
-        var cookieOptions = new CookieOptions
+        var expiredOptions = new CookieOptions
         {
             HttpOnly = IsHttpOnly,
             Secure = _isSecure,
@@ -80,7 +47,7 @@ public class CookieService(IHttpContextAccessor httpContextAccessor) : ICookieSe
             Path = "/"
         };
 
-        httpContext.Response.Cookies.Append(AccessTokenCookieName, "", cookieOptions);
-        httpContext.Response.Cookies.Append(RefreshTokenCookieName, "", cookieOptions);
+        httpContext.Response.Cookies.Append(AccessTokenCookieName, "", expiredOptions);
+        httpContext.Response.Cookies.Append(RefreshTokenCookieName, "", expiredOptions);
     }
 }

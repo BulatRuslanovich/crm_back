@@ -55,15 +55,6 @@ public class RevokeTokenRequestDto
     public string RefreshToken { get; set; } = string.Empty;
 }
 
-public class ActiveSessionDto
-{
-    public int RefreshTokenId { get; set; }
-    public string DeviceInfo { get; set; } = string.Empty;
-    public string IpAddress { get; set; } = string.Empty;
-    public DateTime CreatedAt { get; set; }
-    public DateTime ExpiresAt { get; set; }
-    public bool IsCurrentSession { get; set; }
-}
 
 public class UserWithPoliciesDto : ReadUserDto
 {

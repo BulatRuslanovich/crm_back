@@ -3,7 +3,7 @@ using Microsoft.Extensions.Caching.Distributed;
 
 namespace CrmBack.Services.Impl;
 
-public class RedisCacheService(IDistributedCache cache) : IRedisCacheService
+public class CacheService(IDistributedCache cache) : ICacheService
 {
     public async Task<T?> GetAsync<T>(string key, CancellationToken ct = default)
     {
@@ -14,14 +14,11 @@ public class RedisCacheService(IDistributedCache cache) : IRedisCacheService
     public async Task SetAsync<T>(string key, T value, TimeSpan? expiration = null, CancellationToken ct = default)
     {
         var options = new DistributedCacheEntryOptions();
-        if (expiration.HasValue)
-            options.AbsoluteExpirationRelativeToNow = expiration;
+        if (expiration is not null) options.AbsoluteExpirationRelativeToNow = expiration;
 
         await cache.SetStringAsync(key, JsonSerializer.Serialize(value), options, ct);
     }
 
-    public async Task RemoveAsync(string key, CancellationToken ct = default)
-    {
+    public async Task RemoveAsync(string key, CancellationToken ct = default) =>
         await cache.RemoveAsync(key, ct);
-    }
 }

@@ -8,5 +8,4 @@ namespace CrmBack.Controllers;
 [ApiController]
 [Route("api/activ")]
 public class ActivController(IActivService activService)
-: BaseApiController<ReadActivDto, CreateActivDto, UpdateActivDto>(activService)
-{ }
+: BaseApiController<ReadActivDto, CreateActivDto, UpdateActivDto>(activService) { }

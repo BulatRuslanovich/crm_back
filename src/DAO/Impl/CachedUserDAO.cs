@@ -5,9 +5,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CrmBack.DAO.Impl;
 
-public class CachedUserDAO(AppDBContext context, ITaggedCacheService cache, IAsyncCacheInvalidationService invalid) : IUserDAO
+public class CachedUserDAO(AppDBContext context, ITagCacheService cache, ICacheInvalidService invalid) : IUserDAO
 {
-    private readonly TimeSpan _cacheExpiration = TimeSpan.FromMinutes(15);
+    private readonly TimeSpan expiration = TimeSpan.FromMinutes(15);
     private const string UserTag = "users";
     private const string UserListTag = "user-lists";
 
@@ -17,7 +17,7 @@ public class CachedUserDAO(AppDBContext context, ITaggedCacheService cache, IAsy
         context.User.Add(entity);
         await context.SaveChangesAsync(ct);
 
-        invalid.EnqueueInvalidations([UserTag, UserListTag], ct);
+        invalid.Enqueue([UserTag, UserListTag], ct);
 
         return entity.ToReadDto();
     }
@@ -25,13 +25,12 @@ public class CachedUserDAO(AppDBContext context, ITaggedCacheService cache, IAsy
     public async Task<bool> Delete(int id, CancellationToken ct = default)
     {
         var entity = await context.User.FindAsync([id], ct);
-        if (entity == null || entity.IsDeleted) return false;
+        if (entity is null or { IsDeleted: true }) return false;
 
         entity.IsDeleted = true;
         await context.SaveChangesAsync(ct);
-
-        invalid.EnqueueInvalidation($"user:{id}", ct);
-        invalid.EnqueueInvalidations([UserTag, UserListTag], ct);
+        
+        invalid.Enqueue([$"user:{id}", UserTag, UserListTag], ct);
 
         return true;
     }
@@ -45,9 +44,7 @@ public class CachedUserDAO(AppDBContext context, ITaggedCacheService cache, IAsy
         var query = context.User.AsQueryable();
 
         if (!isDeleted)
-        {
-            query.Where(o => !o.IsDeleted);
-        }
+            query = query.Where(o => !o.IsDeleted);
 
         if (!string.IsNullOrEmpty(searchTerm))
         {
@@ -66,7 +63,7 @@ public class CachedUserDAO(AppDBContext context, ITaggedCacheService cache, IAsy
 
         var res = users.Select(u => u.ToReadDto()).ToList();
 
-        await cache.SetAsync(cacheKey, res, [UserListTag], _cacheExpiration, ct);
+        await cache.SetAsync(cacheKey, res, [UserListTag], expiration, ct);
 
         return res;
     }
@@ -83,7 +80,7 @@ public class CachedUserDAO(AppDBContext context, ITaggedCacheService cache, IAsy
 
         var res = user?.ToReadDto();
 
-        if (res != null) await cache.SetAsync(cacheKey, res, [UserTag, $"user:{id}"], _cacheExpiration, ct);
+        if (res != null) await cache.SetAsync(cacheKey, res, [UserTag, $"user:{id}"], expiration, ct);
 
         return res;
     }
@@ -91,7 +88,7 @@ public class CachedUserDAO(AppDBContext context, ITaggedCacheService cache, IAsy
     public async Task<bool> Update(int id, UpdateUserDto dto, CancellationToken ct = default)
     {
         var existing = await context.User.FindAsync([id], ct);
-        if (existing == null || existing.IsDeleted) return false;
+        if (existing is null or { IsDeleted: true }) return false;
 
         if (!string.IsNullOrEmpty(dto.Password) && !string.IsNullOrEmpty(dto.CurrentPassword))
         {
@@ -106,8 +103,7 @@ public class CachedUserDAO(AppDBContext context, ITaggedCacheService cache, IAsy
         existing.MiddleName = dto.MiddleName ?? existing.MiddleName;
         existing.Login = dto.Login ?? existing.Login;
 
-        invalid.EnqueueInvalidation($"user:{id}", ct);
-        invalid.EnqueueInvalidations([UserTag, UserListTag], ct);
+        invalid.Enqueue([$"user:{id}", UserTag, UserListTag], ct);
 
         await context.SaveChangesAsync(ct);
         return true;
@@ -122,53 +118,53 @@ public class CachedUserDAO(AppDBContext context, ITaggedCacheService cache, IAsy
             .OrderByDescending(a => a.VisitDate)
             .ToListAsync(ct);
 
-        return [.. activs.Select(a => a.ToHumReadDto())];
+        return activs.Select(a => a.ToHumReadDto()).ToList();
     }
 
     public async Task<UserWithPoliciesDto?> FetchByLogin(LoginUserDto dto, CancellationToken ct = default)
     {
         var user = await context.User.FirstOrDefaultAsync(u => u.Login == dto.Login && !u.IsDeleted, ct);
 
-        if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash)) return null;
+        if (user is null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash)) return null;
 
         var usrPolicies = await context.UserPolicies
-        .Where(up => up.UsrId == user.UsrId)
-        .Include(up => up.Policy)
-        .Select(up => up.Policy)
-        .Where(p => !p.IsDeleted)
-        .ToListAsync(ct);
+            .Where(up => up.UsrId == user.UsrId)
+            .Include(up => up.Policy)
+            .Select(up => up.Policy)
+            .Where(p => !p.IsDeleted)
+            .ToListAsync(ct);
 
-        return new UserWithPoliciesDto()
+        return new UserWithPoliciesDto
         {
             UsrId = user.UsrId,
             Login = user.Login,
             FirstName = user.FirstName,
             LastName = user.LastName,
             MiddleName = user.MiddleName,
-            Policies = [.. usrPolicies.Select(p => p.ToReadDto())]
+            Policies = usrPolicies.Select(p => p.ToReadDto()).ToList()
         };
     }
 
     public async Task<UserWithPoliciesDto?> FetchByIdWithPolicies(int id, CancellationToken ct = default)
     {
         var user = await context.User.FirstOrDefaultAsync(u => u.UsrId == id && !u.IsDeleted, ct);
-        if (user == null) return null;
+        if (user is null) return null;
 
         var usrPolicies = await context.UserPolicies
-        .Where(up => up.UsrId == user.UsrId)
-        .Include(up => up.Policy)
-        .Select(up => up.Policy)
-        .Where(p => !p.IsDeleted)
-        .ToListAsync(ct);
+            .Where(up => up.UsrId == user.UsrId)
+            .Include(up => up.Policy)
+            .Select(up => up.Policy)
+            .Where(p => !p.IsDeleted)
+            .ToListAsync(ct);
 
-        return new UserWithPoliciesDto()
+        return new UserWithPoliciesDto
         {
             UsrId = user.UsrId,
             Login = user.Login,
             FirstName = user.FirstName,
             LastName = user.LastName,
             MiddleName = user.MiddleName,
-            Policies = [.. usrPolicies.Select(p => p.ToReadDto())]
+            Policies = usrPolicies.Select(p => p.ToReadDto()).ToList()
         };
     }
 }

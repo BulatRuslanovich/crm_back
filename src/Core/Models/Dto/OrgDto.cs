@@ -5,15 +5,10 @@ namespace CrmBack.Core.Models.Dto;
 
 public class CreateOrgDto
 {
-    [Required]
     public string Name { get; set; } = string.Empty;
-    [Required]
     public string INN { get; set; } = string.Empty;
-    [Required]
     public double Latitude { get; set; }
-    [Required]
     public double Longitude { get; set; }
-    [Required]
     public string Address { get; set; } = string.Empty;
 }
 
