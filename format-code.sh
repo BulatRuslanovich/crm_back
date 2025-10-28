@@ -28,9 +28,4 @@ dotnet format src/CrmBack.csproj --verify-no-changes --verbosity diagnostic 2>&1
 
 echo ""
 echo "✅ Форматирование завершено!"
-echo ""
-echo "💡 Полезные команды:"
-echo "  dotnet format . --verify-no-changes  # Проверить без изменений"
-echo "  dotnet format . --verbosity diagnostic  # Подробный вывод"
-echo "  dotnet format . --include-generated  # С автогенерированными файлами"
-echo "  dotnet format . --severity error  # Только ошибки"
+
