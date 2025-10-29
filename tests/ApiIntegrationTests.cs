@@ -8,16 +8,9 @@ using Xunit;
 
 namespace CrmBack.Tests;
 
-public class UserEndpointTests : IClassFixture<WebApplicationFactory<Program>>
+public class UserEndpointTests(WebApplicationFactory<Program> factory) : IClassFixture<WebApplicationFactory<Program>>
 {
-    private readonly HttpClient client;
-    private readonly WebApplicationFactory<Program> factory;
-
-    public UserEndpointTests(WebApplicationFactory<Program> factory)
-    {
-        this.factory = factory;
-        client = factory.CreateDefaultClient();
-    }
+    private readonly HttpClient client = factory.CreateDefaultClient();
 
     [Fact]
     public async Task UserLifecycle_Register_Login_Get_Delete()
