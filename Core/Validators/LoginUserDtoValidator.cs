@@ -9,10 +9,10 @@ public class LoginUserDtoValidator : AbstractValidator<LoginUserDto>
     {
         RuleFor(x => x.Login)
             .NotEmpty().WithMessage("Логин обязателен")
-            .Length(5, 50).WithMessage("Логин должен содержать от 5 до 50 символов");
+            .Length(4, 40).WithMessage("Логин должен содержать от 4 до 40 символов");
 
         RuleFor(x => x.Password)
             .NotEmpty().WithMessage("Пароль обязателен")
-            .Length(8, 100).WithMessage("Пароль должен содержать от 8 до 100 символов");
+            .Length(4, 40).WithMessage("Пароль должен содержать от 4 до 40 символов");
     }
 }

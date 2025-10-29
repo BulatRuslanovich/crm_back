@@ -1,13 +1,8 @@
-using BCrypt.Net;
 using CrmBack.Core.Models.Dto;
-using CrmBack.Core.Models.Entities;
-using CrmBack.Core.Utils;
 using CrmBack.DAO;
-using CrmBack.Data;
-using Microsoft.EntityFrameworkCore;
-
 
 namespace CrmBack.Services.Impl;
+
 public class UserService(IUserDAO dao, IJwtService jwt, IRefreshTokenDAO refDao, ICookieService cookie) : IUserService
 {
     public async Task<ReadUserDto?> GetById(int id, CancellationToken ct = default) =>
@@ -58,7 +53,7 @@ public class UserService(IUserDAO dao, IJwtService jwt, IRefreshTokenDAO refDao,
 
         var user = await dao.FetchByIdWithPolicies(tkn.UsrId, ct) ?? throw new UnauthorizedAccessException("User not found");
 
-        await refDao.RevokeById(tkn.RefreshTokenId, tkn.UsrId, ct);
+        await refDao.DeleteById(tkn.RefreshTokenId, tkn.UsrId, ct);
 
         await CreateTokensAsync(user, ct);
 
@@ -83,7 +78,7 @@ public class UserService(IUserDAO dao, IJwtService jwt, IRefreshTokenDAO refDao,
 
     public async Task<bool> Logout(int userId, CancellationToken ct = default)
     {
-        bool success = await refDao.RevokeAll(userId, ct);
+        bool success = await refDao.DeleteAll(userId, ct);
         cookie.Clear();
         return success;
     }

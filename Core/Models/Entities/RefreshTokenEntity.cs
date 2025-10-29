@@ -3,11 +3,11 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace CrmBack.Core.Models.Entities;
 
-[Table("refresh_tokens")]
+[Table("refresh")]
 public class RefreshTokenEntity
 {
     [Key]
-    [Column("refresh_token_id")]
+    [Column("refresh_id")]
     public int RefreshTokenId { get; set; }
 
     [Column("usr_id")]
@@ -23,8 +23,8 @@ public class RefreshTokenEntity
     [Required]
     public DateTime ExpiresAt { get; set; }
 
-    [Column("is_revoked")]
-    public bool IsRevoked { get; set; } = false;
+    [Column("is_deleted")]
+    public bool IsDeleted { get; set; } = false;
 
     // Navigation properties
     [ForeignKey("UsrId")]

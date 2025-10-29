@@ -53,10 +53,10 @@ public class UserController(IUserService userService) : BaseApiController<ReadUs
     [Authorize]
     public async Task<ActionResult> Logout()
     {
-        var userId = JwtHelper.GetUserIdFromContext(HttpContext);
+        int? userId = JwtHelper.GetUserIdFromContext(HttpContext);
         if (userId is null) return Unauthorized(new { message = "User not authenticated" });
 
-        var success = await userService.Logout(userId.Value, HttpContext.RequestAborted);
+        bool success = await userService.Logout(userId.Value, HttpContext.RequestAborted);
         return success
             ? Ok(new { message = "Logged out successfully" })
             : BadRequest(new { message = "Failed to logout" });

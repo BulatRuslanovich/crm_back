@@ -10,7 +10,7 @@ public class RefreshTokenDAO(AppDBContext context) : IRefreshTokenDAO
     {
         return await context.RefreshTokens
             .Include(rt => rt.User)
-            .Where(rt => rt.UsrId == userId && !rt.IsRevoked && rt.ExpiresAt > DateTime.UtcNow)
+            .Where(rt => rt.UsrId == userId && !rt.IsDeleted && rt.ExpiresAt > DateTime.UtcNow)
             .ToListAsync(ct);
     }
 
@@ -29,26 +29,26 @@ public class RefreshTokenDAO(AppDBContext context) : IRefreshTokenDAO
     }
 
 
-    public async Task<bool> RevokeAll(int userId, CancellationToken ct = default)
+    public async Task<bool> DeleteAll(int userId, CancellationToken ct = default)
     {
         var tokens = await context.RefreshTokens
-            .Where(rt => rt.UsrId == userId && !rt.IsRevoked)
+            .Where(rt => rt.UsrId == userId && !rt.IsDeleted)
             .ToListAsync(ct);
 
-        foreach (var token in tokens) token.IsRevoked = true;
+        foreach (var token in tokens) token.IsDeleted = true;
 
         await context.SaveChangesAsync(ct);
         return true;
     }
 
-    public async Task<bool> RevokeById(int tokenId, int userId, CancellationToken ct = default)
+    public async Task<bool> DeleteById(int tokenId, int userId, CancellationToken ct = default)
     {
         var token = await context.RefreshTokens
-            .FirstOrDefaultAsync(rt => rt.RefreshTokenId == tokenId && rt.UsrId == userId && !rt.IsRevoked, ct);
+            .FirstOrDefaultAsync(rt => rt.RefreshTokenId == tokenId && rt.UsrId == userId && !rt.IsDeleted, ct);
 
         if (token is null) return false;
 
-        token.IsRevoked = true;
+        token.IsDeleted = true;
         await context.SaveChangesAsync(ct);
         return true;
     }
