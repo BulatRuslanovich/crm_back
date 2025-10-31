@@ -18,13 +18,12 @@ public abstract class BaseApiController<RPayload, CPayload, UPayload>(IService<R
 
     [Authorize]
     [HttpGet]
-    public async Task<ActionResult<List<RPayload>>> GetAll([FromQuery] bool isDeleted = false,
-        [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string? searchTerm = null)
+    public async Task<ActionResult<List<RPayload>>> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string? searchTerm = null)
     {
         if (page < 1 || pageSize is < 1 or > 1000)
             return BadRequest("Invalid pagination parameters");
 
-        return Ok(await service.GetAll(isDeleted, page, pageSize, searchTerm, HttpContext.RequestAborted));
+        return Ok(await service.GetAll(page, pageSize, searchTerm, HttpContext.RequestAborted));
     }
 
     [Authorize]

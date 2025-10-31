@@ -8,8 +8,8 @@ public class UserService(IUserDAO dao, IJwtService jwt, IRefreshTokenDAO refDao,
     public async Task<ReadUserDto?> GetById(int id, CancellationToken ct = default) =>
         await dao.FetchById(id, ct);
 
-    public async Task<List<ReadUserDto>> GetAll(bool isDeleted, int page, int pageSize, string? searchTerm = null, CancellationToken ct = default) =>
-        await dao.FetchAll(isDeleted, page, pageSize, searchTerm, ct);
+    public async Task<List<ReadUserDto>> GetAll(int page, int pageSize, string? searchTerm = null, CancellationToken ct = default) =>
+        await dao.FetchAll(page, pageSize, searchTerm, ct);
 
     public async Task<ReadUserDto?> Create(CreateUserDto dto, CancellationToken ct = default) =>
         await dao.Create(dto, ct);

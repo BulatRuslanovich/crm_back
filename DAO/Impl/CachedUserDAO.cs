@@ -35,16 +35,13 @@ public class CachedUserDAO(AppDBContext context, ITagCacheService cache, ICacheI
         return true;
     }
 
-    public async Task<List<ReadUserDto>> FetchAll(bool isDeleted, int page, int pageSize, string? searchTerm = null, CancellationToken ct = default)
+    public async Task<List<ReadUserDto>> FetchAll(int page, int pageSize, string? searchTerm = null, CancellationToken ct = default)
     {
-        var cacheKey = $"users:all:{isDeleted}:{page}:{pageSize}:{searchTerm ?? "null"}";
+        var cacheKey = $"users:all:{page}:{pageSize}:{searchTerm ?? "null"}";
         var cachedData = await cache.GetAsync<List<ReadUserDto>>(cacheKey, ct);
         if (cachedData != null) return cachedData;
 
-        var query = context.User.AsQueryable();
-
-        if (!isDeleted)
-            query = query.Where(o => !o.IsDeleted);
+        var query = context.User.AsQueryable().Where(o => !o.IsDeleted);
 
         if (!string.IsNullOrEmpty(searchTerm))
         {

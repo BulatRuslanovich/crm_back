@@ -32,9 +32,9 @@ public class PlanDAO(AppDBContext context) : IPlanDAO
         return true;
     }
 
-    public async Task<List<ReadPlanDto>> FetchAll(bool isDeleted, int page, int pageSize, string? searchTerm = null, CancellationToken ct = default)
+    public async Task<List<ReadPlanDto>> FetchAll(int page, int pageSize, string? searchTerm = null, CancellationToken ct = default)
     {
-        var query = context.Plan.AsQueryable().Where(p => p.IsDeleted == isDeleted);
+        var query = context.Plan.AsQueryable().Where(p => !p.IsDeleted);
 
         if (!string.IsNullOrEmpty(searchTerm))
         {

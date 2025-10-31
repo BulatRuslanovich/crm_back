@@ -25,12 +25,9 @@ public class UserDAO(AppDBContext context) : IUserDAO
         return true;
     }
 
-    public async Task<List<ReadUserDto>> FetchAll(bool isDeleted, int page, int pageSize, string? searchTerm = null, CancellationToken ct = default)
+    public async Task<List<ReadUserDto>> FetchAll(int page, int pageSize, string? searchTerm = null, CancellationToken ct = default)
     {
-        var query = context.User.AsQueryable();
-
-        if (!isDeleted)
-            query = query.Where(o => !o.IsDeleted);
+        var query = context.User.AsQueryable().Where(o => !o.IsDeleted);
 
         if (!string.IsNullOrEmpty(searchTerm))
         {

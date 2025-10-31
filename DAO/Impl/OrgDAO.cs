@@ -25,12 +25,9 @@ public class OrgDAO(AppDBContext context) : IOrgDAO
         return true;
     }
 
-    public async Task<List<ReadOrgDto>> FetchAll(bool isDeleted, int page, int pageSize, string? searchTerm = null, CancellationToken ct = default)
+    public async Task<List<ReadOrgDto>> FetchAll(int page, int pageSize, string? searchTerm = null, CancellationToken ct = default)
     {
-        var query = context.Org.AsQueryable();
-
-        if (!isDeleted)
-            query = query.Where(o => !o.IsDeleted);
+        var query = context.Org.AsQueryable().Where(o => !o.IsDeleted);
 
         if (!string.IsNullOrEmpty(searchTerm))
         {

@@ -6,12 +6,9 @@ namespace CrmBack.DAO.Impl;
 
 public class ActivDAO(AppDBContext context) : IActivDAO
 {
-    public async Task<List<ReadActivDto>> FetchAll(bool isDeleted, int page, int pageSize, string? searchTerm = null, CancellationToken ct = default)
+    public async Task<List<ReadActivDto>> FetchAll(int page, int pageSize, string? searchTerm = null, CancellationToken ct = default)
     {
-        var query = context.Activ.AsQueryable();
-
-        if (!isDeleted)
-            query = query.Where(a => !a.IsDeleted);
+        var query = context.Activ.AsQueryable().Where(a => !a.IsDeleted);
 
         var res = await query
             .OrderByDescending(a => a.CreatedAt)
