@@ -95,17 +95,7 @@ builder.Services.AddSwaggerGen(option =>
     {
         Title = "CRM API",
         Version = "v1",
-        Description = "CRM API for managing users, organizations, and activities"
-    });
-
-    option.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
-    {
-        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-        Description = "Enter JWT token in format: Bearer {token}",
-        Name = "Authorization",
-        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT"
+        Description = "CRM API"
     });
 
     option.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
