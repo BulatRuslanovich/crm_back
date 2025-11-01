@@ -8,6 +8,7 @@ public abstract class BaseApiController<RPayload, CPayload, UPayload>(IService<R
 {
     [Authorize]
     [HttpGet("{id:int}")]
+    [ResponseCache(Duration = 120, Location = ResponseCacheLocation.Any, VaryByQueryKeys = new[] { "id" })]
     public async Task<ActionResult<RPayload>> GetById(int id)
     {
         if (id <= 0) return BadRequest();
@@ -18,6 +19,7 @@ public abstract class BaseApiController<RPayload, CPayload, UPayload>(IService<R
 
     [Authorize]
     [HttpGet]
+    [ResponseCache(Duration = 120, Location = ResponseCacheLocation.Any, VaryByQueryKeys = new[] { "page", "pageSize", "searchTerm" })]
     public async Task<ActionResult<List<RPayload>>> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string? searchTerm = null)
     {
         if (page < 1 || pageSize is < 1 or > 1000)
@@ -35,7 +37,7 @@ public abstract class BaseApiController<RPayload, CPayload, UPayload>(IService<R
         var data = await service.Create(payload, HttpContext.RequestAborted);
         if (data is null) return BadRequest();
 
-        var id = data.GetType().GetProperty("Id")?.GetValue(data);
+        object? id = data.GetType().GetProperty("Id")?.GetValue(data);
         return id is null
             ? Created(string.Empty, data)
             : CreatedAtAction(nameof(GetById), new { id }, data);

@@ -11,6 +11,7 @@ public class ActivDAO(AppDBContext context) : IActivDAO
         var query = context.Activ.AsQueryable().Where(a => !a.IsDeleted);
 
         var res = await query
+            .AsNoTracking()
             .OrderByDescending(a => a.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -22,6 +23,7 @@ public class ActivDAO(AppDBContext context) : IActivDAO
     public async Task<ReadActivDto?> FetchById(int id, CancellationToken ct)
     {
         var res = await context.Activ
+            .AsNoTracking()
             .FirstOrDefaultAsync(a => a.ActivId == id && !a.IsDeleted, ct);
         return res?.ToReadDto();
     }
@@ -62,6 +64,7 @@ public class ActivDAO(AppDBContext context) : IActivDAO
     public async Task<List<ReadActivDto>> FetchByUserId(int userId, CancellationToken ct = default)
     {
         var res = await context.Activ
+            .AsNoTracking()
             .Where(a => a.UsrId == userId && !a.IsDeleted)
             .OrderByDescending(a => a.VisitDate)
             .ToListAsync(ct);

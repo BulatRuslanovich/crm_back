@@ -31,13 +31,15 @@ public class OrgDAO(AppDBContext context) : IOrgDAO
 
         if (!string.IsNullOrEmpty(searchTerm))
         {
+            // Используем ILike для case-insensitive поиска в PostgreSQL (оптимизировано для индексов)
             query = query.Where(o =>
-                o.Name.Contains(searchTerm) ||
-                o.Inn!.Contains(searchTerm) ||
-                o.Address!.Contains(searchTerm));
+                EF.Functions.ILike(o.Name, $"%{searchTerm}%") ||
+                EF.Functions.ILike(o.Inn!, $"%{searchTerm}%") ||
+                EF.Functions.ILike(o.Address!, $"%{searchTerm}%"));
         }
 
         var orgs = await query
+            .AsNoTracking()
             .OrderBy(o => o.Name)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -49,6 +51,7 @@ public class OrgDAO(AppDBContext context) : IOrgDAO
     public async Task<ReadOrgDto?> FetchById(int id, CancellationToken ct)
     {
         var org = await context.Org
+            .AsNoTracking()
             .FirstOrDefaultAsync(o => o.OrgId == id && !o.IsDeleted, ct);
 
         return org?.ToReadDto();

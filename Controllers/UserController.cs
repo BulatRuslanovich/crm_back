@@ -64,6 +64,7 @@ public class UserController(IUserService userService) : BaseApiController<ReadUs
 
     [HttpGet("{id:int}/activ")]
     [Authorize]
+    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Any, VaryByQueryKeys = new[] { "id" })]
     public async Task<ActionResult<List<HumReadActivDto>>> GetActivs(int id) =>
         Ok(await userService.GetActivs(id, HttpContext.RequestAborted));
 }

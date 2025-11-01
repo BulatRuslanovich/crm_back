@@ -41,7 +41,8 @@ public class UserService(IUserDAO dao, IJwtService jwt, IRefreshTokenDAO refDao,
     public async Task<List<HumReadActivDto>> GetActivs(int userId, CancellationToken ct = default) =>
         await dao.FetchHumActivs(userId, ct);
 
-    // Обновление токенов: проверка валидности refresh-токена, удаление старого и создание новых токенов
+    // Обновление токенов: проверка валидности refresh-токена и создание новых токенов
+    // Теперь поддерживается только один refresh-токен на пользователя (старые удаляются автоматически)
     public async Task<bool> RefreshToken(string? refreshToken = null, CancellationToken ct = default)
     {
         refreshToken ??= cookie.GetRefreshTkn()
@@ -49,20 +50,24 @@ public class UserService(IUserDAO dao, IJwtService jwt, IRefreshTokenDAO refDao,
 
         int userId = jwt.GetUsrId(refreshToken) ?? throw new UnauthorizedAccessException("Invalid refresh token format");
 
-        var tkns = await refDao.GetUserTokens(userId, ct);
-        var tkn = tkns.FirstOrDefault(token => BCrypt.Net.BCrypt.Verify(refreshToken, token.TokenHash))
-            ?? throw new UnauthorizedAccessException("Invalid refresh token");
+        // Получаем единственный токен пользователя (оптимизировано - без цикла)
+        var tkn = await refDao.GetUserToken(userId, ct)
+            ?? throw new UnauthorizedAccessException("Refresh token not found");
 
-        var user = await dao.FetchByIdWithPolicies(tkn.UsrId, ct) ?? throw new UnauthorizedAccessException("User not found");
+        // Проверяем соответствие токена хешу
+        if (!BCrypt.Net.BCrypt.Verify(refreshToken, tkn.TokenHash))
+            throw new UnauthorizedAccessException("Invalid refresh token");
 
-        await refDao.DeleteById(tkn.RefreshTokenId, tkn.UsrId, ct);
+        var user = await dao.FetchByIdWithPolicies(userId, ct) ?? throw new UnauthorizedAccessException("User not found");
 
+        // CreateTokensAsync автоматически удалит старый токен перед созданием нового
         await CreateTokensAsync(user, ct);
 
         return true;
     }
 
     // Создание пары токенов (access и refresh), хеширование refresh-токена и сохранение в БД/куки
+    // Автоматически удаляет все старые refresh-токены пользователя (поддержка только одного токена)
     private async Task CreateTokensAsync(UserWithPoliciesDto user, CancellationToken ct)
     {
         var roles = user.Policies.Select(p => p.PolicyName).ToList();
