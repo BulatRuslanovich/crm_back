@@ -29,6 +29,30 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddHttpContextAccessor();
 
+// Response Compression для уменьшения размера ответов
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.BrotliCompressionProvider>();
+    options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProvider>();
+});
+builder.Services.Configure<Microsoft.AspNetCore.ResponseCompression.BrotliCompressionProviderOptions>(options =>
+{
+    options.Level = System.IO.Compression.CompressionLevel.Fastest;
+});
+builder.Services.Configure<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProviderOptions>(options =>
+{
+    options.Level = System.IO.Compression.CompressionLevel.Fastest;
+});
+
+// HTTP Response Caching для кэширования ответов на уровне HTTP
+builder.Services.AddResponseCaching(options =>
+{
+    options.MaximumBodySize = 64 * 1024 * 1024; // 64 MB
+    options.UseCaseSensitivePaths = false; // Регистр пути не важен
+    options.SizeLimit = 100 * 1024 * 1024; // 100 MB общий размер кэша
+});
+
 // CORS
 builder.Services.AddCors(options =>
 {
@@ -117,9 +141,22 @@ builder.Services.AddSwaggerGen(option =>
 // Database
 builder.Services.AddDbContext<AppDBContext>(op =>
 {
-    op.UseNpgsql(builder.Configuration.GetConnectionString("DbConnectionString"));
-    op.EnableSensitiveDataLogging();
-    op.EnableDetailedErrors();
+    var connectionString = builder.Configuration.GetConnectionString("DbConnectionString");
+    op.UseNpgsql(connectionString, npgsqlOptions =>
+    {
+        npgsqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
+        npgsqlOptions.MaxBatchSize(100);
+    });
+    
+    op.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+    op.EnableThreadSafetyChecks(false);
+    
+    if (builder.Environment.IsDevelopment())
+    {
+        op.EnableSensitiveDataLogging();
+        op.EnableDetailedErrors();
+        op.UseQueryTrackingBehavior(QueryTrackingBehavior.TrackAll);
+    }
 });
 
 builder.Services.AddStackExchangeRedisCache(options =>
@@ -190,6 +227,7 @@ app.UseExceptionHandler(errorApp =>
     });
 });
 
+app.UseResponseCompression();
 app.UseSerilogRequestLogging();
 app.UseCors("AllowSwagger");
 app.UseRateLimiter();
@@ -212,6 +250,7 @@ if (!app.Environment.IsDevelopment())
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseResponseCaching(); // HTTP Response Caching (после Authentication, но ответы кэшируются с учетом авторизации)
 app.MapHealthChecks("/health");
 app.MapControllers();
 
