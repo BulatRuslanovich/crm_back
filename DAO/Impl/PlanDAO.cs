@@ -8,13 +8,16 @@ public class PlanDAO(AppDBContext context) : IPlanDAO
 {
     public async Task<ReadPlanDto?> Create(CreatePlanDto dto, CancellationToken ct = default)
     {
-        var userExists = await context.User.AnyAsync(u => u.UsrId == dto.UsrId && !u.IsDeleted, ct);
-        if (!userExists) throw new InvalidOperationException("User not found");
-
-        var orgExists = await context.Org.AnyAsync(o => o.OrgId == dto.OrgId && !o.IsDeleted, ct);
-        if (!orgExists) throw new InvalidOperationException("Organization not found");
-
         if (dto.EndDate < dto.StartDate) throw new InvalidOperationException("End date cannot be earlier than start date");
+
+        // Оптимизация: параллельная проверка существования User и Organization
+        var userTask = context.User.AnyAsync(u => u.UsrId == dto.UsrId && !u.IsDeleted, ct);
+        var orgTask = context.Org.AnyAsync(o => o.OrgId == dto.OrgId && !o.IsDeleted, ct);
+
+        await Task.WhenAll(userTask, orgTask);
+
+        if (!await userTask) throw new InvalidOperationException("User not found");
+        if (!await orgTask) throw new InvalidOperationException("Organization not found");
 
         var entity = dto.ToEntity();
         context.Plan.Add(entity);
@@ -34,17 +37,22 @@ public class PlanDAO(AppDBContext context) : IPlanDAO
 
     public async Task<List<ReadPlanDto>> FetchAll(int page, int pageSize, string? searchTerm = null, CancellationToken ct = default)
     {
-        var query = context.Plan.AsQueryable().Where(p => !p.IsDeleted);
+        var query = context.Plan
+            .Include(p => p.User)
+            .Include(p => p.Organization)
+            .Where(p => !p.IsDeleted);
 
         if (!string.IsNullOrEmpty(searchTerm))
         {
+            // Используем ILike для case-insensitive поиска в PostgreSQL (оптимизировано для индексов)
             query = query.Where(p =>
-                p.User.FirstName!.Contains(searchTerm) ||
-                p.User.LastName!.Contains(searchTerm) ||
-                p.Organization.Name.Contains(searchTerm));
+                EF.Functions.ILike(p.User.FirstName!, $"%{searchTerm}%") ||
+                EF.Functions.ILike(p.User.LastName!, $"%{searchTerm}%") ||
+                EF.Functions.ILike(p.Organization.Name, $"%{searchTerm}%"));
         }
 
         var plans = await query
+            .AsNoTracking()
             .OrderByDescending(p => p.StartDate)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -56,6 +64,9 @@ public class PlanDAO(AppDBContext context) : IPlanDAO
     public async Task<ReadPlanDto?> FetchById(int id, CancellationToken ct)
     {
         var plan = await context.Plan
+            .Include(p => p.User)
+            .Include(p => p.Organization)
+            .AsNoTracking()
             .FirstOrDefaultAsync(p => p.PlanId == id && !p.IsDeleted, ct);
 
         return plan?.ToReadDto();

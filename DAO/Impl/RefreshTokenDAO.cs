@@ -6,17 +6,19 @@ namespace CrmBack.DAO.Impl;
 
 public class RefreshTokenDAO(AppDBContext context) : IRefreshTokenDAO
 {
-    // Получение всех валидных (не удаленных и не истекших) refresh-токенов пользователя
-    public async Task<List<RefreshTokenEntity>> GetUserTokens(int userId, CancellationToken ct = default)
+    public async Task<RefreshTokenEntity?> GetUserToken(int userId, CancellationToken ct = default)
     {
         return await context.RefreshTokens
-            .Include(rt => rt.User)
             .Where(rt => rt.UsrId == userId && !rt.IsDeleted && rt.ExpiresAt > DateTime.UtcNow)
-            .ToListAsync(ct);
+            .FirstOrDefaultAsync(ct);
     }
 
     public async Task<RefreshTokenEntity> CreateAsync(int userId, string tokenHash, DateTime expiresAt, CancellationToken ct = default)
     {
+        await context.RefreshTokens
+            .Where(rt => rt.UsrId == userId && !rt.IsDeleted)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(rt => rt.IsDeleted, true), ct);
+
         var refreshToken = new RefreshTokenEntity
         {
             UsrId = userId,
@@ -32,25 +34,11 @@ public class RefreshTokenDAO(AppDBContext context) : IRefreshTokenDAO
 
     public async Task<bool> DeleteAll(int userId, CancellationToken ct = default)
     {
-        var tokens = await context.RefreshTokens
+        int affectedRows = await context.RefreshTokens
             .Where(rt => rt.UsrId == userId && !rt.IsDeleted)
-            .ToListAsync(ct);
+            .ExecuteUpdateAsync(setters => setters.SetProperty(rt => rt.IsDeleted, true), ct);
 
-        foreach (var token in tokens) token.IsDeleted = true;
-
-        await context.SaveChangesAsync(ct);
-        return true;
+        return affectedRows > 0;
     }
 
-    public async Task<bool> DeleteById(int tokenId, int userId, CancellationToken ct = default)
-    {
-        var token = await context.RefreshTokens
-            .FirstOrDefaultAsync(rt => rt.RefreshTokenId == tokenId && rt.UsrId == userId && !rt.IsDeleted, ct);
-
-        if (token is null) return false;
-
-        token.IsDeleted = true;
-        await context.SaveChangesAsync(ct);
-        return true;
-    }
 }
