@@ -25,6 +25,7 @@ public class UserDAO(AppDBContext context) : IUserDAO
         return true;
     }
 
+    // Пагинация и поиск пользователей по имени/фамилии/логину с сортировкой
     public async Task<List<ReadUserDto>> FetchAll(int page, int pageSize, string? searchTerm = null, CancellationToken ct = default)
     {
         var query = context.User.AsQueryable().Where(o => !o.IsDeleted);
@@ -55,6 +56,7 @@ public class UserDAO(AppDBContext context) : IUserDAO
         return user?.ToReadDto();
     }
 
+    // Обновление данных пользователя с проверкой текущего пароля перед изменением
     public async Task<bool> Update(int id, UpdateUserDto dto, CancellationToken ct = default)
     {
         var existing = await context.User.FindAsync([id], ct);
@@ -89,6 +91,7 @@ public class UserDAO(AppDBContext context) : IUserDAO
         return activs.Select(a => a.ToHumReadDto()).ToList();
     }
 
+    // Поиск пользователя по логину с проверкой пароля и загрузкой связанных политик доступа
     public async Task<UserWithPoliciesDto?> FetchByLogin(LoginUserDto dto, CancellationToken ct = default)
     {
         var user = await context.User.FirstOrDefaultAsync(u => u.Login == dto.Login && !u.IsDeleted, ct);
@@ -113,6 +116,7 @@ public class UserDAO(AppDBContext context) : IUserDAO
         };
     }
 
+    // Загрузка пользователя по ID вместе с его политиками доступа (ролями)
     public async Task<UserWithPoliciesDto?> FetchByIdWithPolicies(int id, CancellationToken ct = default)
     {
         var user = await context.User.FirstOrDefaultAsync(u => u.UsrId == id && !u.IsDeleted, ct);

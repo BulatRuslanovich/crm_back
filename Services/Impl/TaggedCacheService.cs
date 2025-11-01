@@ -9,6 +9,7 @@ public class TagCacheService(ICacheService cache) : ITagCacheService
         return await cache.GetAsync<T>(key, ct);
     }
 
+    // Сохранение значения в кэш с тегами: сохранение самого значения и обновление индексов тегов для инвалидации
     public async Task SetAsync<T>(string key, T value, IEnumerable<string> tags, TimeSpan? expiration = null, CancellationToken ct = default)
     {
         await cache.SetAsync(key, value, expiration, ct);
@@ -22,6 +23,7 @@ public class TagCacheService(ICacheService cache) : ITagCacheService
         }
     }
 
+    // Инвалидация кэша по тегу: удаление всех ключей, связанных с тегом, и самого индекса тега
     public async Task RemoveByTagAsync(string tag, CancellationToken ct = default)
     {
         var tagKey = $"{TagPrefix}{tag}";

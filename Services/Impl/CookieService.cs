@@ -10,6 +10,7 @@ public class CookieService(IHttpContextAccessor accessor) : ICookieService
     private const bool IsHttpOnly = true;
     private const SameSiteMode SameSite = SameSiteMode.Strict;
 
+    // Установка cookie с токеном с применением настроек безопасности (HttpOnly, Secure в Production, SameSite=Strict)
     private void SetToken(string name, string token, DateTime expiresAt)
     {
         var httpContext = accessor.HttpContext;

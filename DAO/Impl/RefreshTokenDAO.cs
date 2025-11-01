@@ -6,6 +6,7 @@ namespace CrmBack.DAO.Impl;
 
 public class RefreshTokenDAO(AppDBContext context) : IRefreshTokenDAO
 {
+    // Получение всех валидных (не удаленных и не истекших) refresh-токенов пользователя
     public async Task<List<RefreshTokenEntity>> GetUserTokens(int userId, CancellationToken ct = default)
     {
         return await context.RefreshTokens

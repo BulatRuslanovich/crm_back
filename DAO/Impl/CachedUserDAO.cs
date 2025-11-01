@@ -35,6 +35,7 @@ public class CachedUserDAO(AppDBContext context, ITagCacheService cache, ICacheI
         return true;
     }
 
+    // Получение списка пользователей с кэшированием: проверка кэша, при отсутствии - загрузка из БД и сохранение в кэш
     public async Task<List<ReadUserDto>> FetchAll(int page, int pageSize, string? searchTerm = null, CancellationToken ct = default)
     {
         var cacheKey = $"users:all:{page}:{pageSize}:{searchTerm ?? "null"}";
@@ -65,6 +66,7 @@ public class CachedUserDAO(AppDBContext context, ITagCacheService cache, ICacheI
         return res;
     }
 
+    // Получение пользователя по ID с кэшированием: проверка кэша, при отсутствии - загрузка из БД и сохранение с тегами
     public async Task<ReadUserDto?> FetchById(int id, CancellationToken ct)
     {
         var cacheKey = $"user:id:{id}";

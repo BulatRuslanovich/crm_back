@@ -5,6 +5,7 @@ namespace CrmBack.Core.Utils.Middleware;
 
 public class TokenRefreshMiddleware(RequestDelegate next)
 {
+    // Middleware для автоматического обновления access-токена за 5 минут до истечения срока действия
     public async Task InvokeAsync(HttpContext context, ICookieService cookie, IUserService user)
     {
         var accessToken = cookie.GetAccessTkn();

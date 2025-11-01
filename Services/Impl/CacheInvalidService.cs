@@ -22,6 +22,7 @@ public class CacheInvalidService(ITagCacheService cache) : ICacheInvalidService
         _ = Task.Run(ProcessQueue, ctSource.Token);
     }
 
+    // Обработка очереди инвалидации кэша: последовательная обработка задач с защитой семафором от параллельного выполнения
     private async Task ProcessQueue()
     {
         await semaphore.WaitAsync();

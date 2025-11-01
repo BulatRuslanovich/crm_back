@@ -11,6 +11,7 @@ public class JwtService(IConfiguration conf) : IJwtService
     private readonly string _issuer = conf["Jwt:Issuer"] ?? throw new InvalidOperationException("JWT Issuer is not configured");
     private readonly string _audience = conf["Jwt:Audience"] ?? throw new InvalidOperationException("JWT Audience is not configured");
 
+    // Генерация access-токена с claims (ID пользователя, логин, роли) сроком действия 1 час
     public string GenerateAccessTkn(int userId, string login, List<string> roles)
     {
         var claims = new List<Claim>
@@ -27,6 +28,7 @@ public class JwtService(IConfiguration conf) : IJwtService
         return Generate(claims, TimeSpan.FromHours(1));
     }
 
+    // Генерация refresh-токена с минимальным набором claims, срок действия 7 дней
     public string GenerateRefreshTkn(int userId)
     {
         var claims = new List<Claim>
@@ -39,6 +41,7 @@ public class JwtService(IConfiguration conf) : IJwtService
         return Generate(claims, TimeSpan.FromDays(7));
     }
 
+    // Создание JWT-токена с указанными claims, подписью HmacSha256 и сроком действия
     private string Generate(List<Claim> claims, TimeSpan expiration)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_key));
@@ -55,6 +58,7 @@ public class JwtService(IConfiguration conf) : IJwtService
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
+    // Извлечение ID пользователя из refresh-токена (без проверки подписи, только чтение claims)
     public int? GetUsrId(string refTkn)
     {
         try

@@ -22,6 +22,7 @@ public class UserService(IUserDAO dao, IJwtService jwt, IRefreshTokenDAO refDao,
     public async Task<bool> Update(int id, UpdateUserDto dto, CancellationToken ct = default) =>
         await dao.Update(id, dto, ct);
 
+    // Аутентификация пользователя: проверка логина/пароля, извлечение ролей и создание токенов
     public async Task<LoginResponseDto> Login(LoginUserDto dto, CancellationToken ct = default)
     {
         var user = await dao.FetchByLogin(dto, ct) ?? throw new UnauthorizedAccessException("Invalid login or password");
@@ -40,6 +41,7 @@ public class UserService(IUserDAO dao, IJwtService jwt, IRefreshTokenDAO refDao,
     public async Task<List<HumReadActivDto>> GetActivs(int userId, CancellationToken ct = default) =>
         await dao.FetchHumActivs(userId, ct);
 
+    // Обновление токенов: проверка валидности refresh-токена, удаление старого и создание новых токенов
     public async Task<bool> RefreshToken(string? refreshToken = null, CancellationToken ct = default)
     {
         refreshToken ??= cookie.GetRefreshTkn()
@@ -60,6 +62,7 @@ public class UserService(IUserDAO dao, IJwtService jwt, IRefreshTokenDAO refDao,
         return true;
     }
 
+    // Создание пары токенов (access и refresh), хеширование refresh-токена и сохранение в БД/куки
     private async Task CreateTokensAsync(UserWithPoliciesDto user, CancellationToken ct)
     {
         var roles = user.Policies.Select(p => p.PolicyName).ToList();
