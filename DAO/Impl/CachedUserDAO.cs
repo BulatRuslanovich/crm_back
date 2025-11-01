@@ -1,11 +1,10 @@
 using CrmBack.Core.Models.Dto;
-using CrmBack.Data;
 using CrmBack.Services;
-using Microsoft.EntityFrameworkCore;
 
 namespace CrmBack.DAO.Impl;
 
-public class CachedUserDAO(AppDBContext context, ITagCacheService cache, ICacheInvalidService invalid) : IUserDAO
+
+public class CachedUserDAO(IUserDAO userDao, ITagCacheService cache, ICacheInvalidService invalid) : IUserDAO
 {
     private readonly TimeSpan expiration = TimeSpan.FromMinutes(15);
     private const string UserTag = "users";
@@ -13,157 +12,75 @@ public class CachedUserDAO(AppDBContext context, ITagCacheService cache, ICacheI
 
     public async Task<ReadUserDto?> Create(CreateUserDto dto, CancellationToken ct = default)
     {
-        var entity = dto.ToEntity();
-        context.User.Add(entity);
-        await context.SaveChangesAsync(ct);
-
-        invalid.Enqueue([UserTag, UserListTag], ct);
-
-        return entity.ToReadDto();
+        var result = await userDao.Create(dto, ct);
+        
+        if (result != null)
+            invalid.Enqueue([UserTag, UserListTag], ct);
+        
+        return result;
     }
 
     public async Task<bool> Delete(int id, CancellationToken ct = default)
     {
-        var entity = await context.User.FindAsync([id], ct);
-        if (entity is null or { IsDeleted: true }) return false;
-
-        entity.IsDeleted = true;
-        await context.SaveChangesAsync(ct);
-
-        invalid.Enqueue([$"user:{id}", UserTag, UserListTag], ct);
-
-        return true;
+        var result = await userDao.Delete(id, ct);
+  
+        if (result)
+            invalid.Enqueue([$"user:{id}", UserTag, UserListTag], ct);
+        
+        return result;
     }
 
-    // Получение списка пользователей с кэшированием: проверка кэша, при отсутствии - загрузка из БД и сохранение в кэш
     public async Task<List<ReadUserDto>> FetchAll(int page, int pageSize, string? searchTerm = null, CancellationToken ct = default)
     {
-        var cacheKey = $"users:all:{page}:{pageSize}:{searchTerm ?? "null"}";
+        string cacheKey = $"users:all:{page}:{pageSize}:{searchTerm ?? "null"}";
+        
         var cachedData = await cache.GetAsync<List<ReadUserDto>>(cacheKey, ct);
         if (cachedData != null) return cachedData;
 
-        var query = context.User.AsQueryable().Where(o => !o.IsDeleted);
+        var result = await userDao.FetchAll(page, pageSize, searchTerm, ct);
 
-        if (!string.IsNullOrEmpty(searchTerm))
-        {
-            query = query.Where(u =>
-                u.FirstName!.Contains(searchTerm) ||
-                u.LastName!.Contains(searchTerm) ||
-                u.Login.Contains(searchTerm));
-        }
+        await cache.SetAsync(cacheKey, result, [UserListTag], expiration, ct);
 
-        var users = await query
-            .OrderBy(u => u.LastName)
-            .ThenBy(u => u.FirstName)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(ct);
-
-        var res = users.Select(u => u.ToReadDto()).ToList();
-
-        await cache.SetAsync(cacheKey, res, [UserListTag], expiration, ct);
-
-        return res;
+        return result;
     }
 
-    // Получение пользователя по ID с кэшированием: проверка кэша, при отсутствии - загрузка из БД и сохранение с тегами
     public async Task<ReadUserDto?> FetchById(int id, CancellationToken ct)
     {
-        var cacheKey = $"user:id:{id}";
-
+        string cacheKey = $"user:id:{id}";
+        
         var cachedData = await cache.GetAsync<ReadUserDto>(cacheKey, ct);
         if (cachedData != null) return cachedData;
 
-        var user = await context.User
-            .FirstOrDefaultAsync(u => u.UsrId == id && !u.IsDeleted, ct);
+        var result = await userDao.FetchById(id, ct);
 
-        var res = user?.ToReadDto();
+        if (result != null)
+            await cache.SetAsync(cacheKey, result, [UserTag, $"user:{id}"], expiration, ct);
 
-        if (res != null) await cache.SetAsync(cacheKey, res, [UserTag, $"user:{id}"], expiration, ct);
-
-        return res;
+        return result;
     }
 
     public async Task<bool> Update(int id, UpdateUserDto dto, CancellationToken ct = default)
     {
-        var existing = await context.User.FindAsync([id], ct);
-        if (existing is null or { IsDeleted: true }) return false;
-
-        if (!string.IsNullOrEmpty(dto.Password) && !string.IsNullOrEmpty(dto.CurrentPassword))
-        {
-            if (!BCrypt.Net.BCrypt.Verify(dto.CurrentPassword, existing.PasswordHash))
-                throw new UnauthorizedAccessException("Current password is incorrect");
-            else
-                existing.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
-        }
-
-        existing.FirstName = dto.FirstName ?? existing.FirstName;
-        existing.LastName = dto.LastName ?? existing.LastName;
-        existing.MiddleName = dto.MiddleName ?? existing.MiddleName;
-        existing.Login = dto.Login ?? existing.Login;
-
-        invalid.Enqueue([$"user:{id}", UserTag, UserListTag], ct);
-
-        await context.SaveChangesAsync(ct);
-        return true;
+        var result = await userDao.Update(id, dto, ct);
+        
+        if (result)
+            invalid.Enqueue([$"user:{id}", UserTag, UserListTag], ct);
+        
+        return result;
     }
 
     public async Task<List<HumReadActivDto>> FetchHumActivs(int userId, CancellationToken ct = default)
     {
-        var activs = await context.Activ
-            .Where(a => a.UsrId == userId && !a.IsDeleted)
-            .Include(a => a.Organization)
-            .Include(a => a.Status)
-            .OrderByDescending(a => a.VisitDate)
-            .ToListAsync(ct);
-
-        return activs.Select(a => a.ToHumReadDto()).ToList();
+        return await userDao.FetchHumActivs(userId, ct);
     }
 
     public async Task<UserWithPoliciesDto?> FetchByLogin(LoginUserDto dto, CancellationToken ct = default)
     {
-        var user = await context.User.FirstOrDefaultAsync(u => u.Login == dto.Login && !u.IsDeleted, ct);
-
-        if (user is null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash)) return null;
-
-        var usrPolicies = await context.UserPolicies
-            .Where(up => up.UsrId == user.UsrId)
-            .Include(up => up.Policy)
-            .Select(up => up.Policy)
-            .Where(p => !p.IsDeleted)
-            .ToListAsync(ct);
-
-        return new UserWithPoliciesDto
-        {
-            UsrId = user.UsrId,
-            Login = user.Login,
-            FirstName = user.FirstName,
-            LastName = user.LastName,
-            MiddleName = user.MiddleName,
-            Policies = usrPolicies.Select(p => p.ToReadDto()).ToList()
-        };
+        return await userDao.FetchByLogin(dto, ct);
     }
 
     public async Task<UserWithPoliciesDto?> FetchByIdWithPolicies(int id, CancellationToken ct = default)
     {
-        var user = await context.User.FirstOrDefaultAsync(u => u.UsrId == id && !u.IsDeleted, ct);
-        if (user is null) return null;
-
-        var usrPolicies = await context.UserPolicies
-            .Where(up => up.UsrId == user.UsrId)
-            .Include(up => up.Policy)
-            .Select(up => up.Policy)
-            .Where(p => !p.IsDeleted)
-            .ToListAsync(ct);
-
-        return new UserWithPoliciesDto
-        {
-            UsrId = user.UsrId,
-            Login = user.Login,
-            FirstName = user.FirstName,
-            LastName = user.LastName,
-            MiddleName = user.MiddleName,
-            Policies = usrPolicies.Select(p => p.ToReadDto()).ToList()
-        };
+        return await userDao.FetchByIdWithPolicies(id, ct);
     }
 }

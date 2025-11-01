@@ -32,13 +32,15 @@ public class UserDAO(AppDBContext context) : IUserDAO
 
         if (!string.IsNullOrEmpty(searchTerm))
         {
+            // Используем ILike для case-insensitive поиска в PostgreSQL (оптимизировано для индексов)
             query = query.Where(u =>
-                u.FirstName!.Contains(searchTerm) ||
-                u.LastName!.Contains(searchTerm) ||
-                u.Login.Contains(searchTerm));
+                EF.Functions.ILike(u.FirstName!, $"%{searchTerm}%") ||
+                EF.Functions.ILike(u.LastName!, $"%{searchTerm}%") ||
+                EF.Functions.ILike(u.Login, $"%{searchTerm}%"));
         }
 
         var users = await query
+            .AsNoTracking()
             .OrderBy(u => u.LastName)
             .ThenBy(u => u.FirstName)
             .Skip((page - 1) * pageSize)
@@ -51,6 +53,7 @@ public class UserDAO(AppDBContext context) : IUserDAO
     public async Task<ReadUserDto?> FetchById(int id, CancellationToken ct)
     {
         var user = await context.User
+            .AsNoTracking()
             .FirstOrDefaultAsync(u => u.UsrId == id && !u.IsDeleted, ct);
 
         return user?.ToReadDto();
@@ -94,49 +97,59 @@ public class UserDAO(AppDBContext context) : IUserDAO
     // Поиск пользователя по логину с проверкой пароля и загрузкой связанных политик доступа
     public async Task<UserWithPoliciesDto?> FetchByLogin(LoginUserDto dto, CancellationToken ct = default)
     {
-        var user = await context.User.FirstOrDefaultAsync(u => u.Login == dto.Login && !u.IsDeleted, ct);
+        // Оптимизация: объединенный запрос для избежания N+1 проблемы
+        var userWithPolicies = await context.User
+            .Where(u => u.Login == dto.Login && !u.IsDeleted)
+            .Select(u => new
+            {
+                User = u,
+                Policies = u.UserPolicies
+                    .Where(up => !up.Policy.IsDeleted)
+                    .Select(up => up.Policy)
+                    .ToList()
+            })
+            .FirstOrDefaultAsync(ct);
 
-        if (user is null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash)) return null;
-
-        var usrPolicies = await context.UserPolicies
-            .Where(up => up.UsrId == user.UsrId)
-            .Include(up => up.Policy)
-            .Select(up => up.Policy)
-            .Where(p => !p.IsDeleted)
-            .ToListAsync(ct);
+        if (userWithPolicies == null || !BCrypt.Net.BCrypt.Verify(dto.Password, userWithPolicies.User.PasswordHash))
+            return null;
 
         return new UserWithPoliciesDto
         {
-            UsrId = user.UsrId,
-            Login = user.Login,
-            FirstName = user.FirstName,
-            LastName = user.LastName,
-            MiddleName = user.MiddleName,
-            Policies = usrPolicies.Select(p => p.ToReadDto()).ToList()
+            UsrId = userWithPolicies.User.UsrId,
+            Login = userWithPolicies.User.Login,
+            FirstName = userWithPolicies.User.FirstName,
+            LastName = userWithPolicies.User.LastName,
+            MiddleName = userWithPolicies.User.MiddleName,
+            Policies = userWithPolicies.Policies.Select(p => p.ToReadDto()).ToList()
         };
     }
 
     // Загрузка пользователя по ID вместе с его политиками доступа (ролями)
     public async Task<UserWithPoliciesDto?> FetchByIdWithPolicies(int id, CancellationToken ct = default)
     {
-        var user = await context.User.FirstOrDefaultAsync(u => u.UsrId == id && !u.IsDeleted, ct);
-        if (user is null) return null;
+        // Оптимизация: объединенный запрос для избежания N+1 проблемы
+        var userWithPolicies = await context.User
+            .Where(u => u.UsrId == id && !u.IsDeleted)
+            .Select(u => new
+            {
+                User = u,
+                Policies = u.UserPolicies
+                    .Where(up => !up.Policy.IsDeleted)
+                    .Select(up => up.Policy)
+                    .ToList()
+            })
+            .FirstOrDefaultAsync(ct);
 
-        var usrPolicies = await context.UserPolicies
-            .Where(up => up.UsrId == user.UsrId)
-            .Include(up => up.Policy)
-            .Select(up => up.Policy)
-            .Where(p => !p.IsDeleted)
-            .ToListAsync(ct);
+        if (userWithPolicies == null) return null;
 
         return new UserWithPoliciesDto
         {
-            UsrId = user.UsrId,
-            Login = user.Login,
-            FirstName = user.FirstName,
-            LastName = user.LastName,
-            MiddleName = user.MiddleName,
-            Policies = usrPolicies.Select(p => p.ToReadDto()).ToList()
+            UsrId = userWithPolicies.User.UsrId,
+            Login = userWithPolicies.User.Login,
+            FirstName = userWithPolicies.User.FirstName,
+            LastName = userWithPolicies.User.LastName,
+            MiddleName = userWithPolicies.User.MiddleName,
+            Policies = userWithPolicies.Policies.Select(p => p.ToReadDto()).ToList()
         };
     }
 }
