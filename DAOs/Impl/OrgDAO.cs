@@ -4,11 +4,11 @@ using CrmBack.Core.Models.Entities;
 using CrmBack.Core.Specifications;
 using CrmBack.Data;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Distributed;
+using StackExchange.Redis;
 
 namespace CrmBack.DAOs.Impl;
 
-public class OrgDAO(AppDBContext context, IDistributedCache cache) : BaseCrudDAO<OrgEntity, ReadOrgDto, CreateOrgDto, UpdateOrgDto>(context, cache), IOrgDAO
+public class OrgDAO(AppDBContext context, IConnectionMultiplexer redis) : BaseCrudDAO<OrgEntity, ReadOrgDto, CreateOrgDto, UpdateOrgDto>(context, redis), IOrgDAO
 {
     protected override string CacheKeyPrefix => "Org";
     protected override ReadOrgDto MapToDto(OrgEntity entity) => entity.ToReadDto();

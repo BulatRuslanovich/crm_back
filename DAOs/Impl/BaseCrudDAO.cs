@@ -1,57 +1,66 @@
-using System.Text.Json;
 using CrmBack.Core.Models.Dto;
 using CrmBack.Core.Models.Entities;
 using CrmBack.Data;
+using MessagePack;
+using MessagePack.Resolvers;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Distributed;
+using StackExchange.Redis;
 
 namespace CrmBack.DAOs.Impl;
 
 /// <summary>
 /// Base CRUD DAO implementation with common patterns and Redis caching
 /// </summary>
-public abstract class BaseCrudDAO<TEntity, RDto, CDto, UDto>(AppDBContext context, IDistributedCache cache) : ICrudDAO<RDto, CDto, UDto>
+public abstract class BaseCrudDAO<TEntity, RDto, CDto, UDto>(AppDBContext context, IConnectionMultiplexer redis) : ICrudDAO<RDto, CDto, UDto>
     where TEntity : BaseEntity
 {
     protected AppDBContext Context => context;
-    protected IDistributedCache Cache => cache;
+    protected IConnectionMultiplexer Redis => redis;
     protected abstract string CacheKeyPrefix { get; }
     private static readonly TimeSpan CacheExpiration = TimeSpan.FromMinutes(5);
+    private static readonly MessagePackSerializerOptions MessagePackOptions = MessagePackSerializerOptions.Standard
+        .WithResolver(ContractlessStandardResolver.Instance);
 
-    protected string GetCacheKey(int id) => $"{CacheKeyPrefix}:{id}";
-    protected string GetCacheKey(PaginationDto pagination) => $"{CacheKeyPrefix}:list:{pagination.Page}:{pagination.PageSize}:{pagination.SearchTerm ?? ""}";
+    protected string GetCacheKey(int id) => $"CrmBack:{CacheKeyPrefix}:{id}";
+    protected string GetCacheKey(PaginationDto pagination) => $"CrmBack:{CacheKeyPrefix}:list:{pagination.Page}:{pagination.PageSize}:{pagination.SearchTerm ?? ""}";
+
+    private IDatabase GetDatabase() => Redis.GetDatabase();
 
     public virtual async Task<RDto?> FetchById(int id, CancellationToken ct)
     {
-        var cacheKey = GetCacheKey(id);
-        var cached = await Cache.GetStringAsync(cacheKey, ct);
+        string cacheKey = GetCacheKey(id);
+        var db = GetDatabase();
+        var cached = await db.StringGetAsync(cacheKey);
         
-        if (cached is not null)
-            return JsonSerializer.Deserialize<RDto>(cached);
+        if (cached.HasValue)
+            return MessagePackSerializer.Deserialize<RDto>(cached!, MessagePackOptions, ct);
 
         var entity = await Context.Set<TEntity>().FindAsync([id], ct);
         if (entity is null or { IsDeleted: true }) return default;
         
         var dto = MapToDto(entity);
-        await Cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(dto), new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = CacheExpiration }, ct);
+        var serialized = MessagePackSerializer.Serialize(dto, MessagePackOptions, ct);
+        await db.StringSetAsync(cacheKey, serialized, CacheExpiration);
         
         return dto;
     }
 
     public virtual async Task<List<RDto>> FetchAll(PaginationDto pagination, CancellationToken ct)
     {
-        var cacheKey = GetCacheKey(pagination);
-        var cached = await Cache.GetStringAsync(cacheKey, ct);
+        string cacheKey = GetCacheKey(pagination);
+        var db = GetDatabase();
+        var cached = await db.StringGetAsync(cacheKey);
         
-        if (cached is not null)
-            return JsonSerializer.Deserialize<List<RDto>>(cached) ?? [];
+        if (cached.HasValue)
+            return MessagePackSerializer.Deserialize<List<RDto>>(cached!, MessagePackOptions, ct) ?? [];
 
         var query = Context.Set<TEntity>().AsQueryable();
         query = ApplyDefaults(query, pagination);
         var entities = await query.ToListAsync(ct);
         var result = entities.Select(MapToDto).ToList();
         
-        await Cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(result), new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = CacheExpiration }, ct);
+        var serialized = MessagePackSerializer.Serialize(result, MessagePackOptions, ct);
+        await db.StringSetAsync(cacheKey, serialized, CacheExpiration);
         
         return result;
     }
@@ -78,7 +87,8 @@ public abstract class BaseCrudDAO<TEntity, RDto, CDto, UDto>(AppDBContext contex
         
         if (success)
         {
-            await Cache.RemoveAsync(GetCacheKey(id), ct);
+            var db = GetDatabase();
+            await db.KeyDeleteAsync(GetCacheKey(id));
             await InvalidateListCache();
         }
         
@@ -95,7 +105,8 @@ public abstract class BaseCrudDAO<TEntity, RDto, CDto, UDto>(AppDBContext contex
         
         if (success)
         {
-            await Cache.RemoveAsync(GetCacheKey(id), ct);
+            var db = GetDatabase();
+            await db.KeyDeleteAsync(GetCacheKey(id));
             await InvalidateListCache();
         }
         
@@ -107,12 +118,19 @@ public abstract class BaseCrudDAO<TEntity, RDto, CDto, UDto>(AppDBContext contex
     protected abstract void UpdateEntity(TEntity entity, UDto dto);
     protected abstract IQueryable<TEntity> ApplyDefaults(IQueryable<TEntity> query, PaginationDto pagination);
 
-    private Task InvalidateListCache()
+    private async Task InvalidateListCache()
     {
-        // Invalidate paginated cache with pattern matching would require Redis Stack with JSON/SCAN support
-        // For simplicity, we'll just clear all list caches when items change
-        // In production, you could use Redis keys with pattern matching
-        return Task.CompletedTask;
+        var db = Redis.GetDatabase();
+        string pattern = $"CrmBack:{CacheKeyPrefix}:list:*";
+        
+        // Use SCAN to find all keys matching the pattern
+        var server = Redis.GetServer(Redis.GetEndPoints()[0]);
+        var keys = server.KeysAsync(pattern: pattern);
+        
+        await foreach (var key in keys)
+        {
+            await db.KeyDeleteAsync(key);
+        }
     }
 }
 

@@ -3,14 +3,19 @@ using CrmBack.Core.Models.Dto;
 using CrmBack.Core.Models.Entities;
 using CrmBack.Core.Specifications;
 using CrmBack.Data;
+using MessagePack;
+using MessagePack.Resolvers;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Distributed;
+using StackExchange.Redis;
 
 namespace CrmBack.DAOs.Impl;
 
-public class UserDAO(AppDBContext context, IDistributedCache cache) : BaseCrudDAO<UserEntity, ReadUserDto, CreateUserDto, UpdateUserDto>(context, cache), IUserDAO
+public class UserDAO(AppDBContext context, IConnectionMultiplexer redis) : BaseCrudDAO<UserEntity, ReadUserDto, CreateUserDto, UpdateUserDto>(context, redis), IUserDAO
 {
     protected override string CacheKeyPrefix => "User";
+    private static readonly TimeSpan CacheExpiration = TimeSpan.FromMinutes(5);
+    private static readonly MessagePackSerializerOptions MessagePackOptions = MessagePackSerializerOptions.Standard
+        .WithResolver(ContractlessStandardResolver.Instance);
     protected override ReadUserDto MapToDto(UserEntity entity) => entity.ToReadDto();
 
     protected override UserEntity MapToEntity(CreateUserDto dto) => dto.ToEntity();
@@ -54,6 +59,13 @@ public class UserDAO(AppDBContext context, IDistributedCache cache) : BaseCrudDA
 
     public async Task<List<HumReadActivDto>> FetchHumActivs(int userId, CancellationToken ct = default)
     {
+        string cacheKey = $"CrmBack:UserActivs:{userId}";
+        var db = Redis.GetDatabase();
+        var cached = await db.StringGetAsync(cacheKey);
+        
+        if (cached.HasValue)
+            return MessagePackSerializer.Deserialize<List<HumReadActivDto>>(cached!, MessagePackOptions, ct) ?? [];
+        
         var entities = await Context.Activ
             .WhereNotDeleted()
             .Include(a => a.Organization)
@@ -61,7 +73,12 @@ public class UserDAO(AppDBContext context, IDistributedCache cache) : BaseCrudDA
             .Where(a => a.UsrId == userId)
             .OrderByDefault()
             .ToListAsync(ct);
-        return entities.Select(a => a.ToHumReadDto()).ToList();
+        
+        var result = entities.Select(a => a.ToHumReadDto()).ToList();
+        var serialized = MessagePackSerializer.Serialize(result, MessagePackOptions, ct);
+        await db.StringSetAsync(cacheKey, serialized, CacheExpiration);
+        
+        return result;
     }
 
     public async Task<UserWithPoliciesDto?> FetchByLogin(LoginUserDto dto, CancellationToken ct = default)

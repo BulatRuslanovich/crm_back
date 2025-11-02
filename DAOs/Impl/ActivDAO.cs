@@ -4,11 +4,11 @@ using CrmBack.Core.Models.Entities;
 using CrmBack.Core.Specifications;
 using CrmBack.Data;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Distributed;
+using StackExchange.Redis;
 
 namespace CrmBack.DAOs.Impl;
 
-public class ActivDAO(AppDBContext context, IDistributedCache cache) : BaseCrudDAO<ActivEntity, ReadActivDto, CreateActivDto, UpdateActivDto>(context, cache), IActivDAO
+public class ActivDAO(AppDBContext context, IConnectionMultiplexer redis) : BaseCrudDAO<ActivEntity, ReadActivDto, CreateActivDto, UpdateActivDto>(context, redis), IActivDAO
 {
     protected override string CacheKeyPrefix => "Activ";
     protected override ReadActivDto MapToDto(ActivEntity entity) => entity.ToReadDto();

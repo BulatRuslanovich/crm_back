@@ -191,6 +191,13 @@ builder.Services.AddStackExchangeRedisCache(options =>
     options.InstanceName = "CrmBack:";
 });
 
+// StackExchange.Redis ConnectionMultiplexer for advanced Redis operations
+builder.Services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(sp =>
+{
+    var config = builder.Configuration.GetConnectionString("Redis");
+    return StackExchange.Redis.ConnectionMultiplexer.Connect(config!);
+});
+
 // Health Checks
 builder.Services.AddHealthChecks()
     .AddNpgSql(builder.Configuration.GetConnectionString("DbConnectionString")!)

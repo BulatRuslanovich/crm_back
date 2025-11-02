@@ -1,7 +1,6 @@
 namespace CrmBack.Controllers;
 
 using CrmBack.Core.Utils;
-using CrmBack.Services;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
