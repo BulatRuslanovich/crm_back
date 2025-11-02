@@ -9,17 +9,14 @@ public abstract class CrudController<RPayload, CPayload, UPayload>(IService<RPay
     [HttpGet("{id:int}")]
     [ResponseCache(Duration = 120, Location = ResponseCacheLocation.Any, VaryByQueryKeys = new[] { "id" })]
     public async Task<ActionResult<RPayload>> GetById(int id) =>
-        id <= 0 ? Error<RPayload>("Invalid ID", ["ID must be greater than 0"]) :
-        await GetByIdCore(id);
-
-    private async Task<ActionResult<RPayload>> GetByIdCore(int id)
-    {
-        var data = await service.GetById(id, HttpContext.RequestAborted);
-        return data is null ? NotFound<RPayload>() : Success(data);
-    }
+        id <= 0
+            ? Error<RPayload>("Invalid ID", ["ID must be greater than 0"])
+            : (await service.GetById(id, HttpContext.RequestAborted)) is var data && data is null
+                ? NotFound<RPayload>()
+                : Success(data);
 
     [HttpGet]
-    // [ResponseCache(Duration = 120, Location = ResponseCacheLocation.Any, VaryByQueryKeys = new[] { "page", "pageSize", "searchTerm" })]
+    [ResponseCache(Duration = 120, Location = ResponseCacheLocation.Any, VaryByQueryKeys = new[] { "page", "pageSize", "searchTerm" })]
     public async Task<ActionResult<List<RPayload>>> GetAll([FromQuery] PaginationDto pagination) =>
         !ModelState.IsValid
             ? Error<List<RPayload>>("Invalid pagination parameters", [.. ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)])
@@ -31,13 +28,12 @@ public abstract class CrudController<RPayload, CPayload, UPayload>(IService<RPay
         if (!ModelState.IsValid) return Error<RPayload>("Invalid payload", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList());
 
         var data = await service.Create(payload, HttpContext.RequestAborted);
-        if (data is null) return Error<RPayload>("Failed to create resource", ["Failed to create resource"]);
-
-        object? id = data.GetType().GetProperty("Id")?.GetValue(data);
-        return id is null
-            ? Created(string.Empty, data)
-            : CreatedAtAction(nameof(GetById), new { id }, data);
+        return data is null
+            ? Error<RPayload>("Failed to create resource", ["Failed to create resource"])
+            : CreatedAtAction(nameof(GetById), new { id = GetId(data) }, data);
     }
+
+    protected abstract int GetId(RPayload payload);
 
     [HttpPut("{id:int}")]
     public async Task<ActionResult<bool>> Update(int id, [FromBody] UPayload payload)

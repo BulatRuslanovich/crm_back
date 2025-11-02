@@ -1,5 +1,5 @@
 using CrmBack.Core.Models.Dto;
-using CrmBack.DAO;
+using CrmBack.DAOs;
 
 namespace CrmBack.Services.Impl;
 

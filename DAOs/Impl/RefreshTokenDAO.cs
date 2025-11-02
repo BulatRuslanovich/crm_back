@@ -2,7 +2,7 @@ using CrmBack.Core.Models.Entities;
 using CrmBack.Data;
 using Microsoft.EntityFrameworkCore;
 
-namespace CrmBack.DAO.Impl;
+namespace CrmBack.DAOs.Impl;
 
 public class RefreshTokenDAO(AppDBContext context) : IRefreshTokenDAO
 {

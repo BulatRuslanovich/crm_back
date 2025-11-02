@@ -8,4 +8,6 @@ namespace CrmBack.Controllers;
 [ApiVersion("1.0")]
 public class ActivController(IActivService activService)
 : CrudController<ReadActivDto, CreateActivDto, UpdateActivDto>(activService)
-{ }
+{
+    protected override int GetId(ReadActivDto payload) => payload.ActivId;
+}

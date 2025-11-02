@@ -9,6 +9,8 @@ using Microsoft.AspNetCore.Mvc;
 [ApiVersion("1.0")]
 public class UserController(IUserService userService) : CrudController<ReadUserDto, CreateUserDto, UpdateUserDto>(userService)
 {
+    protected override int GetId(ReadUserDto payload) => payload.UsrId;
+
     [HttpGet("{id:int}/activ")]
     [Authorize]
     [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Any, VaryByQueryKeys = new[] { "id" })]

@@ -1,10 +1,16 @@
+using System.IO.Compression;
 using CrmBack.Core.Extensions;
 using CrmBack.Core.Utils.Middleware;
 using CrmBack.Core.Validators;
 using CrmBack.Data;
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,11 +22,13 @@ builder.Host.UseSerilog((context, config) =>
         .WriteTo.Console(
             theme: Serilog.Sinks.SystemConsole.Themes.AnsiConsoleTheme.Code,
             outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {LogType:l} {Message:lj}{NewLine}{Exception}")
-        .WriteTo.Debug()
-        .MinimumLevel.Debug()
-        .MinimumLevel.Override("CrmBack.Data", Serilog.Events.LogEventLevel.Information)
-        .MinimumLevel.Override("CrmBack.Api.Middleware", Serilog.Events.LogEventLevel.Information)
-        .MinimumLevel.Override("Microsoft.AspNetCore", Serilog.Events.LogEventLevel.Information);
+        .MinimumLevel.Information()
+        .MinimumLevel.Override("CrmBack.Data", context.HostingEnvironment.IsProduction() ? Serilog.Events.LogEventLevel.Warning : Serilog.Events.LogEventLevel.Information)
+        .MinimumLevel.Override("CrmBack.Api.Middleware", Serilog.Events.LogEventLevel.Warning)
+        .MinimumLevel.Override("Microsoft.AspNetCore", Serilog.Events.LogEventLevel.Warning);
+    
+    if (!context.HostingEnvironment.IsProduction())
+        config.WriteTo.Debug();
 });
 
 // Services
@@ -28,8 +36,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddHttpContextAccessor();
 
-// Настройка роутинга - делаем URLs строчными для лучшей совместимости
-builder.Services.Configure<Microsoft.AspNetCore.Routing.RouteOptions>(options =>
+// Routing - make URLs lowercase for better compatibility
+builder.Services.Configure<RouteOptions>(options =>
 {
     options.LowercaseUrls = true;
 });
@@ -37,31 +45,31 @@ builder.Services.Configure<Microsoft.AspNetCore.Routing.RouteOptions>(options =>
 builder.Services.AddApiVersioning(options =>
 {
     options.AssumeDefaultVersionWhenUnspecified = true;
-    options.DefaultApiVersion = new Microsoft.AspNetCore.Mvc.ApiVersion(1, 0);
+    options.DefaultApiVersion = new ApiVersion(1, 0);
     options.ReportApiVersions = true;
 });
 
-// Настройка API explorer для поддержки versioning
+// API explorer for versioning support
 builder.Services.AddVersionedApiExplorer(options =>
 {
     options.GroupNameFormat = "'v'VVV";
     options.SubstituteApiVersionInUrl = true;
 });
 
-// Response Compression для уменьшения размера ответов
+// Response Compression for reducing response size
 builder.Services.AddResponseCompression(options =>
 {
     options.EnableForHttps = true;
-    options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.BrotliCompressionProvider>();
-    options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProvider>();
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
 });
-builder.Services.Configure<Microsoft.AspNetCore.ResponseCompression.BrotliCompressionProviderOptions>(options =>
+builder.Services.Configure<BrotliCompressionProviderOptions>(options =>
 {
-    options.Level = System.IO.Compression.CompressionLevel.Fastest;
+    options.Level = CompressionLevel.Fastest;
 });
-builder.Services.Configure<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProviderOptions>(options =>
+builder.Services.Configure<GzipCompressionProviderOptions>(options =>
 {
-    options.Level = System.IO.Compression.CompressionLevel.Fastest;
+    options.Level = CompressionLevel.Fastest;
 });
 
 builder.Services.AddResponseCaching(options =>
@@ -91,12 +99,12 @@ string jwtAudience = builder.Configuration["Jwt:Audience"] ?? throw new InvalidO
 builder.Services
     .AddAuthentication(options =>
     {
-        options.DefaultAuthenticateScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
     })
     .AddJwtBearer(options =>
     {
-        options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+        options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
             ValidateAudience = true,
@@ -104,12 +112,12 @@ builder.Services
             ValidateIssuerSigningKey = true,
             ValidIssuer = jwtIssuer,
             ValidAudience = jwtAudience,
-            IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
+            IssuerSigningKey = new SymmetricSecurityKey(
                 System.Text.Encoding.UTF8.GetBytes(jwtKey)),
             ClockSkew = TimeSpan.FromSeconds(30)
         };
 
-        options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+        options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
             {
@@ -133,21 +141,21 @@ builder.Services.AddAuthorizationBuilder()
 // Swagger
 builder.Services.AddSwaggerGen(option =>
 {
-    option.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    option.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "CRM API",
         Version = "v1",
         Description = "CRM API"
     });
 
-    option.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    option.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
-            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            new OpenApiSecurityScheme
             {
-                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                Reference = new OpenApiReference
                 {
-                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Type = ReferenceType.SecurityScheme,
                     Id = "Bearer"
                 }
             },
@@ -160,40 +168,33 @@ builder.Services.AddSwaggerGen(option =>
 builder.Services.AddDbContext<AppDBContext>(op =>
 {
     op.UseNpgsql(builder.Configuration.GetConnectionString("DbConnectionString"));
-
-    if (builder.Environment.IsDevelopment())
+    
+    // Performance optimizations
+    if (builder.Environment.IsProduction())
     {
-        op.EnableSensitiveDataLogging();
-        op.EnableDetailedErrors();
+        op.EnableSensitiveDataLogging(false);
+        op.EnableDetailedErrors(false);
+        op.EnableServiceProviderCaching();
+        op.EnableThreadSafetyChecks(false);
+    }
+    else
+    {
+        op.EnableSensitiveDataLogging(true);
+        op.EnableDetailedErrors(true);
     }
 });
 
+// Redis Distributed Cache
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = builder.Configuration.GetConnectionString("Redis");
+    options.InstanceName = "CrmBack:";
+});
 
 // Health Checks
 builder.Services.AddHealthChecks()
-    .AddNpgSql(builder.Configuration.GetConnectionString("DbConnectionString")!);
-
-// Rate Limiting
-builder.Services.AddRateLimiter(options =>
-{
-    options.GlobalLimiter = System.Threading.RateLimiting.PartitionedRateLimiter.Create<HttpContext, string>(context =>
-    {
-        string ipAddress = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-        string userAgent = context.Request.Headers.UserAgent.ToString();
-        string deviceKey = $"{ipAddress}:{userAgent.GetHashCode()}";
-
-        return System.Threading.RateLimiting.RateLimitPartition.GetSlidingWindowLimiter(
-            partitionKey: deviceKey,
-            factory: _ => new System.Threading.RateLimiting.SlidingWindowRateLimiterOptions
-            {
-                PermitLimit = 100,
-                Window = TimeSpan.FromMinutes(1),
-                SegmentsPerWindow = 6,
-                QueueProcessingOrder = System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst,
-                QueueLimit = 50
-            });
-    });
-});
+    .AddNpgSql(builder.Configuration.GetConnectionString("DbConnectionString")!)
+    .AddRedis(builder.Configuration.GetConnectionString("Redis")!);
 
 // FluentValidation
 builder.Services.AddValidatorsFromAssemblyContaining<LoginUserDtoValidator>()
@@ -209,28 +210,17 @@ builder.Services.AddFluentValidationAutoValidation(config =>
 builder.Services.AddFluentValidationClientsideAdapters()
                  .AddApplicationServices();
 
-// Build and configure middleware
 var app = builder.Build();
 
-app.UseExceptionHandler(errorApp =>
-{
-    errorApp.Run(async context =>
-    {
-        var errorFeature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
-        if (errorFeature != null)
-        {
-            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-            await context.Response.WriteAsJsonAsync(new { error = "Ops, error ;)" });
-            Log.Error(errorFeature.Error, "Unhandled exception in {Path}", context.Request.Path);
-        }
-    });
-});
-
 app.UseResponseCompression();
-app.UseSerilogRequestLogging();
+app.UseResponseCaching();
+if (app.Environment.IsDevelopment())
+{
+    app.UseSerilogRequestLogging();
+}
 app.UseCors("AllowSwagger");
-app.UseRateLimiter();
 app.UseMiddleware<TokenRefreshMiddleware>();
+app.UseMiddleware<ExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
@@ -249,11 +239,13 @@ if (!app.Environment.IsDevelopment())
 
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseResponseCaching(); // HTTP Response Caching (после Authentication, но ответы кэшируются с учетом авторизации)
 app.MapHealthChecks("/health");
 app.MapControllers();
 
-app.Run("http://localhost:5555");
-
-public partial class Program { }
+// In production with nginx, bind to internal network
+var listenAddress = builder.Environment.IsProduction() 
+    ? "http://0.0.0.0:5555" 
+    : "http://localhost:5555";
+    
+app.Run(listenAddress);
 

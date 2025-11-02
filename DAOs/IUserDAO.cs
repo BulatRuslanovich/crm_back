@@ -1,7 +1,6 @@
 using CrmBack.Core.Models.Dto;
 
-
-namespace CrmBack.DAO;
+namespace CrmBack.DAOs;
 
 public interface IUserDAO : ICrudDAO<ReadUserDto, CreateUserDto, UpdateUserDto>
 {

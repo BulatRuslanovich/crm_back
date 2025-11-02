@@ -47,23 +47,51 @@ Backend API for CRM system built with ASP.NET Core 8, PostgreSQL, and Redis.
 - .NET 8.0 SDK
 - PostgreSQL 16+
 - Redis 7+
+- Docker & Docker Compose (optional, for services)
 
 ### Quick Start
 
 ```bash
-dotnet run --project src/
+# Run application directly
+dotnet run
+
+# Or via Docker Compose with all services
+docker-compose up -d
 ```
 
 ### Database Setup
 
 ```bash
-# Initialize databases
+# Initialize databases (PostgreSQL + Redis)
+docker-compose up -d postgres redis
+
+# Or all services including Nginx
 docker-compose up -d
 ```
 
 ### API Documentation
 
-Access Swagger UI at: `https://localhost:7000/swagger`
+Access Swagger UI at: `http://localhost/swagger` (via Nginx)
+or directly: `http://localhost:5555/swagger`
+
+---
+
+## Architecture
+
+### Why Nginx?
+
+Nginx serves as a **reverse proxy** in front of ASP.NET Core, providing:
+
+1. **Rate Limiting**: 100 req/s per IP for API, 10 req/s for Swagger (DDoS protection)
+2. **Connection Limits**: Max 20 connections per IP
+3. **Load Balancing**: Ready for horizontal scaling with multiple ASP.NET instances
+4. **Security Headers**: X-Frame-Options, X-Content-Type-Options, etc.
+5. **Caching Layer**: Additional caching on top of Redis/Response Cache
+6. **Keep-Alive Connections**: Reuses connections to backend
+7. **Centralized Logging**: Single point for access/error logs
+8. **SSL Termination**: Ready for HTTPS (with certbot)
+
+**In production**: Single entry point (Port 80) → Nginx → ASP.NET Core (Port 5555)
 
 ---
 
@@ -85,6 +113,7 @@ dotnet test --collect:"XPlat Code Coverage"
 ./format-code.sh
 ```
 
+
 ### Project Structure
 
 ```
@@ -95,3 +124,7 @@ src/
 ├── Services/       # Business services
 └── Program.cs      # Application entry point
 ```
+
+
+
+

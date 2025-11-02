@@ -1,6 +1,6 @@
 using CrmBack.Core.Models.Dto;
 
-namespace CrmBack.DAO;
+namespace CrmBack.DAOs;
 
 public interface IActivDAO : ICrudDAO<ReadActivDto, CreateActivDto, UpdateActivDto>
 {

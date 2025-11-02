@@ -30,7 +30,7 @@ public class ExceptionMiddleware(RequestDelegate next)
         {
             BusinessException e => ((int)HttpStatusCode.BadRequest, e.Message, e.ErrorCode, e.Errors),
             KeyNotFoundException => ((int)HttpStatusCode.NotFound, ex.Message, "NOT_FOUND", null),
-            FluentValidation.ValidationException e => HandleValidationError(e),
+            ValidationException e => HandleValidationError(e),
             UnauthorizedAccessException => ((int)HttpStatusCode.Unauthorized, ex.Message, "UNAUTHORIZED", null),
             DbUpdateException => HandleDbError(ex),
             OperationCanceledException or TaskCanceledException => ((int)HttpStatusCode.RequestTimeout, "Request timeout", "TIMEOUT", null),

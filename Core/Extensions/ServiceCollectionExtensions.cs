@@ -1,5 +1,5 @@
-using CrmBack.DAO;
-using CrmBack.DAO.Impl;
+using CrmBack.DAOs;
+using CrmBack.DAOs.Impl;
 using CrmBack.Services;
 using CrmBack.Services.Impl;
 

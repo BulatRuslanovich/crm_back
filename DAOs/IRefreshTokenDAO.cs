@@ -1,6 +1,6 @@
 using CrmBack.Core.Models.Entities;
 
-namespace CrmBack.DAO;
+namespace CrmBack.DAOs;
 
 public interface IRefreshTokenDAO
 {

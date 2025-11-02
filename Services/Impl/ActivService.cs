@@ -1,7 +1,7 @@
 namespace CrmBack.Services.Impl;
 
 using CrmBack.Core.Models.Dto;
-using CrmBack.DAO;
+using CrmBack.DAOs;
 
 public class ActivService(IActivDAO dao) : IActivService
 {
