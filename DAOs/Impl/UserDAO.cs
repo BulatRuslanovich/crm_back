@@ -13,9 +13,10 @@ namespace CrmBack.DAOs.Impl;
 public class UserDAO(AppDBContext context, IConnectionMultiplexer redis) : BaseCrudDAO<UserEntity, ReadUserDto, CreateUserDto, UpdateUserDto>(context, redis), IUserDAO
 {
     protected override string CacheKeyPrefix => "User";
-    private static readonly TimeSpan CacheExpiration = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan CacheExpiration = TimeSpan.FromMinutes(10);
     private static readonly MessagePackSerializerOptions MessagePackOptions = MessagePackSerializerOptions.Standard
-        .WithResolver(ContractlessStandardResolver.Instance);
+        .WithResolver(ContractlessStandardResolver.Instance)
+        .WithCompression(MessagePackCompression.Lz4Block);
     protected override ReadUserDto MapToDto(UserEntity entity) => entity.ToReadDto();
 
     protected override UserEntity MapToEntity(CreateUserDto dto) => dto.ToEntity();

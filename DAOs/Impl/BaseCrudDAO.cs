@@ -19,7 +19,8 @@ public abstract class BaseCrudDAO<TEntity, RDto, CDto, UDto>(AppDBContext contex
     protected abstract string CacheKeyPrefix { get; }
     private static readonly TimeSpan CacheExpiration = TimeSpan.FromMinutes(5);
     private static readonly MessagePackSerializerOptions MessagePackOptions = MessagePackSerializerOptions.Standard
-        .WithResolver(ContractlessStandardResolver.Instance);
+        .WithResolver(ContractlessStandardResolver.Instance)
+        .WithCompression(MessagePackCompression.Lz4Block);
 
     protected string GetCacheKey(int id) => $"CrmBack:{CacheKeyPrefix}:{id}";
     protected string GetCacheKey(PaginationDto pagination) => $"CrmBack:{CacheKeyPrefix}:list:{pagination.Page}:{pagination.PageSize}:{pagination.SearchTerm ?? ""}";

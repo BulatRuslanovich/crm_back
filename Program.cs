@@ -26,7 +26,7 @@ builder.Host.UseSerilog((context, config) =>
         .MinimumLevel.Override("CrmBack.Data", context.HostingEnvironment.IsProduction() ? Serilog.Events.LogEventLevel.Warning : Serilog.Events.LogEventLevel.Information)
         .MinimumLevel.Override("CrmBack.Api.Middleware", Serilog.Events.LogEventLevel.Warning)
         .MinimumLevel.Override("Microsoft.AspNetCore", Serilog.Events.LogEventLevel.Warning);
-    
+
     if (!context.HostingEnvironment.IsProduction())
         config.WriteTo.Debug();
 });
@@ -168,7 +168,7 @@ builder.Services.AddSwaggerGen(option =>
 builder.Services.AddDbContext<AppDBContext>(op =>
 {
     op.UseNpgsql(builder.Configuration.GetConnectionString("DbConnectionString"));
-    
+
     // Performance optimizations
     if (builder.Environment.IsProduction())
     {
@@ -250,9 +250,9 @@ app.MapHealthChecks("/health");
 app.MapControllers();
 
 // In production with nginx, bind to internal network
-var listenAddress = builder.Environment.IsProduction() 
-    ? "http://0.0.0.0:5555" 
+var listenAddress = builder.Environment.IsProduction()
+    ? "http://0.0.0.0:5555"
     : "http://localhost:5555";
-    
+
 app.Run(listenAddress);
 
