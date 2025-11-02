@@ -28,34 +28,8 @@ services:
         reservations:
           memory: 256M
 
-  redis:
-    image: redis:7-alpine
-    container_name: crm_redis
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
-    volumes:
-      - redis_data:/data
-      - ./redis.conf:/usr/local/etc/redis/redis.conf:ro
-    restart: unless-stopped
-    command: redis-server /usr/local/etc/redis/redis.conf
-    networks:
-      - crm-network
-    healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "ping"]
-      start_period: 20s
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-        reservations:
-          memory: 128M
 volumes:
   postgres_data:
-    driver: local
-  redis_data:
     driver: local
 
 networks:

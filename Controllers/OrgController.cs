@@ -4,8 +4,7 @@ using CrmBack.Core.Models.Dto;
 using CrmBack.Services;
 using Microsoft.AspNetCore.Mvc;
 
-[ApiController]
-[Route("api/org")]
+[ApiVersion("1.0")]
 public class OrgController(IOrgService orgService)
-: BaseApiController<ReadOrgDto, CreateOrgDto, UpdateOrgDto>(orgService)
+: CrudController<ReadOrgDto, CreateOrgDto, UpdateOrgDto>(orgService)
 { }

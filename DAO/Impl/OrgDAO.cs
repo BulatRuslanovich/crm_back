@@ -25,36 +25,35 @@ public class OrgDAO(AppDBContext context) : IOrgDAO
         return true;
     }
 
-    public async Task<List<ReadOrgDto>> FetchAll(int page, int pageSize, string? searchTerm = null, CancellationToken ct = default)
+    public async Task<List<ReadOrgDto>> FetchAll(PaginationDto pagination, CancellationToken ct = default)
     {
         var query = context.Org.AsQueryable().Where(o => !o.IsDeleted);
 
-        if (!string.IsNullOrEmpty(searchTerm))
+        if (pagination.SearchTerm is not null)
         {
             // Используем ILike для case-insensitive поиска в PostgreSQL (оптимизировано для индексов)
             query = query.Where(o =>
-                EF.Functions.ILike(o.Name, $"%{searchTerm}%") ||
-                EF.Functions.ILike(o.Inn!, $"%{searchTerm}%") ||
-                EF.Functions.ILike(o.Address!, $"%{searchTerm}%"));
+                EF.Functions.ILike(o.Name, $"%{pagination.SearchTerm}%") ||
+                EF.Functions.ILike(o.Inn!, $"%{pagination.SearchTerm}%") ||
+                EF.Functions.ILike(o.Address!, $"%{pagination.SearchTerm}%"));
         }
 
-        var orgs = await query
+        return await query
             .AsNoTracking()
             .OrderBy(o => o.Name)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
+            .Skip((pagination.Page - 1) * pagination.PageSize)
+            .Take(pagination.PageSize)
+            .Select(o => o.ToReadDto())
             .ToListAsync(ct);
-
-        return orgs.Select(o => o.ToReadDto()).ToList();
     }
 
     public async Task<ReadOrgDto?> FetchById(int id, CancellationToken ct)
     {
-        var org = await context.Org
+        return await context.Org
             .AsNoTracking()
-            .FirstOrDefaultAsync(o => o.OrgId == id && !o.IsDeleted, ct);
-
-        return org?.ToReadDto();
+            .Where(o => o.OrgId == id && !o.IsDeleted)
+            .Select(o => o.ToReadDto())
+            .FirstOrDefaultAsync(ct);
     }
 
     public async Task<bool> Update(int id, UpdateOrgDto dto, CancellationToken ct = default)

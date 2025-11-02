@@ -6,26 +6,32 @@ namespace CrmBack.DAO.Impl;
 
 public class ActivDAO(AppDBContext context) : IActivDAO
 {
-    public async Task<List<ReadActivDto>> FetchAll(int page, int pageSize, string? searchTerm = null, CancellationToken ct = default)
+    public async Task<List<ReadActivDto>> FetchAll(PaginationDto pagination, CancellationToken ct = default)
     {
         var query = context.Activ.AsQueryable().Where(a => !a.IsDeleted);
 
-        var res = await query
-            .AsNoTracking()
-            .OrderByDescending(a => a.CreatedAt)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(ct);
+        if (pagination.SearchTerm is not null)
+        {
+            query = query.Where(a =>
+                EF.Functions.ILike(a.Description!, $"%{pagination.SearchTerm}%"));
+        }
 
-        return res.Select(r => r.ToReadDto()).ToList();
+        return await query
+            .AsNoTracking()
+            .OrderByDescending(a => a.VisitDate)
+            .Skip((pagination.Page - 1) * pagination.PageSize)
+            .Take(pagination.PageSize)
+        .Select(a => a.ToReadDto())
+        .ToListAsync(ct);
     }
 
     public async Task<ReadActivDto?> FetchById(int id, CancellationToken ct)
     {
-        var res = await context.Activ
+        return await context.Activ
             .AsNoTracking()
-            .FirstOrDefaultAsync(a => a.ActivId == id && !a.IsDeleted, ct);
-        return res?.ToReadDto();
+            .Where(a => a.ActivId == id && !a.IsDeleted)
+            .Select(a => a.ToReadDto())
+            .FirstOrDefaultAsync(ct);
     }
 
     public async Task<ReadActivDto?> Create(CreateActivDto dto, CancellationToken ct = default)
@@ -63,12 +69,11 @@ public class ActivDAO(AppDBContext context) : IActivDAO
 
     public async Task<List<ReadActivDto>> FetchByUserId(int userId, CancellationToken ct = default)
     {
-        var res = await context.Activ
+        return await context.Activ
             .AsNoTracking()
             .Where(a => a.UsrId == userId && !a.IsDeleted)
             .OrderByDescending(a => a.VisitDate)
+            .Select(a => a.ToReadDto())
             .ToListAsync(ct);
-
-        return res.Select(a => a.ToReadDto()).ToList();
     }
 }

@@ -3,45 +3,35 @@ using CrmBack.Core.Models.Entities;
 
 namespace CrmBack.Core.Models.Dto;
 
-public class CreateOrgDto
-{
-    public string Name { get; set; } = string.Empty;
-    public string INN { get; set; } = string.Empty;
-    public double Latitude { get; set; }
-    public double Longitude { get; set; }
-    public string Address { get; set; } = string.Empty;
-}
+public record CreateOrgDto(
+    string Name,
+    string INN,
+    double Latitude,
+    double Longitude,
+    string Address
+);
 
-public class ReadOrgDto
-{
-    public int OrgId { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public string INN { get; set; } = string.Empty;
-    public double Latitude { get; set; }
-    public double Longitude { get; set; }
-    public string Address { get; set; } = string.Empty;
-}
+public record ReadOrgDto(
+    int OrgId,
+    string Name,
+    string INN,
+    double Latitude,
+    double Longitude,
+    string Address
+);
 
-public class UpdateOrgDto
-{
-    public string? Name { get; set; }
-    public string? INN { get; set; }
-    public double? Latitude { get; set; }
-    public double? Longitude { get; set; }
-    public string? Address { get; set; }
-}
+public record UpdateOrgDto(
+    string? Name = null,
+    string? INN = null,
+    double? Latitude = null,
+    double? Longitude = null,
+    string? Address = null
+);
 
 public static class OrgMapper
 {
-    public static ReadOrgDto ToReadDto(this OrgEntity entity) => new()
-    {
-        OrgId = entity.OrgId,
-        Name = entity.Name,
-        INN = entity.Inn ?? "-",
-        Latitude = entity.Latitude,
-        Longitude = entity.Longitude,
-        Address = entity.Address
-    };
+    public static ReadOrgDto ToReadDto(this OrgEntity entity) =>
+        new(entity.OrgId, entity.Name, entity.Inn ?? "-", entity.Latitude, entity.Longitude, entity.Address);
 
     public static OrgEntity ToEntity(this CreateOrgDto dto) => new()
     {

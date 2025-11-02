@@ -8,8 +8,8 @@ public class ActivService(IActivDAO dao) : IActivService
     public async Task<ReadActivDto?> GetById(int id, CancellationToken ct = default) =>
         await dao.FetchById(id, ct);
 
-    public async Task<List<ReadActivDto>> GetAll(int page, int pageSize, string? searchTerm = null, CancellationToken ct = default) =>
-        await dao.FetchAll(page, pageSize, searchTerm, ct);
+    public async Task<List<ReadActivDto>> GetAll(PaginationDto pagination, CancellationToken ct = default) =>
+        await dao.FetchAll(pagination, ct);
 
     public async Task<ReadActivDto?> Create(CreateActivDto dto, CancellationToken ct = default) =>
         await dao.Create(dto, ct);

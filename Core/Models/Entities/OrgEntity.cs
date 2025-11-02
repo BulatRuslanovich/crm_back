@@ -4,19 +4,16 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace CrmBack.Core.Models.Entities;
 
 [Table("org")]
-public class OrgEntity
+public class OrgEntity : BaseEntity
 {
     [Key]
     [Column("org_id")]
     public int OrgId { get; set; }
 
     [Column("name")]
-    [MaxLength(255)]
-    [Required]
     public string Name { get; set; } = string.Empty;
 
     [Column("inn")]
-    [MaxLength(12)]
     public string? Inn { get; set; } = string.Empty;
 
     [Column("latitude")]
@@ -28,10 +25,5 @@ public class OrgEntity
     [Column("address")]
     public string Address { get; set; } = string.Empty;
 
-    [Column("is_deleted")]
-    public bool IsDeleted { get; set; } = false;
-
-    // Navigation properties
     public virtual ICollection<ActivEntity> Activities { get; set; } = [];
-    public virtual ICollection<PlanEntity> Plans { get; set; } = [];
 }

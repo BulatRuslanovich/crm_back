@@ -9,7 +9,6 @@
   <img src="https://img.shields.io/github/repo-size/BulatRuslanovich/crm_back?label=Repo%20Size&color=orange&style=for-the-badge" alt="Repo Size" />
   <img src="https://img.shields.io/badge/.NET-8.0-purple?style=for-the-badge" alt=".NET Version" />
   <img src="https://img.shields.io/badge/PostgreSQL-16%2B-blue?style=for-the-badge" alt="PostgreSQL" />
-  <img src="https://img.shields.io/badge/Redis-7%2B-red?style=for-the-badge" alt="Redis" />
   <img src="https://img.shields.io/badge/Status-In%20Development-orange?style=for-the-badge" alt="Status" />
   <img src="https://img.shields.io/github/license/BulatRuslanovich/crm_back?color=yellow&style=for-the-badge" alt="License" />
 </p>

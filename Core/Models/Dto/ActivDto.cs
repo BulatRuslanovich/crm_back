@@ -2,68 +2,55 @@ using CrmBack.Core.Models.Entities;
 
 namespace CrmBack.Core.Models.Dto;
 
-public class CreateActivDto
-{
-    public int UsrId { get; set; }
-    public int OrgId { get; set; }
-    public DateTime VisitDate { get; set; }
-    public TimeSpan StartTime { get; set; }
-    public TimeSpan EndTime { get; set; }
-    public string? Description { get; set; }
-}
+public record CreateActivDto(
+    int UsrId,
+    int OrgId,
+    DateTime VisitDate,
+    TimeSpan StartTime,
+    TimeSpan EndTime,
+    string? Description = null
+);
 
-public class HumReadActivDto : ReadActivDto
-{
-    public string OrgName { get; set; } = string.Empty;
-    public string StatusName { get; set; } = string.Empty;
-}
+public record HumReadActivDto(
+    int ActivId,
+    int UsrId,
+    int OrgId,
+    int StatusId,
+    DateTime VisitDate,
+    TimeSpan StartTime,
+    TimeSpan EndTime,
+    string? Description,
+    string OrgName,
+    string StatusName
+) : ReadActivDto(ActivId, UsrId, OrgId, StatusId, VisitDate, StartTime, EndTime, Description);
 
-public class ReadActivDto
-{
-    public int ActivId { get; set; }
-    public int UsrId { get; set; }
-    public int OrgId { get; set; }
-    public int StatusId { get; set; }
-    public DateTime VisitDate { get; set; }
-    public TimeSpan StartTime { get; set; }
-    public TimeSpan EndTime { get; set; }
-    public string? Description { get; set; }
-}
+public record ReadActivDto(
+    int ActivId,
+    int UsrId,
+    int OrgId,
+    int StatusId,
+    DateTime VisitDate,
+    TimeSpan StartTime,
+    TimeSpan EndTime,
+    string? Description
+);
 
-public class UpdateActivDto
-{
-    public int? StatusId { get; set; }
-    public DateTime? VisitDate { get; set; }
-    public TimeSpan? StartTime { get; set; }
-    public TimeSpan? EndTime { get; set; }
-    public string? Description { get; set; }
-}
+public record UpdateActivDto(
+    int? StatusId = null,
+    DateTime? VisitDate = null,
+    TimeSpan? StartTime = null,
+    TimeSpan? EndTime = null,
+    string? Description = null
+);
 
 public static class ActivMapper
 {
-    public static ReadActivDto ToReadDto(this ActivEntity entity) => new()
-    {
-        ActivId = entity.ActivId,
-        UsrId = entity.UsrId,
-        OrgId = entity.OrgId,
-        VisitDate = entity.VisitDate,
-        StatusId = entity.StatusId,
-        StartTime = entity.StartTime,
-        EndTime = entity.EndTime,
-        Description = entity.Description ?? string.Empty,
-    };
+    public static ReadActivDto ToReadDto(this ActivEntity entity) =>
+        new(entity.ActivId, entity.UsrId, entity.OrgId, entity.StatusId, entity.VisitDate, entity.StartTime, entity.EndTime, entity.Description ?? string.Empty);
 
-    public static HumReadActivDto ToHumReadDto(this ActivEntity entity) => new()
-    {
-        ActivId = entity.ActivId,
-        UsrId = entity.UsrId,
-        OrgName = entity.Organization?.Name ?? string.Empty,
-        VisitDate = entity.VisitDate,
-        StatusName = entity.Status?.Name ?? string.Empty,
-        StartTime = entity.StartTime,
-        EndTime = entity.EndTime,
-        Description = entity.Description ?? string.Empty,
-    };
+    public static HumReadActivDto ToHumReadDto(this ActivEntity entity) =>
+        new(entity.ActivId, entity.UsrId, entity.OrgId, entity.StatusId, entity.VisitDate, entity.StartTime, entity.EndTime, entity.Description ?? string.Empty,
+            entity.Organization?.Name ?? string.Empty, entity.Status?.Name ?? string.Empty);
 
     public static ActivEntity ToEntity(this CreateActivDto payload) => new()
     {

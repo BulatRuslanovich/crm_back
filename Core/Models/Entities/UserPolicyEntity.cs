@@ -11,14 +11,11 @@ public class UserPolicyEntity
     public int UsrPolicyId { get; set; }
 
     [Column("usr_id")]
-    [Required]
     public int UsrId { get; set; }
 
     [Column("policy_id")]
-    [Required]
     public int PolicyId { get; set; }
 
-    // Navigation properties
     [ForeignKey("UsrId")]
     public virtual UserEntity User { get; set; } = null!;
 

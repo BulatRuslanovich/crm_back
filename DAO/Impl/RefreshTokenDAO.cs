@@ -6,18 +6,22 @@ namespace CrmBack.DAO.Impl;
 
 public class RefreshTokenDAO(AppDBContext context) : IRefreshTokenDAO
 {
+
     public async Task<RefreshTokenEntity?> GetUserToken(int userId, CancellationToken ct = default)
     {
         return await context.RefreshTokens
+            .Include(rt => rt.User)
             .Where(rt => rt.UsrId == userId && !rt.IsDeleted && rt.ExpiresAt > DateTime.UtcNow)
             .FirstOrDefaultAsync(ct);
     }
 
     public async Task<RefreshTokenEntity> CreateAsync(int userId, string tokenHash, DateTime expiresAt, CancellationToken ct = default)
     {
-        await context.RefreshTokens
+        var oldTokens = await context.RefreshTokens
             .Where(rt => rt.UsrId == userId && !rt.IsDeleted)
-            .ExecuteUpdateAsync(setters => setters.SetProperty(rt => rt.IsDeleted, true), ct);
+            .ToListAsync(ct);
+
+        foreach (var token in oldTokens) token.IsDeleted = true;
 
         var refreshToken = new RefreshTokenEntity
         {
@@ -34,11 +38,13 @@ public class RefreshTokenDAO(AppDBContext context) : IRefreshTokenDAO
 
     public async Task<bool> DeleteAll(int userId, CancellationToken ct = default)
     {
-        int affectedRows = await context.RefreshTokens
+        var tokens = await context.RefreshTokens
             .Where(rt => rt.UsrId == userId && !rt.IsDeleted)
-            .ExecuteUpdateAsync(setters => setters.SetProperty(rt => rt.IsDeleted, true), ct);
+            .ToListAsync(ct);
 
-        return affectedRows > 0;
+        foreach (var token in tokens) token.IsDeleted = true;
+
+        await context.SaveChangesAsync(ct);
+        return true;
     }
-
 }

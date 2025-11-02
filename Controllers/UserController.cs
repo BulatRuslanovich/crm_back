@@ -6,65 +6,12 @@ using CrmBack.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-[ApiController]
-[Route("api/usr")]
-public class UserController(IUserService userService) : BaseApiController<ReadUserDto, CreateUserDto, UpdateUserDto>(userService)
+[ApiVersion("1.0")]
+public class UserController(IUserService userService) : CrudController<ReadUserDto, CreateUserDto, UpdateUserDto>(userService)
 {
-    [HttpPost("login")]
-    public async Task<ActionResult<LoginResponseDto>> Login([FromBody] LoginUserDto dto)
-    {
-        if (!ModelState.IsValid) return BadRequest(ModelState);
-
-        try
-        {
-            return Ok(await userService.Login(dto, HttpContext.RequestAborted));
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Unauthorized(new { message = ex.Message });
-        }
-    }
-
-    [HttpPost("register")]
-    public async Task<ActionResult<ReadUserDto>> Register([FromBody] CreateUserDto dto)
-    {
-        if (!ModelState.IsValid) return BadRequest(ModelState);
-
-        var response = await userService.Create(dto, HttpContext.RequestAborted);
-        return response is null
-            ? BadRequest(new { message = "Failed to register user" })
-            : Ok(response);
-    }
-
-    [HttpPost("refresh")]
-    public async Task<ActionResult<bool>> RefreshToken()
-    {
-        try
-        {
-            return Ok(await userService.RefreshToken(ct: HttpContext.RequestAborted));
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Unauthorized(new { message = ex.Message });
-        }
-    }
-
-    [HttpPost("logout")]
-    [Authorize]
-    public async Task<ActionResult> Logout()
-    {
-        int? userId = JwtHelper.GetUserIdFromContext(HttpContext);
-        if (userId is null) return Unauthorized(new { message = "User not authenticated" });
-
-        bool success = await userService.Logout(userId.Value, HttpContext.RequestAborted);
-        return success
-            ? Ok(new { message = "Logged out successfully" })
-            : BadRequest(new { message = "Failed to logout" });
-    }
-
     [HttpGet("{id:int}/activ")]
     [Authorize]
     [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Any, VaryByQueryKeys = new[] { "id" })]
     public async Task<ActionResult<List<HumReadActivDto>>> GetActivs(int id) =>
-        Ok(await userService.GetActivs(id, HttpContext.RequestAborted));
+        Success(await userService.GetActivs(id, HttpContext.RequestAborted));
 }

@@ -5,8 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CrmBack.Controllers;
 
-[ApiController]
-[Route("api/activ")]
+[ApiVersion("1.0")]
 public class ActivController(IActivService activService)
-: BaseApiController<ReadActivDto, CreateActivDto, UpdateActivDto>(activService)
+: CrudController<ReadActivDto, CreateActivDto, UpdateActivDto>(activService)
 { }

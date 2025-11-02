@@ -1,74 +1,41 @@
 namespace CrmBack.Controllers;
 
+using CrmBack.Core.Utils;
 using CrmBack.Services;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-public abstract class BaseApiController<RPayload, CPayload, UPayload>(IService<RPayload, CPayload, UPayload> service) : ControllerBase
+[ApiController]
+[Route("api/v{version:apiVersion}/[controller]")]
+[Produces("application/json")]
+public abstract class BaseApiController() : ControllerBase
 {
-    [Authorize]
-    [HttpGet("{id:int}")]
-    [ResponseCache(Duration = 120, Location = ResponseCacheLocation.Any, VaryByQueryKeys = new[] { "id" })]
-    public async Task<ActionResult<RPayload>> GetById(int id)
-    {
-        if (id <= 0) return BadRequest();
+    /// <summary>
+    /// Returns a successful response
+    /// </summary>
+    protected ActionResult<T> Success<T>(T data, string? message = null) =>
+        Ok(ApiResponse<T>.Ok(data, message));
 
-        var data = await service.GetById(id, HttpContext.RequestAborted);
-        return data is null ? NotFound() : Ok(data);
-    }
+    /// <summary>
+    /// Returns a successful response without data
+    /// </summary>
+    protected ActionResult<T> Success<T>(string? message = null) =>
+        Ok(ApiResponse<T>.Ok(message));
 
-    [Authorize]
-    [HttpGet]
-    [ResponseCache(Duration = 120, Location = ResponseCacheLocation.Any, VaryByQueryKeys = new[] { "page", "pageSize", "searchTerm" })]
-    public async Task<ActionResult<List<RPayload>>> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string? searchTerm = null)
-    {
-        if (page < 1 || pageSize is < 1 or > 1000)
-            return BadRequest("Invalid pagination parameters");
+    /// <summary>
+    /// Returns an error response
+    /// </summary>
+    protected ActionResult<T> Error<T>(string message, List<string>? errors = null) =>
+        BadRequest(ApiResponse<T>.Fail(message, errors));
 
-        return Ok(await service.GetAll(page, pageSize, searchTerm, HttpContext.RequestAborted));
-    }
+    /// <summary>
+    /// Returns a not found response
+    /// </summary>
+    protected ActionResult<T> NotFound<T>(string message = "Resource not found") =>
+        NotFound(ApiResponse<T>.Fail(message));
 
-    [Authorize]
-    [HttpPost]
-    public async Task<ActionResult<RPayload>> Create([FromBody] CPayload payload)
-    {
-        if (!ModelState.IsValid) return BadRequest(ModelState);
-
-        var data = await service.Create(payload, HttpContext.RequestAborted);
-        if (data is null) return BadRequest();
-
-        object? id = data.GetType().GetProperty("Id")?.GetValue(data);
-        return id is null
-            ? Created(string.Empty, data)
-            : CreatedAtAction(nameof(GetById), new { id }, data);
-    }
-
-    [Authorize]
-    [HttpPut("{id:int}")]
-    public async Task<ActionResult<bool>> Update(int id, [FromBody] UPayload payload)
-    {
-        if (id <= 0 || !ModelState.IsValid) return BadRequest();
-
-        try
-        {
-            return await service.Update(id, payload, HttpContext.RequestAborted)
-                ? Ok(true)
-                : NotFound();
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Unauthorized(new { message = ex.Message });
-        }
-    }
-
-    [Authorize]
-    [HttpDelete("{id:int}")]
-    public async Task<IActionResult> Delete(int id)
-    {
-        if (id <= 0) return BadRequest();
-
-        return await service.Delete(id, HttpContext.RequestAborted)
-            ? NoContent()
-            : NotFound();
-    }
+    /// <summary>
+    /// Returns an unauthorized response
+    /// </summary>
+    protected IActionResult Unauthorized(string message = "Unauthorized access") =>
+        Unauthorized(ApiResponse<object>.Fail(message));
 }

@@ -11,10 +11,7 @@ public class StatusEntity
     public int StatusId { get; set; }
 
     [Column("name")]
-    [MaxLength(50)]
-    [Required]
     public string Name { get; set; } = string.Empty;
 
-    // Navigation properties
     public virtual ICollection<ActivEntity> Activities { get; set; } = [];
 }

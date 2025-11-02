@@ -5,7 +5,7 @@ namespace CrmBack.DAO;
 
 public interface ICrudDAO<RDto, CDto, UDto>
 {
-    public Task<List<RDto>> FetchAll(int page, int pageSize, string? searchTerm = null, CancellationToken ct = default);
+    public Task<List<RDto>> FetchAll(PaginationDto pagination, CancellationToken ct = default);
 
     public Task<RDto?> FetchById(int id, CancellationToken ct);
 

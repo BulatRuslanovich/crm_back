@@ -3,68 +3,60 @@ using CrmBack.Core.Models.Entities;
 
 namespace CrmBack.Core.Models.Dto;
 
-public class CreateUserDto
-{
-    public string FirstName { get; set; } = string.Empty;
-    public string LastName { get; set; } = string.Empty;
-    public string? MiddleName { get; set; }
-    public string Login { get; set; } = string.Empty;
-    public string Password { get; set; } = string.Empty;
-}
+public record CreateUserDto(
+    string FirstName,
+    string LastName,
+    string? MiddleName,
+    string Login,
+    string Password
+);
 
-public class ReadUserDto
-{
-    public int UsrId { get; set; }
-    public string FirstName { get; set; } = string.Empty;
-    public string LastName { get; set; } = string.Empty;
-    public string? MiddleName { get; set; }
-    public string Login { get; set; } = string.Empty;
-}
+public record ReadUserDto(
+    int UsrId,
+    string FirstName,
+    string LastName,
+    string? MiddleName,
+    string Login
+);
 
-public class UpdateUserDto
-{
-    public string? FirstName { get; set; }
-    public string? LastName { get; set; }
-    public string? MiddleName { get; set; }
-    public string? Login { get; set; }
-    public string? Password { get; set; }
-    public string? CurrentPassword { get; set; }
-}
+public record UpdateUserDto(
+    string? FirstName = null,
+    string? LastName = null,
+    string? MiddleName = null,
+    string? Login = null,
+    string? Password = null,
+    string? CurrentPassword = null
+);
 
-public class LoginUserDto
-{
-    public string Login { get; set; } = string.Empty;
-    public string Password { get; set; } = string.Empty;
-}
+public record LoginUserDto(
+    string Login,
+    string Password
+);
 
-public class LoginResponseDto
-{
-    public int UserId { get; set; }
-    public string Login { get; set; } = string.Empty;
-    public List<string> Roles { get; set; } = [];
-}
+public record LoginResponseDto(
+    int UserId,
+    string Login,
+    List<string> Roles
+);
 
-public class UserWithPoliciesDto : ReadUserDto
-{
-    public List<PolicyDto> Policies { get; set; } = [];
-}
+public record UserWithPoliciesDto(
+    int UsrId,
+    string FirstName,
+    string LastName,
+    string? MiddleName,
+    string Login,
+    List<PolicyDto> Policies
+) : ReadUserDto(UsrId, FirstName, LastName, MiddleName, Login);
 
-public class PolicyDto
-{
-    public int PolicyId { get; set; }
-    public string PolicyName { get; set; } = string.Empty;
-}
+public record PolicyDto(
+    int PolicyId,
+    string PolicyName
+);
 
 public static class UserMapper
 {
-    public static ReadUserDto ToReadDto(this UserEntity entity) => new()
-    {
-        UsrId = entity.UsrId,
-        FirstName = entity.FirstName,
-        LastName = entity.LastName,
-        MiddleName = entity.MiddleName,
-        Login = entity.Login
-    };
+    public static ReadUserDto ToReadDto(this UserEntity entity) =>
+        new(entity.UsrId, entity.FirstName, entity.LastName, entity.MiddleName, entity.Login);
 
     public static UserEntity ToEntity(this CreateUserDto dto) => new()
     {
@@ -75,9 +67,6 @@ public static class UserMapper
         PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password)
     };
 
-    public static PolicyDto ToReadDto(this PolicyEntity entity) => new()
-    {
-        PolicyId = entity.PolicyId,
-        PolicyName = entity.PolicyName
-    };
+    public static PolicyDto ToReadDto(this PolicyEntity entity) =>
+        new(entity.PolicyId, entity.PolicyName);
 }

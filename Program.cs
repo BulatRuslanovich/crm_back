@@ -6,7 +6,6 @@ using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
-using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,7 +17,7 @@ builder.Host.UseSerilog((context, config) =>
             theme: Serilog.Sinks.SystemConsole.Themes.AnsiConsoleTheme.Code,
             outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {LogType:l} {Message:lj}{NewLine}{Exception}")
         .WriteTo.Debug()
-        .MinimumLevel.Information()
+        .MinimumLevel.Debug()
         .MinimumLevel.Override("CrmBack.Data", Serilog.Events.LogEventLevel.Information)
         .MinimumLevel.Override("CrmBack.Api.Middleware", Serilog.Events.LogEventLevel.Information)
         .MinimumLevel.Override("Microsoft.AspNetCore", Serilog.Events.LogEventLevel.Information);
@@ -28,6 +27,26 @@ builder.Host.UseSerilog((context, config) =>
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddHttpContextAccessor();
+
+// Настройка роутинга - делаем URLs строчными для лучшей совместимости
+builder.Services.Configure<Microsoft.AspNetCore.Routing.RouteOptions>(options =>
+{
+    options.LowercaseUrls = true;
+});
+
+builder.Services.AddApiVersioning(options =>
+{
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    options.DefaultApiVersion = new Microsoft.AspNetCore.Mvc.ApiVersion(1, 0);
+    options.ReportApiVersions = true;
+});
+
+// Настройка API explorer для поддержки versioning
+builder.Services.AddVersionedApiExplorer(options =>
+{
+    options.GroupNameFormat = "'v'VVV";
+    options.SubstituteApiVersionInUrl = true;
+});
 
 // Response Compression для уменьшения размера ответов
 builder.Services.AddResponseCompression(options =>
@@ -45,12 +64,11 @@ builder.Services.Configure<Microsoft.AspNetCore.ResponseCompression.GzipCompress
     options.Level = System.IO.Compression.CompressionLevel.Fastest;
 });
 
-// HTTP Response Caching для кэширования ответов на уровне HTTP
 builder.Services.AddResponseCaching(options =>
 {
-    options.MaximumBodySize = 64 * 1024 * 1024; // 64 MB
-    options.UseCaseSensitivePaths = false; // Регистр пути не важен
-    options.SizeLimit = 100 * 1024 * 1024; // 100 MB общий размер кэша
+    options.MaximumBodySize = 64 * 1024 * 1024;
+    options.UseCaseSensitivePaths = false;
+    options.SizeLimit = 100 * 1024 * 1024;
 });
 
 // CORS
@@ -141,40 +159,19 @@ builder.Services.AddSwaggerGen(option =>
 // Database
 builder.Services.AddDbContext<AppDBContext>(op =>
 {
-    var connectionString = builder.Configuration.GetConnectionString("DbConnectionString");
-    op.UseNpgsql(connectionString, npgsqlOptions =>
-    {
-        npgsqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
-        npgsqlOptions.MaxBatchSize(100);
-    });
-    
-    op.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
-    op.EnableThreadSafetyChecks(false);
-    
+    op.UseNpgsql(builder.Configuration.GetConnectionString("DbConnectionString"));
+
     if (builder.Environment.IsDevelopment())
     {
         op.EnableSensitiveDataLogging();
         op.EnableDetailedErrors();
-        op.UseQueryTrackingBehavior(QueryTrackingBehavior.TrackAll);
     }
 });
 
-builder.Services.AddStackExchangeRedisCache(options =>
-{
-    options.Configuration = builder.Configuration.GetConnectionString("Redis");
-    options.InstanceName = "CrmBack";
-});
-
-builder.Services.AddSingleton<IConnectionMultiplexer>(provider =>
-{
-    var configuration = provider.GetRequiredService<IConfiguration>();
-    return ConnectionMultiplexer.Connect(configuration.GetConnectionString("Redis")!);
-});
 
 // Health Checks
 builder.Services.AddHealthChecks()
-    .AddNpgSql(builder.Configuration.GetConnectionString("DbConnectionString")!)
-    .AddRedis(builder.Configuration.GetConnectionString("Redis")!);
+    .AddNpgSql(builder.Configuration.GetConnectionString("DbConnectionString")!);
 
 // Rate Limiting
 builder.Services.AddRateLimiter(options =>
@@ -201,12 +198,14 @@ builder.Services.AddRateLimiter(options =>
 // FluentValidation
 builder.Services.AddValidatorsFromAssemblyContaining<LoginUserDtoValidator>()
                  .AddValidatorsFromAssemblyContaining<CreateUserDtoValidator>()
-                 .AddValidatorsFromAssemblyContaining<UpdateUserDtoValidator>();
+                 .AddValidatorsFromAssemblyContaining<UpdateUserDtoValidator>()
+                 .AddValidatorsFromAssemblyContaining<PaginationDtoValidator>();
 
 builder.Services.AddFluentValidationAutoValidation(config =>
 {
     config.DisableDataAnnotationsValidation = true;
 });
+
 builder.Services.AddFluentValidationClientsideAdapters()
                  .AddApplicationServices();
 
@@ -257,3 +256,4 @@ app.MapControllers();
 app.Run("http://localhost:5555");
 
 public partial class Program { }
+
