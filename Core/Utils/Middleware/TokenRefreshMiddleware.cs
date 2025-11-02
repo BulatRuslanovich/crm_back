@@ -1,5 +1,5 @@
-using System.IdentityModel.Tokens.Jwt;
 using System.Collections.Concurrent;
+using System.IdentityModel.Tokens.Jwt;
 using CrmBack.Services;
 
 namespace CrmBack.Core.Utils.Middleware;
@@ -19,13 +19,13 @@ public class TokenRefreshMiddleware(RequestDelegate next)
         {
             // Генерируем ключ кэша на основе токена (первые 50 символов для уникальности)
             var cacheKey = accessToken.Length > 50 ? accessToken[..50] : accessToken;
-            
+
             // Проверяем, была ли недавняя проверка этого токена
-            if (!TokenCheckCache.TryGetValue(cacheKey, out var lastCheck) || 
+            if (!TokenCheckCache.TryGetValue(cacheKey, out var lastCheck) ||
                 DateTime.UtcNow - lastCheck > CacheExpiration)
             {
                 var tokenHandler = new JwtSecurityTokenHandler();
-                
+
                 // Безопасное чтение токена (без валидации подписи - только для проверки времени)
                 try
                 {

@@ -18,7 +18,7 @@ public class RefreshTokenEntity : BaseEntity
 
     [Column("expires_at")]
     public DateTime ExpiresAt { get; set; }
-    
+
     [ForeignKey("UsrId")]
     public virtual UserEntity User { get; set; } = null!;
 }

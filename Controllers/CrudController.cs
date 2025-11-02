@@ -12,7 +12,8 @@ public abstract class CrudController<RPayload, CPayload, UPayload>(IService<RPay
         id <= 0 ? Error<RPayload>("Invalid ID", ["ID must be greater than 0"]) :
         await GetByIdCore(id);
 
-    private async Task<ActionResult<RPayload>> GetByIdCore(int id) {
+    private async Task<ActionResult<RPayload>> GetByIdCore(int id)
+    {
         var data = await service.GetById(id, HttpContext.RequestAborted);
         return data is null ? NotFound<RPayload>() : Success(data);
     }

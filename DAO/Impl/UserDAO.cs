@@ -44,7 +44,7 @@ public class UserDAO(AppDBContext context) : IUserDAO
             .Skip((pagination.Page - 1) * pagination.PageSize)
             .Take(pagination.PageSize)
             .Select(u => u.ToReadDto())
-            .ToListAsync(ct);   
+            .ToListAsync(ct);
     }
 
     public async Task<ReadUserDto?> FetchById(int id, CancellationToken ct)
@@ -62,7 +62,7 @@ public class UserDAO(AppDBContext context) : IUserDAO
             .AsNoTracking()
             .Where(u => u.UsrId == id && !u.IsDeleted)
             .FirstOrDefaultAsync(ct);
-            
+
         if (existing is null) return false;
 
         if (!string.IsNullOrEmpty(dto.Password) && !string.IsNullOrEmpty(dto.CurrentPassword))
@@ -104,7 +104,7 @@ public class UserDAO(AppDBContext context) : IUserDAO
 
         if (user is null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash)) return null;
 
-        return new UserWithPoliciesDto(user.UsrId, user.Login, user.FirstName, user.LastName, user.MiddleName ?? string.Empty, [.. user.UserPolicies.Select(up => up.Policy.ToReadDto())]); 
+        return new UserWithPoliciesDto(user.UsrId, user.Login, user.FirstName, user.LastName, user.MiddleName ?? string.Empty, [.. user.UserPolicies.Select(up => up.Policy.ToReadDto())]);
     }
 
     public async Task<UserWithPoliciesDto?> FetchByIdWithPolicies(int id, CancellationToken ct = default)
@@ -120,4 +120,3 @@ public class UserDAO(AppDBContext context) : IUserDAO
         return new UserWithPoliciesDto(user.UsrId, user.FirstName, user.LastName, user.MiddleName, user.Login, [.. user.UserPolicies.Select(up => up.Policy.ToReadDto())]);
     }
 }
-    
