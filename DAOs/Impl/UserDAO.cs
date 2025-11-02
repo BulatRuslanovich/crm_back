@@ -2,6 +2,7 @@ using CrmBack.Core.Extensions;
 using CrmBack.Core.Models.Dto;
 using CrmBack.Core.Models.Entities;
 using CrmBack.Core.Specifications;
+using CrmBack.Core.Utils;
 using CrmBack.Data;
 using MessagePack;
 using MessagePack.Resolvers;
@@ -63,10 +64,10 @@ public class UserDAO(AppDBContext context, IConnectionMultiplexer redis) : BaseC
         string cacheKey = $"CrmBack:UserActivs:{userId}";
         var db = Redis.GetDatabase();
         var cached = await db.StringGetAsync(cacheKey);
-        
+
         if (cached.HasValue)
             return MessagePackSerializer.Deserialize<List<HumReadActivDto>>(cached!, MessagePackOptions, ct) ?? [];
-        
+
         var entities = await Context.Activ
             .WhereNotDeleted()
             .Include(a => a.Organization)
@@ -74,23 +75,17 @@ public class UserDAO(AppDBContext context, IConnectionMultiplexer redis) : BaseC
             .Where(a => a.UsrId == userId)
             .OrderByDefault()
             .ToListAsync(ct);
-        
+
         var result = entities.Select(a => a.ToHumReadDto()).ToList();
         var serialized = MessagePackSerializer.Serialize(result, MessagePackOptions, ct);
         await db.StringSetAsync(cacheKey, serialized, CacheExpiration);
-        
+
         return result;
     }
 
     public async Task<UserWithPoliciesDto?> FetchByLogin(LoginUserDto dto, CancellationToken ct = default)
     {
-        var user = await Context.User
-            .WhereNotDeleted()
-            .AsNoTracking()
-            .Include(u => u.UserPolicies)
-            .ThenInclude(up => up.Policy)
-            .Where(u => u.Login == dto.Login)
-            .FirstOrDefaultAsync(ct);
+        var user = await CompiledQueries.UserByLoginAsync(Context, dto.Login);
 
         if (user is null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash)) return null;
 
@@ -99,13 +94,7 @@ public class UserDAO(AppDBContext context, IConnectionMultiplexer redis) : BaseC
 
     public async Task<UserWithPoliciesDto?> FetchByIdWithPolicies(int id, CancellationToken ct = default)
     {
-        var user = await Context.User
-            .WhereNotDeleted()
-            .AsNoTracking()
-            .Include(u => u.UserPolicies)
-            .ThenInclude(up => up.Policy)
-            .Where(u => u.UsrId == id)
-            .FirstOrDefaultAsync(ct);
+        var user = await CompiledQueries.UserByIdWithPoliciesAsync(Context, id);
 
         if (user is null) return null;
 

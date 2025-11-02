@@ -32,17 +32,17 @@ public abstract class BaseCrudDAO<TEntity, RDto, CDto, UDto>(AppDBContext contex
         string cacheKey = GetCacheKey(id);
         var db = GetDatabase();
         var cached = await db.StringGetAsync(cacheKey);
-        
+
         if (cached.HasValue)
             return MessagePackSerializer.Deserialize<RDto>(cached!, MessagePackOptions, ct);
 
         var entity = await Context.Set<TEntity>().FindAsync([id], ct);
         if (entity is null or { IsDeleted: true }) return default;
-        
+
         var dto = MapToDto(entity);
         var serialized = MessagePackSerializer.Serialize(dto, MessagePackOptions, ct);
         await db.StringSetAsync(cacheKey, serialized, CacheExpiration);
-        
+
         return dto;
     }
 
@@ -51,7 +51,7 @@ public abstract class BaseCrudDAO<TEntity, RDto, CDto, UDto>(AppDBContext contex
         string cacheKey = GetCacheKey(pagination);
         var db = GetDatabase();
         var cached = await db.StringGetAsync(cacheKey);
-        
+
         if (cached.HasValue)
             return MessagePackSerializer.Deserialize<List<RDto>>(cached!, MessagePackOptions, ct) ?? [];
 
@@ -59,10 +59,10 @@ public abstract class BaseCrudDAO<TEntity, RDto, CDto, UDto>(AppDBContext contex
         query = ApplyDefaults(query, pagination);
         var entities = await query.ToListAsync(ct);
         var result = entities.Select(MapToDto).ToList();
-        
+
         var serialized = MessagePackSerializer.Serialize(result, MessagePackOptions, ct);
         await db.StringSetAsync(cacheKey, serialized, CacheExpiration);
-        
+
         return result;
     }
 
@@ -71,10 +71,10 @@ public abstract class BaseCrudDAO<TEntity, RDto, CDto, UDto>(AppDBContext contex
         var entity = MapToEntity(dto);
         Context.Set<TEntity>().Add(entity);
         await Context.SaveChangesAsync(ct);
-        
+
         var result = MapToDto(entity);
         await InvalidateListCache();
-        
+
         return result;
     }
 
@@ -85,14 +85,14 @@ public abstract class BaseCrudDAO<TEntity, RDto, CDto, UDto>(AppDBContext contex
 
         UpdateEntity(existing, dto);
         var success = await Context.SaveChangesAsync(ct) > 0;
-        
+
         if (success)
         {
             var db = GetDatabase();
             await db.KeyDeleteAsync(GetCacheKey(id));
             await InvalidateListCache();
         }
-        
+
         return success;
     }
 
@@ -103,14 +103,14 @@ public abstract class BaseCrudDAO<TEntity, RDto, CDto, UDto>(AppDBContext contex
 
         entity.IsDeleted = true;
         var success = await Context.SaveChangesAsync(ct) > 0;
-        
+
         if (success)
         {
             var db = GetDatabase();
             await db.KeyDeleteAsync(GetCacheKey(id));
             await InvalidateListCache();
         }
-        
+
         return success;
     }
 
@@ -123,11 +123,11 @@ public abstract class BaseCrudDAO<TEntity, RDto, CDto, UDto>(AppDBContext contex
     {
         var db = Redis.GetDatabase();
         string pattern = $"CrmBack:{CacheKeyPrefix}:list:*";
-        
+
         // Use SCAN to find all keys matching the pattern
         var server = Redis.GetServer(Redis.GetEndPoints()[0]);
         var keys = server.KeysAsync(pattern: pattern);
-        
+
         await foreach (var key in keys)
         {
             await db.KeyDeleteAsync(key);

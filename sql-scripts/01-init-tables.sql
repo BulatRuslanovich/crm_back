@@ -101,12 +101,6 @@ CREATE INDEX idx_activ_active ON activ (activ_id) WHERE is_deleted = FALSE;
 CREATE INDEX idx_activ_usr_visit_date ON activ (usr_id, visit_date DESC) WHERE is_deleted = FALSE;
 CREATE INDEX idx_activ_created_at ON activ (created_at DESC) WHERE is_deleted = FALSE;
 
-CREATE INDEX idx_plan_usr_id ON plan (usr_id);
-CREATE INDEX idx_plan_org_id ON plan (org_id);
-CREATE INDEX idx_plan_active ON plan (plan_id) WHERE is_deleted = FALSE;
-CREATE INDEX idx_plan_usr_org_check ON plan (usr_id, org_id) WHERE is_deleted = FALSE;
-CREATE INDEX idx_plan_start_date ON plan (start_date DESC) WHERE is_deleted = FALSE;
-CREATE INDEX idx_plan_usr_org_join ON plan (usr_id, org_id, start_date DESC) WHERE is_deleted = FALSE;
 
 CREATE INDEX idx_refresh_usr_id ON refresh (usr_id);
 CREATE INDEX idx_refresh_token_hash ON refresh (token_hash);
@@ -159,5 +153,17 @@ VALUES ('Запланирован'),
        ('Открыт'),
        ('Сохранен'),
        ('Закрыт');
-       
+
+INSERT INTO usr (first_name, middle_name, last_name, login, password_hash) VALUES
+('Булат', 'Русланович', 'Бикмухаметов', 'bulat', '$2a$11$xi3EwTpQov3A9kYsM1UsveTjr1ZScZKQzjSBMQQXOOKbgPv6R5MjC');
+
+INSERT INTO policy (policy_name) VALUES
+('Admin'),
+('Director'),
+('Manager'),
+('Representative');
+
+INSERT INTO usr_policy (usr_id, policy_id) VALUES
+(1, 1);
+
 

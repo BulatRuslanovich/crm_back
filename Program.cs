@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using System.Text.Json.Serialization;
 using CrmBack.Core.Extensions;
 using CrmBack.Core.Utils.Middleware;
 using CrmBack.Core.Validators;
@@ -32,7 +33,14 @@ builder.Host.UseSerilog((context, config) =>
 });
 
 // Services
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Performance: optimize JSON serialization
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+        options.JsonSerializerOptions.WriteIndented = false; // Production: no indentation
+    });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddHttpContextAccessor();
 
@@ -195,7 +203,17 @@ builder.Services.AddStackExchangeRedisCache(options =>
 builder.Services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(sp =>
 {
     var config = builder.Configuration.GetConnectionString("Redis");
-    return StackExchange.Redis.ConnectionMultiplexer.Connect(config!);
+    var redisConfig = StackExchange.Redis.ConfigurationOptions.Parse(config!);
+
+    // Performance optimizations for Redis connection pool
+    redisConfig.SyncTimeout = 5000;
+    redisConfig.AsyncTimeout = 5000;
+    redisConfig.ConnectTimeout = 5000;
+    redisConfig.AbortOnConnectFail = false;
+    redisConfig.ConnectRetry = 3;
+    redisConfig.DefaultDatabase = 0;
+
+    return StackExchange.Redis.ConnectionMultiplexer.Connect(redisConfig);
 });
 
 // Health Checks

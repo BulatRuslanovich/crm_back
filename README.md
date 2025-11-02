@@ -1,157 +1,133 @@
-<img src="https://readme-typing-svg.herokuapp.com?font=Lexend+Giga&size=25&pause=1000&color=6495ED&vCenter=true&width=435&height=25&lines=CRM%20Backend%20System" width="450"/>
+# CRM Backend API
 
----
-
-<p align="center">
-  <img src="https://img.shields.io/github/actions/workflow/status/BulatRuslanovich/crm_back/build.yaml?branch=master&style=for-the-badge&label=Build" alt="Build" />
-  <img src="https://img.shields.io/codecov/c/github/BulatRuslanovich/crm_back?style=for-the-badge&label=Coverage" alt="Coverage" />
-  <img src="https://img.shields.io/github/last-commit/BulatRuslanovich/crm_back/master?label=Last%20Commit&color=blue&style=for-the-badge" alt="Last Commit" />
-  <img src="https://img.shields.io/github/repo-size/BulatRuslanovich/crm_back?label=Repo%20Size&color=orange&style=for-the-badge" alt="Repo Size" />
-  <img src="https://img.shields.io/badge/.NET-8.0-purple?style=for-the-badge" alt=".NET Version" />
-  <img src="https://img.shields.io/badge/PostgreSQL-16%2B-blue?style=for-the-badge" alt="PostgreSQL" />
-  <img src="https://img.shields.io/badge/Status-In%20Development-orange?style=for-the-badge" alt="Status" />
-  <img src="https://img.shields.io/github/license/BulatRuslanovich/crm_back?color=yellow&style=for-the-badge" alt="License" />
-</p>
-
-Backend API for CRM system built with ASP.NET Core 8, PostgreSQL, and Redis.
-
-> **⚠️ Project Status**: In active development. API endpoints and structure may change.
-
----
+High-performance REST API for CRM system. ASP.NET Core 8, PostgreSQL, Redis.
 
 ## Tech Stack
 
-- **ASP.NET Core 8** - Modern web framework
-- **PostgreSQL 16+** - Relational database
-- **Redis** - Caching and session management
-- **Dapper** - High-performance ORM
-- **JWT Authentication** - Secure token-based auth
-- **xUnit** - Unit and integration testing
-
----
-
-## Core Features
-
-- **Authentication System** - JWT-based user authentication
-- **CRUD Operations** - Generic repository pattern for all entities
-- **Data Validation** - Input validation and sanitization
-- **Caching** - Redis integration for performance
-- **API Documentation** - Swagger/OpenAPI integration
-- **Comprehensive Testing** - Unit and integration test coverage
-
----
-
-## Getting Started
-
-### Prerequisites
-- .NET 8.0 SDK
-- PostgreSQL 16+
-- Redis 7+
-- Docker & Docker Compose (optional, for services)
-
-### Quick Start
-
-```bash
-# Run application directly
-dotnet run
-
-# Or via Docker Compose with all services
-docker-compose up -d
-```
-
-### Database Setup
-
-```bash
-# Initialize databases (PostgreSQL + Redis)
-docker-compose up -d postgres redis
-
-# Or all services including Nginx
-docker-compose up -d
-```
-
-### API Documentation
-
-Access Swagger UI at: `http://localhost/swagger` (via Nginx)
-or directly: `http://localhost:5555/swagger`
-
----
+| Component | Technology | Purpose |
+|-----------|-----------|---------|
+| Framework | ASP.NET Core 8 | Web API |
+| Database | PostgreSQL 16 | Primary storage |
+| Cache | Redis 7 + MessagePack + LZ4 | Distributed caching |
+| Proxy | Nginx | Rate limiting, load balancing |
+| Auth | JWT + BCrypt | Token-based auth |
+| Validation | FluentValidation | Input validation |
+| Logging | Serilog | Structured logging |
 
 ## Architecture
 
-### Why Nginx?
+```
+nginx:80 → ASP.NET Core:5555 → PostgreSQL:5432
+                        ↓
+                   Redis:6379
+```
 
-Nginx serves as a **reverse proxy** in front of ASP.NET Core, providing:
+**Layers**: Controllers → Services → DAOs → Database
 
-1. **Rate Limiting**: 100 req/s per IP for API, 10 req/s for Swagger (DDoS protection)
-2. **Connection Limits**: Max 20 connections per IP
-3. **Load Balancing**: Ready for horizontal scaling with multiple ASP.NET instances
-4. **Security Headers**: X-Frame-Options, X-Content-Type-Options, etc.
-5. **Caching Layer**: Additional caching on top of Redis/Response Cache
-6. **Keep-Alive Connections**: Reuses connections to backend
-7. **Centralized Logging**: Single point for access/error logs
-8. **SSL Termination**: Ready for HTTPS (with certbot)
+**Patterns**:
+- Generic CRUD controller (`CrudController<T>`)
+- Repository pattern with caching
+- Soft delete with `BaseEntity.IsDeleted`
+- DTO → Entity mapping
 
-**In production**: Single entry point (Port 80) → Nginx → ASP.NET Core (Port 5555)
+## Entities
 
----
+| Entity | Description | CRUD |
+|--------|-------------|------|
+| User | Users with roles (Admin, Director, Manager, Representative) | ✅ |
+| Org | Organizations (name, INN, GPS, address) | ✅ |
+| Activ | User activities (visits to orgs with status) | ✅ |
+| Policy | Role permissions | System |
+| Status | Activity statuses | System |
 
-## Development
+**Relations**: User → Policy (many-to-many), User → Activ (one-to-many), Org → Activ (one-to-many)
 
-### Running Tests
+## Quick Start
 
 ```bash
-# Run all tests
-dotnet test
+# Prerequisites
+.NET 8 SDK, PostgreSQL 16+, Redis 7+
 
-# Run with coverage
-dotnet test --collect:"XPlat Code Coverage"
+# Run services
+docker-compose up -d postgres redis nginx
+
+# Run app
+dotnet run
+
+# Access API
+http://localhost:5555/swagger
 ```
 
-### Code Formatting
+**Default user**: `bulat` / `1234` (Admin)
 
-```bash
-./format-code.sh
-```
-
-
-### Project Structure
+## API Endpoints
 
 ```
-src/
-├── Controllers/     # API endpoints
-├── Core/           # Business logic & models
-├── Repository/     # Data access layer
-├── Services/       # Business services
-└── Program.cs      # Application entry point
+POST   /api/v1/auth/login        # Login (returns JWT in cookies)
+POST   /api/v1/auth/register     # Register user
+POST   /api/v1/auth/refresh      # Refresh token
+POST   /api/v1/auth/logout       # Logout (clears cookies)
+
+GET    /api/v1/user              # List users (paginated)
+GET    /api/v1/user/{id}         # Get user
+POST   /api/v1/user              # Create user
+PUT    /api/v1/user/{id}         # Update user
+DELETE /api/v1/user/{id}         # Delete user (soft)
+GET    /api/v1/user/{id}/activ   # Get user activities
+
+GET    /api/v1/org               # List orgs (paginated)
+GET    /api/v1/org/{id}          # Get org
+POST   /api/v1/org               # Create org
+PUT    /api/v1/org/{id}          # Update org
+DELETE /api/v1/org/{id}          # Delete org (soft)
+
+GET    /api/v1/activ             # List activities (paginated)
+GET    /api/v1/activ/{id}        # Get activity
+POST   /api/v1/activ             # Create activity
+PUT    /api/v1/activ/{id}        # Update activity
+DELETE /api/v1/activ/{id}        # Delete activity (soft)
 ```
 
----
+## Project Structure
 
-## Performance Benchmarks
-
-**Load Test Results** (with Redis caching enabled):
-
-```bash
-# Test configuration
-wrk -t4 -c100 -d10s http://localhost:5555/api/v1/activ
-
-Results:
-- Requests/sec:  12,620
-- Latency:       5.47ms avg (92% under 8ms)
-- Throughput:    3.60 MB/s
-- Total:        126,782 requests in 10s
+```
+├── Controllers/       # API endpoints (CrudController base)
+├── Services/          # Business logic (IService<T>)
+├── DAOs/              # Data access (ICrudDAO<T>, BaseCrudDAO)
+├── Core/
+│   ├── Models/
+│   │   ├── Dto/       # Data Transfer Objects (records)
+│   │   └── Entities/  # EF entities
+│   ├── Utils/         # Helpers, compiled queries
+│   ├── Validators/    # FluentValidation rules
+│   └── Middleware/    # Exception handler, token refresh
+├── Data/              # DbContext
+└── Program.cs         # Bootstrap
 ```
 
-**Optimizations Applied:**
-- ✅ Redis DAO caching with **MessagePack** (5min TTL, ~3x faster than JSON, ~2x smaller)
-- ✅ Pattern-based list cache invalidation via SCAN
-- ✅ Response caching (120s on GET endpoints)
-- ✅ Response compression (Gzip/Brotli)
-- ✅ Connection pooling (5-100 connections)
-- ✅ AsNoTracking for read-only queries
-- ✅ PostgreSQL indexes
-- ✅ EF Core production optimizations
+## Performance
 
+**Load test** (wrk -t4 -c100 -d10s):
+- **Throughput**: 12,620 req/s
+- **Latency**: 5.47ms avg (92% < 8ms)
+- **Target**: `/api/v1/activ` with cache hit
 
+**Optimizations**:
+- MessagePack + LZ4 caching (5min TTL, 3x faster than JSON, 4x smaller)
+- Pattern-based cache invalidation (Redis SCAN)
+- Compiled queries for hot paths (~2x faster SQL)
+- Connection pooling (PostgreSQL: 5-100, Redis tuned)
+- Response caching (120s GET), compression (Gzip/Brotli)
+- AsNoTracking for reads, production EF settings
+- PostgreSQL: GIN indexes, partial indexes, trigram FTS
+- FluentValidation-only (DataAnnotations suppressed)
 
+## Security
+
+- JWT in HttpOnly cookies
+- BCrypt password hashing
+- Refresh token rotation (single token per user)
+- Soft delete (data recovery)
+- Role-based authorization
+- Nginx rate limiting (100 req/s)
 

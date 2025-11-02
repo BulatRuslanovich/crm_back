@@ -5,6 +5,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <NoWarn>$(NoWarn);1591</NoWarn>
     <PreserveCompilationContext>true</PreserveCompilationContext>
+    <SuppressImplicitRequiredAttributeForNonNullableReferenceTypes>true</SuppressImplicitRequiredAttributeForNonNullableReferenceTypes>
+    <PublishTrimmed>false</PublishTrimmed>
+    <TrimmerDefaultAction>link</TrimmerDefaultAction>
   </PropertyGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="CrmBack.Tests" />
