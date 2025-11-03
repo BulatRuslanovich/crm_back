@@ -81,16 +81,9 @@ CREATE TABLE refresh
 CREATE INDEX idx_usr_login ON usr (login);
 CREATE INDEX idx_usr_active ON usr (usr_id) WHERE is_deleted = FALSE;
 CREATE INDEX idx_usr_name_search ON usr (last_name, first_name) WHERE is_deleted = FALSE;
-CREATE INDEX idx_usr_fts ON usr USING gin (
-    (LOWER(first_name || ' ' || COALESCE(last_name, '') || ' ' || login)) gin_trgm_ops
-) WHERE is_deleted = FALSE;
-
 
 CREATE INDEX idx_org_active ON org (org_id) WHERE is_deleted = FALSE;
 CREATE INDEX idx_org_name_sort ON org (name) WHERE is_deleted = FALSE;
-CREATE INDEX idx_org_fts ON org USING gin (
-    (LOWER(COALESCE(name, '') || ' ' || COALESCE(inn, '') || ' ' || COALESCE(address, ''))) gin_trgm_ops
-) WHERE is_deleted = FALSE;
 
 CREATE INDEX idx_status_active ON status (status_id) WHERE is_deleted = FALSE;
 

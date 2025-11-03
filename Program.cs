@@ -1,9 +1,18 @@
 using System.IO.Compression;
 using System.Text.Json.Serialization;
-using CrmBack.Core.Extensions;
-using CrmBack.Core.Utils.Middleware;
-using CrmBack.Core.Validators;
-using CrmBack.Data;
+using CrmBack.Application.Activities.Services;
+using CrmBack.Application.Auth.Services;
+using CrmBack.Application.Auth.Validators;
+using CrmBack.Application.Common.Validators;
+using CrmBack.Application.Organizations.Services;
+using CrmBack.Application.Users.Services;
+using CrmBack.Application.Users.Validators;
+using CrmBack.Core.Infrastructure.Middleware;
+using CrmBack.Infrastructure.Data;
+using CrmBack.Infrastructure.Persistence.Activities;
+using CrmBack.Infrastructure.Persistence.Auth;
+using CrmBack.Infrastructure.Persistence.Organizations;
+using CrmBack.Infrastructure.Persistence.Users;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -43,6 +52,21 @@ builder.Services.AddControllers()
     });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddHttpContextAccessor();
+
+// Cookie Service
+builder.Services.AddScoped<ICookieService, CookieService>();
+
+// DAO Layer
+builder.Services.AddScoped<IUserDAO, UserDAO>()
+            .AddScoped<IActivDAO, ActivDAO>()
+            .AddScoped<IOrgDAO, OrgDAO>()
+            .AddScoped<IRefreshTokenDAO, RefreshTokenDAO>();
+
+// Service Layer
+builder.Services.AddScoped<IUserService, UserService>()
+            .AddScoped<IActivService, ActivService>()
+            .AddScoped<IOrgService, OrgService>()
+            .AddScoped<IJwtService, JwtService>();
 
 // Routing - make URLs lowercase for better compatibility
 builder.Services.Configure<RouteOptions>(options =>
@@ -232,8 +256,7 @@ builder.Services.AddFluentValidationAutoValidation(config =>
     config.DisableDataAnnotationsValidation = true;
 });
 
-builder.Services.AddFluentValidationClientsideAdapters()
-                 .AddApplicationServices();
+builder.Services.AddFluentValidationClientsideAdapters();
 
 var app = builder.Build();
 
@@ -244,7 +267,6 @@ if (app.Environment.IsDevelopment())
     app.UseSerilogRequestLogging();
 }
 app.UseCors("AllowSwagger");
-app.UseMiddleware<TokenRefreshMiddleware>();
 app.UseMiddleware<ExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment())
