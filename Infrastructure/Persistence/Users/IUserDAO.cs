@@ -1,5 +1,5 @@
-using CrmBack.Application.Users.Dto;
 using CrmBack.Application.Activities.Dto;
+using CrmBack.Application.Users.Dto;
 using CrmBack.Infrastructure.Persistence.Common;
 
 namespace CrmBack.Infrastructure.Persistence.Users;

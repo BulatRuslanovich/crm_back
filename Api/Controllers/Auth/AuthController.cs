@@ -38,7 +38,7 @@ public class AuthController(IUserService userService, ILogger<AuthController> lo
         logger.LogInformation("Token refreshed for user: {UserId} ({Login})", response.UserId, response.Login);
         return Success(response);
     }
-    
+
     [HttpPost("logout")]
     public async Task<ActionResult<string>> Logout(CancellationToken ct = default)
     {

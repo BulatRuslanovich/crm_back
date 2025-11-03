@@ -99,10 +99,6 @@ dotnet_code_quality.unused_value_assignment_preference = discard_variable:error
 
 # C# Code Style Rules:
 [*.cs]
-# var preferences
-csharp_style_var_elsewhere = true:silent
-csharp_style_var_for_built_in_types = false:suggestion
-csharp_style_var_when_type_is_apparent = true:silent
 
 # Expression-bodied members
 csharp_style_expression_bodied_accessors = true:silent

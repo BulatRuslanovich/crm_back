@@ -1,5 +1,5 @@
-using FluentValidation;
 using CrmBack.Application.Users.Dto;
+using FluentValidation;
 
 namespace CrmBack.Application.Auth.Validators;
 

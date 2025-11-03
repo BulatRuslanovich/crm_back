@@ -1,6 +1,6 @@
-using CrmBack.Domain.Users;
-using CrmBack.Domain.Organizations;
 using CrmBack.Domain.Activities;
+using CrmBack.Domain.Organizations;
+using CrmBack.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 
 namespace CrmBack.Application.Common.Specifications;

@@ -1,9 +1,9 @@
 namespace CrmBack.Api.Controllers.Base;
 
+using CrmBack.Application.Common.Dto;
+using CrmBack.Application.Common.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using CrmBack.Application.Common.Services;
-using CrmBack.Application.Common.Dto;
 
 public abstract class CrudController<RPayload, CPayload, UPayload>(
     IService<RPayload, CPayload, UPayload> service,
@@ -16,7 +16,7 @@ public abstract class CrudController<RPayload, CPayload, UPayload>(
     {
         ValidateId(id);
         var data = await service.GetById(id, ct);
-        return data is null 
+        return data is null
             ? throw new KeyNotFoundException($"Resource with ID {id} not found")
             : Success(data);
     }
@@ -36,7 +36,7 @@ public abstract class CrudController<RPayload, CPayload, UPayload>(
 
         var resourceId = GetId(data);
         logger.LogInformation("Resource created: {ResourceId}", resourceId);
-        
+
         return CreatedAtAction(nameof(GetById), new { id = resourceId }, data);
     }
 
@@ -48,7 +48,7 @@ public abstract class CrudController<RPayload, CPayload, UPayload>(
     {
         ValidateId(id);
         var success = await service.Update(id, payload, ct);
-        
+
         if (!success)
             throw new KeyNotFoundException($"Resource with ID {id} not found or update failed");
 
@@ -62,7 +62,7 @@ public abstract class CrudController<RPayload, CPayload, UPayload>(
     {
         ValidateId(id);
         var success = await service.Delete(id, ct);
-        
+
         if (!success)
             throw new KeyNotFoundException($"Resource with ID {id} not found or deletion failed");
 

@@ -1,9 +1,9 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using CrmBack.Application.Users.Dto;
-using CrmBack.Application.Users.Services;
 using CrmBack.Api.Controllers.Base;
 using CrmBack.Application.Activities.Dto;
+using CrmBack.Application.Users.Dto;
+using CrmBack.Application.Users.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace CrmBack.Api.Controllers.Users;
 

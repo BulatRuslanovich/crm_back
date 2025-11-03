@@ -1,12 +1,12 @@
-using CrmBack.Core.Extensions;
 using CrmBack.Application.Common.Dto;
-using CrmBack.Infrastructure.Persistence.Common;
 using CrmBack.Application.Common.Specifications;
+using CrmBack.Application.Organizations.Dto;
+using CrmBack.Core.Extensions;
+using CrmBack.Domain.Organizations;
 using CrmBack.Infrastructure.Data;
+using CrmBack.Infrastructure.Persistence.Common;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
-using CrmBack.Domain.Organizations;
-using CrmBack.Application.Organizations.Dto;
 
 namespace CrmBack.Infrastructure.Persistence.Organizations;
 

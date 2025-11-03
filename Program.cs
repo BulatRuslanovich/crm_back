@@ -7,7 +7,6 @@ using CrmBack.Application.Common.Validators;
 using CrmBack.Application.Organizations.Services;
 using CrmBack.Application.Users.Services;
 using CrmBack.Application.Users.Validators;
-using CrmBack.Core.Infrastructure.Middleware;
 using CrmBack.Infrastructure.Data;
 using CrmBack.Infrastructure.Persistence.Activities;
 using CrmBack.Infrastructure.Persistence.Auth;
@@ -267,7 +266,6 @@ if (app.Environment.IsDevelopment())
     app.UseSerilogRequestLogging();
 }
 app.UseCors("AllowSwagger");
-app.UseMiddleware<ExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {

@@ -1,8 +1,8 @@
-using CrmBack.Domain.Common;
-using CrmBack.Domain.Users;
-using CrmBack.Domain.Organizations;
-using CrmBack.Domain.Activities;
 using CrmBack.Application.Common.Dto;
+using CrmBack.Domain.Activities;
+using CrmBack.Domain.Common;
+using CrmBack.Domain.Organizations;
+using CrmBack.Domain.Users;
 
 namespace CrmBack.Core.Extensions;
 

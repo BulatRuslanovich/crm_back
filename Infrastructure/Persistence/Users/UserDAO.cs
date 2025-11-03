@@ -1,16 +1,16 @@
-using CrmBack.Core.Extensions;
+using CrmBack.Application.Activities.Dto;
 using CrmBack.Application.Common.Dto;
-using CrmBack.Domain.Users;
 using CrmBack.Application.Common.Specifications;
+using CrmBack.Application.Users.Dto;
+using CrmBack.Core.Extensions;
 using CrmBack.Core.Infrastructure.Utils;
+using CrmBack.Domain.Users;
 using CrmBack.Infrastructure.Data;
+using CrmBack.Infrastructure.Persistence.Common;
 using MessagePack;
 using MessagePack.Resolvers;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
-using CrmBack.Infrastructure.Persistence.Common;
-using CrmBack.Application.Users.Dto;
-using CrmBack.Application.Activities.Dto;
 
 namespace CrmBack.Infrastructure.Persistence.Users;
 
