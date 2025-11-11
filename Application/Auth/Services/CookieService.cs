@@ -8,78 +8,78 @@ namespace CrmBack.Application.Auth.Services;
 /// </summary>
 public class CookieService(IHttpContextAccessor accessor) : ICookieService
 {
-    private const string AccessTokenCookieName = "access_token";
-    private const string RefreshTokenCookieName = "refresh_token";
-    
-    /// <summary>
-    /// Secure flag: true in production (requires HTTPS)
-    /// Prevents cookies from being sent over unencrypted connections
-    /// </summary>
-    private readonly bool _isSecure = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Production";
-    
-    /// <summary>
-    /// HTTP-only flag: prevents JavaScript access to cookies
-    /// Security: Mitigates XSS attacks
-    /// </summary>
-    private const bool IsHttpOnly = true;
-    
-    /// <summary>
-    /// SameSite mode: Strict prevents cross-site cookie sending
-    /// Security: Mitigates CSRF attacks
-    /// </summary>
-    private const SameSiteMode SameSite = SameSiteMode.Strict;
+	private const string AccessTokenCookieName = "access_token";
+	private const string RefreshTokenCookieName = "refresh_token";
 
-    /// <summary>
-    /// Internal method to set token cookie with security options
-    /// </summary>
-    private void SetToken(string name, string token, DateTime expiresAt)
-    {
-        var httpContext = accessor.HttpContext;
-        if (httpContext is null) return;
+	/// <summary>
+	/// Secure flag: true in production (requires HTTPS)
+	/// Prevents cookies from being sent over unencrypted connections
+	/// </summary>
+	private readonly bool _isSecure = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Production";
 
-        httpContext.Response.Cookies.Append(name, token, new CookieOptions
-        {
-            HttpOnly = IsHttpOnly,      // Prevent JavaScript access
-            Secure = _isSecure,         // HTTPS only in production
-            SameSite = SameSite,        // Prevent cross-site requests
-            Expires = expiresAt,        // Cookie expiration time
-            Path = "/"                  // Cookie available for all paths
-        });
-    }
+	/// <summary>
+	/// HTTP-only flag: prevents JavaScript access to cookies
+	/// Security: Mitigates XSS attacks
+	/// </summary>
+	private const bool IsHttpOnly = true;
 
-    /// <summary>Set access token cookie</summary>
-    public void SetAccessTkn(string token, DateTime expiresAt) => SetToken(AccessTokenCookieName, token, expiresAt);
+	/// <summary>
+	/// SameSite mode: Strict prevents cross-site cookie sending
+	/// Security: Mitigates CSRF attacks
+	/// </summary>
+	private const SameSiteMode SameSite = SameSiteMode.Strict;
 
-    /// <summary>Set refresh token cookie</summary>
-    public void SetRefreshTkn(string token, DateTime expiresAt) => SetToken(RefreshTokenCookieName, token, expiresAt);
+	/// <summary>
+	/// Internal method to set token cookie with security options
+	/// </summary>
+	private void SetToken(string name, string token, DateTime expiresAt)
+	{
+		var httpContext = accessor.HttpContext;
+		if (httpContext is null) return;
 
-    /// <summary>Get access token from request cookie</summary>
-    public string? GetAccessTkn() => accessor.HttpContext?.Request.Cookies[AccessTokenCookieName];
+		httpContext.Response.Cookies.Append(name, token, new CookieOptions
+		{
+			HttpOnly = IsHttpOnly,      // Prevent JavaScript access
+			Secure = _isSecure,         // HTTPS only in production
+			SameSite = SameSite,        // Prevent cross-site requests
+			Expires = expiresAt,        // Cookie expiration time
+			Path = "/"                  // Cookie available for all paths
+		});
+	}
 
-    /// <summary>Get refresh token from request cookie</summary>
-    public string? GetRefreshTkn() => accessor.HttpContext?.Request.Cookies[RefreshTokenCookieName];
+	/// <summary>Set access token cookie</summary>
+	public void SetAccessTkn(string token, DateTime expiresAt) => SetToken(AccessTokenCookieName, token, expiresAt);
 
-    /// <summary>
-    /// Clear all authentication cookies
-    /// Sets cookies with expired date to force browser deletion
-    /// </summary>
-    public void Clear()
-    {
-        var httpContext = accessor.HttpContext;
-        if (httpContext is null) return;
+	/// <summary>Set refresh token cookie</summary>
+	public void SetRefreshTkn(string token, DateTime expiresAt) => SetToken(RefreshTokenCookieName, token, expiresAt);
 
-        // Create expired cookie options to force browser deletion
-        var expiredOptions = new CookieOptions
-        {
-            HttpOnly = IsHttpOnly,
-            Secure = _isSecure,
-            SameSite = SameSite,
-            Expires = DateTime.UtcNow.AddDays(-1), // Expired date forces deletion
-            Path = "/"
-        };
+	/// <summary>Get access token from request cookie</summary>
+	public string? GetAccessTkn() => accessor.HttpContext?.Request.Cookies[AccessTokenCookieName];
 
-        // Set empty cookies with expired date
-        httpContext.Response.Cookies.Append(AccessTokenCookieName, "", expiredOptions);
-        httpContext.Response.Cookies.Append(RefreshTokenCookieName, "", expiredOptions);
-    }
+	/// <summary>Get refresh token from request cookie</summary>
+	public string? GetRefreshTkn() => accessor.HttpContext?.Request.Cookies[RefreshTokenCookieName];
+
+	/// <summary>
+	/// Clear all authentication cookies
+	/// Sets cookies with expired date to force browser deletion
+	/// </summary>
+	public void Clear()
+	{
+		var httpContext = accessor.HttpContext;
+		if (httpContext is null) return;
+
+		// Create expired cookie options to force browser deletion
+		var expiredOptions = new CookieOptions
+		{
+			HttpOnly = IsHttpOnly,
+			Secure = _isSecure,
+			SameSite = SameSite,
+			Expires = DateTime.UtcNow.AddDays(-1), // Expired date forces deletion
+			Path = "/"
+		};
+
+		// Set empty cookies with expired date
+		httpContext.Response.Cookies.Append(AccessTokenCookieName, "", expiredOptions);
+		httpContext.Response.Cookies.Append(RefreshTokenCookieName, "", expiredOptions);
+	}
 }

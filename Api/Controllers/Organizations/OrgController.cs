@@ -15,9 +15,9 @@ using Microsoft.AspNetCore.Mvc;
 [Authorize]
 public class OrgController(IOrgService orgService, ILogger<OrgController> logger) : CrudController<ReadOrgDto, CreateOrgDto, UpdateOrgDto>(orgService, logger)
 {
-    /// <summary>
-    /// Implements abstract method from CrudController
-    /// Extracts organization ID from read DTO
-    /// </summary>
-    protected override int GetId(ReadOrgDto payload) => payload.OrgId;
+	/// <summary>
+	/// Implements abstract method from CrudController
+	/// Extracts organization ID from read DTO
+	/// </summary>
+	protected override int GetId(ReadOrgDto payload) => payload.OrgId;
 }

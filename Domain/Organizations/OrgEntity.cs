@@ -8,24 +8,24 @@ namespace CrmBack.Domain.Organizations;
 [Table("org")]
 public class OrgEntity : BaseEntity
 {
-    [Key]
-    [Column("org_id")]
-    public int OrgId { get; set; }
+	[Key]
+	[Column("org_id")]
+	public int OrgId { get; set; }
 
-    [Column("name")]
-    public string Name { get; set; } = string.Empty;
+	[Column("name")]
+	public string Name { get; set; } = string.Empty;
 
-    [Column("inn")]
-    public string? Inn { get; set; } = string.Empty;
+	[Column("inn")]
+	public string? Inn { get; set; } = string.Empty;
 
-    [Column("latitude")]
-    public double Latitude { get; set; }
+	[Column("latitude")]
+	public double Latitude { get; set; }
 
-    [Column("longitude")]
-    public double Longitude { get; set; }
+	[Column("longitude")]
+	public double Longitude { get; set; }
 
-    [Column("address")]
-    public string Address { get; set; } = string.Empty;
+	[Column("address")]
+	public string Address { get; set; } = string.Empty;
 
-    public virtual ICollection<ActivEntity> Activities { get; set; } = [];
+	public virtual ICollection<ActivEntity> Activities { get; set; } = [];
 }

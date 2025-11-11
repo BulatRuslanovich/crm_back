@@ -13,9 +13,9 @@ using Microsoft.AspNetCore.Mvc;
 [ApiVersion("1.0")]
 public class ActivController(IActivService activService, ILogger<ActivController> logger) : CrudController<ReadActivDto, CreateActivDto, UpdateActivDto>(activService, logger)
 {
-    /// <summary>
-    /// Implements abstract method from CrudController
-    /// Extracts activity ID from read DTO
-    /// </summary>
-    protected override int GetId(ReadActivDto payload) => payload.ActivId;
+	/// <summary>
+	/// Implements abstract method from CrudController
+	/// Extracts activity ID from read DTO
+	/// </summary>
+	protected override int GetId(ReadActivDto payload) => payload.ActivId;
 }

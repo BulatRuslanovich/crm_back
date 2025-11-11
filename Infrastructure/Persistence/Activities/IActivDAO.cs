@@ -9,6 +9,6 @@ namespace CrmBack.Infrastructure.Persistence.Activities;
 /// </summary>
 public interface IActivDAO : ICrudDAO<ReadActivDto, CreateActivDto, UpdateActivDto>
 {
-    /// <summary>Fetch all activities for a specific user</summary>
-    public Task<List<ReadActivDto>> FetchByUserId(int userId, CancellationToken ct = default);
+	/// <summary>Fetch all activities for a specific user</summary>
+	public Task<List<ReadActivDto>> FetchByUserId(int userId, CancellationToken ct = default);
 }
