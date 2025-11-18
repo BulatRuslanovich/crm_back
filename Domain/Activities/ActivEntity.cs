@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using CrmBack.Application.Activities.Dto;
 using CrmBack.Domain.Common;
 using CrmBack.Domain.Organizations;
 using CrmBack.Domain.Users;
@@ -42,4 +43,13 @@ public class ActivEntity : BaseEntity
 
 	[ForeignKey("StatusId")]
 	public virtual StatusEntity Status { get; set; } = null!;
+
+	public void Update(UpdateActivDto dto)
+    {
+        StatusId = dto.StatusId ?? StatusId;
+		VisitDate = dto.VisitDate ?? VisitDate;
+		StartTime = dto.StartTime ?? StartTime;
+		EndTime = dto.EndTime ?? EndTime;
+		Description = dto.Description ?? Description;
+    }
 }

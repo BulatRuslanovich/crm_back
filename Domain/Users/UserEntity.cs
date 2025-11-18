@@ -1,11 +1,10 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using CrmBack.Application.Users.Dto;
 using CrmBack.Domain.Activities;
 using CrmBack.Domain.Common;
 
 namespace CrmBack.Domain.Users;
-
-
 
 [Table("usr")]
 public class UserEntity : BaseEntity
@@ -31,4 +30,12 @@ public class UserEntity : BaseEntity
 
 	public virtual ICollection<ActivEntity> Activities { get; set; } = [];
 	public virtual ICollection<UserPolicyEntity> UserPolicies { get; set; } = [];
+
+	public void Update(UpdateUserDto dto)
+    {
+        FirstName = dto.FirstName ?? FirstName;
+		LastName = dto.LastName ?? LastName;
+		MiddleName = dto.MiddleName ?? MiddleName;
+		Login = dto.Login ?? Login;
+    }
 }

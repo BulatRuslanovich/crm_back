@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using CrmBack.Application.Organizations.Dto;
 using CrmBack.Domain.Activities;
 using CrmBack.Domain.Common;
 
@@ -28,4 +29,13 @@ public class OrgEntity : BaseEntity
 	public string Address { get; set; } = string.Empty;
 
 	public virtual ICollection<ActivEntity> Activities { get; set; } = [];
+
+	public void Update(UpdateOrgDto dto)
+    {
+        Name = dto.Name ?? Name;
+		Inn = dto.INN ?? Inn;
+		Latitude = dto.Latitude ?? Latitude;
+		Longitude = dto.Longitude ?? Longitude;
+		Address = dto.Address ?? Address;
+    }
 }
