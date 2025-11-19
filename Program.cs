@@ -1,4 +1,6 @@
+using System;
 using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 using CrmBack.Application.Activities.Services;
 using CrmBack.Application.Auth.Services;
 using CrmBack.Application.Auth.Validators;
@@ -14,9 +16,13 @@ using CrmBack.Infrastructure.Persistence.Users;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -112,21 +118,6 @@ builder.Services.AddSwaggerGen(option =>
 		Title = "FARM CRM API",
 		Version = "v1",
 		Description = "FARM CRM API"
-	});
-
-	option.AddSecurityRequirement(new OpenApiSecurityRequirement
-	{
-		{
-			new OpenApiSecurityScheme
-			{
-				Reference = new OpenApiReference
-				{
-					Type = ReferenceType.SecurityScheme,
-					Id = "Bearer"
-				}
-			},
-			Array.Empty<string>()
-		}
 	});
 });
 

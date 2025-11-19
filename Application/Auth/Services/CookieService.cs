@@ -1,3 +1,6 @@
+using System;
+using Microsoft.AspNetCore.Http;
+
 namespace CrmBack.Application.Auth.Services;
 
 

@@ -1,3 +1,4 @@
+using System.Linq;
 using CrmBack.Application.Common.Dto;
 using CrmBack.Domain.Activities;
 using CrmBack.Domain.Common;

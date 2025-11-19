@@ -1,6 +1,8 @@
 namespace CrmBack.Application.Users.Services;
 
+using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using CrmBack.Application.Activities.Dto;
 using CrmBack.Application.Common.Services;
 using CrmBack.Application.Users.Dto;

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CrmBack.Domain.Users;
 
 namespace CrmBack.Application.Users.Dto;

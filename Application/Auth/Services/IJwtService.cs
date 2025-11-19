@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace CrmBack.Application.Auth.Services;
 
 public interface IJwtService

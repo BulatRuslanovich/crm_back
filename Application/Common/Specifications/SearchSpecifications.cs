@@ -1,3 +1,4 @@
+using System.Linq;
 using CrmBack.Domain.Activities;
 using CrmBack.Domain.Organizations;
 using CrmBack.Domain.Users;

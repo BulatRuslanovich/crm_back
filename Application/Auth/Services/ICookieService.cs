@@ -1,3 +1,5 @@
+using System;
+
 namespace CrmBack.Application.Auth.Services;
 
 public interface ICookieService

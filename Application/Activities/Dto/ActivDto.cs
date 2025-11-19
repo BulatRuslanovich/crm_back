@@ -1,3 +1,4 @@
+using System;
 using CrmBack.Domain.Activities;
 
 namespace CrmBack.Application.Activities.Dto;

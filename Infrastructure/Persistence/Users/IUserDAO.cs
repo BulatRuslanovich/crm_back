@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using CrmBack.Application.Activities.Dto;
 using CrmBack.Application.Users.Dto;
 using CrmBack.Infrastructure.Persistence.Common;
