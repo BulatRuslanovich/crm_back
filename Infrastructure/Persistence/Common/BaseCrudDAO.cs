@@ -20,7 +20,7 @@ public abstract class BaseCrudDAO<TEntity, ReadDto, CreateDto, UpdateDto>(AppDBC
 	where TEntity : BaseEntity
 {
 	protected AppDBContext Context => context;
-	
+
 	public virtual async Task<ReadDto?> FetchById(int id, CancellationToken ct)
 	{
 		var entity = await Context.Set<TEntity>().FindAsync([id], ct);
@@ -52,7 +52,7 @@ public abstract class BaseCrudDAO<TEntity, ReadDto, CreateDto, UpdateDto>(AppDBC
 		updateEntity(existing, dto);
 		return await Context.SaveChangesAsync(ct) > 0;
 	}
-	
+
 	public virtual async Task<bool> Delete(int id, CancellationToken ct)
 	{
 		var entity = await Context.Set<TEntity>().FindAsync([id], ct);

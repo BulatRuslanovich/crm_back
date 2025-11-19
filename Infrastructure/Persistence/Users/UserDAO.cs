@@ -42,13 +42,13 @@ public class UserDAO(AppDBContext context) : BaseCrudDAO<UserEntity, ReadUserDto
 		return await Context.SaveChangesAsync(ct) > 0;
 	}
 
-	
+
 	public async Task<List<HumReadActivDto>> FetchHumActivs(int userId, CancellationToken ct = default)
 	{
 		var entities = await Context.Activ
 			.WhereNotDeleted()
-			.Include(a => a.Organization)  
-			.Include(a => a.Status) 
+			.Include(a => a.Organization)
+			.Include(a => a.Status)
 			.Where(a => a.UsrId == userId)
 			.OrderByDefault()
 			.ToListAsync(ct);
@@ -56,7 +56,7 @@ public class UserDAO(AppDBContext context) : BaseCrudDAO<UserEntity, ReadUserDto
 		return entities.Select(a => a.ToHumReadDto()).ToList();
 	}
 
-	
+
 	public async Task<UserWithPoliciesDto?> FetchByLogin(LoginUserDto dto, CancellationToken ct = default)
 	{
 		var user = await Context.User.Include(u => u.UserPolicies)

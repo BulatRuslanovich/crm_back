@@ -85,9 +85,9 @@ builder.Services
 	{
 		options.TokenValidationParameters = new TokenValidationParameters
 		{
-			ValidateIssuer = true,      
-			ValidateAudience = true,    
-			ValidateLifetime = true,   
+			ValidateIssuer = true,
+			ValidateAudience = true,
+			ValidateLifetime = true,
 			ValidateIssuerSigningKey = true,
 			ValidIssuer = jwtIssuer,
 			ValidAudience = jwtAudience,
@@ -173,7 +173,7 @@ app.UseAuthorization();
 app.MapControllers();
 
 var listenAddress = builder.Environment.IsProduction()
-	? "http://0.0.0.0:5555"  
+	? "http://0.0.0.0:5555"
 	: "http://localhost:5555";
 
 app.Run(listenAddress);

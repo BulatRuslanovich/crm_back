@@ -72,8 +72,8 @@ public class UserService(IUserDAO dao, IJwtService jwt, IRefreshTokenDAO refDao,
 		string refreshTkn = jwt.GenerateRefreshTkn(user.UsrId);
 		string refreshTknHash = BCrypt.Net.BCrypt.HashPassword(refreshTkn);
 
-		var expiresAt = DateTime.UtcNow.AddDays(7);     
-		var accessTokenExpiresAt = DateTime.UtcNow.AddHours(1); 
+		var expiresAt = DateTime.UtcNow.AddDays(7);
+		var accessTokenExpiresAt = DateTime.UtcNow.AddHours(1);
 
 		await refDao.CreateAsync(user.UsrId, refreshTknHash, expiresAt, ct);
 

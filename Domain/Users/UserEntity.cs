@@ -33,10 +33,10 @@ public class UserEntity : BaseEntity
 	public virtual ICollection<UserPolicyEntity> UserPolicies { get; set; } = [];
 
 	public void Update(UpdateUserDto dto)
-    {
-        FirstName = dto.FirstName ?? FirstName;
+	{
+		FirstName = dto.FirstName ?? FirstName;
 		LastName = dto.LastName ?? LastName;
 		MiddleName = dto.MiddleName ?? MiddleName;
 		Login = dto.Login ?? Login;
-    }
+	}
 }

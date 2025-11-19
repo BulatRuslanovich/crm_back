@@ -46,11 +46,11 @@ public class ActivEntity : BaseEntity
 	public virtual StatusEntity Status { get; set; } = null!;
 
 	public void Update(UpdateActivDto dto)
-    {
-        StatusId = dto.StatusId ?? StatusId;
+	{
+		StatusId = dto.StatusId ?? StatusId;
 		VisitDate = dto.VisitDate ?? VisitDate;
 		StartTime = dto.StartTime ?? StartTime;
 		EndTime = dto.EndTime ?? EndTime;
 		Description = dto.Description ?? Description;
-    }
+	}
 }

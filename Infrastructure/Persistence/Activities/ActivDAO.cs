@@ -14,7 +14,7 @@ namespace CrmBack.Infrastructure.Persistence.Activities;
 
 
 public class ActivDAO(AppDBContext context) : BaseCrudDAO<ActivEntity, ReadActivDto, CreateActivDto, UpdateActivDto>(
-	context, 
+	context,
 	e => e.ToReadDto(),
 	d => d.ToEntity(),
 	(e, d) => e.Update(d),
@@ -25,7 +25,7 @@ public class ActivDAO(AppDBContext context) : BaseCrudDAO<ActivEntity, ReadActiv
 	{
 		var entities = await Context.Activ
 			.WhereNotDeleted()
-			.AsNoTracking()            
+			.AsNoTracking()
 			.Where(a => a.UsrId == userId)
 			.OrderByDefault()
 			.ToListAsync(ct);

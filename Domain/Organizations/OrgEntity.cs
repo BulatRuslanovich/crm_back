@@ -32,11 +32,11 @@ public class OrgEntity : BaseEntity
 	public virtual ICollection<ActivEntity> Activities { get; set; } = [];
 
 	public void Update(UpdateOrgDto dto)
-    {
-        Name = dto.Name ?? Name;
+	{
+		Name = dto.Name ?? Name;
 		Inn = dto.INN ?? Inn;
 		Latitude = dto.Latitude ?? Latitude;
 		Longitude = dto.Longitude ?? Longitude;
 		Address = dto.Address ?? Address;
-    }
+	}
 }
