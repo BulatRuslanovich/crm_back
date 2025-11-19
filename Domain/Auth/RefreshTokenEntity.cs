@@ -16,10 +16,10 @@ public class RefreshTokenEntity : BaseEntity
 	[Column("usr_id")]
 	public int UsrId { get; set; }
 
-	[Column("token_hash")]
+	[Column("refresh_token_hash")]
 	public string TokenHash { get; set; } = string.Empty;
 
-	[Column("expires_at")]
+	[Column("refresh_expires_at")]
 	public DateTime ExpiresAt { get; set; }
 
 	[ForeignKey("UsrId")]

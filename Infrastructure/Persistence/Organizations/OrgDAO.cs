@@ -1,6 +1,6 @@
+using System.Linq;
 using CrmBack.Application.Common.Specifications;
 using CrmBack.Application.Organizations.Dto;
-using CrmBack.Core.Extensions;
 using CrmBack.Domain.Organizations;
 using CrmBack.Infrastructure.Data;
 using CrmBack.Infrastructure.Persistence.Common;
@@ -12,6 +12,7 @@ public class OrgDAO(AppDBContext context) : BaseCrudDAO<OrgEntity, ReadOrgDto, C
 	e => e.ToReadDto(),
 	d => d.ToEntity(),
 	(e, d) => e.Update(d),
-	(q, p) => q.WhereNotDeleted().AsNoTracking().Search(p.SearchTerm).OrderByDefault().Paginate(p)
+	(q, p) => q.Where(e => !e.IsDeleted).AsNoTracking().Search(p.SearchTerm).OrderBy(o => o.Name).Skip((p.Page - 1) * p.PageSize)
+			.Take(p.PageSize)
 ), IOrgDAO
 { }

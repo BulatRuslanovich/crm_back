@@ -14,19 +14,16 @@ public class UserEntity : BaseEntity
 	[Column("usr_id")]
 	public int UsrId { get; set; }
 
-	[Column("first_name")]
+	[Column("usr_firstname")]
 	public string FirstName { get; set; } = string.Empty;
 
-	[Column("middle_name")]
-	public string? MiddleName { get; set; } = string.Empty;
-
-	[Column("last_name")]
+	[Column("usr_lastname")]
 	public string LastName { get; set; } = string.Empty;
 
-	[Column("login")]
+	[Column("usr_login")]
 	public string Login { get; set; } = string.Empty;
 
-	[Column("password_hash")]
+	[Column("usr_pass")]
 	public string PasswordHash { get; set; } = string.Empty;
 
 	public virtual ICollection<ActivEntity> Activities { get; set; } = [];
@@ -36,7 +33,6 @@ public class UserEntity : BaseEntity
 	{
 		FirstName = dto.FirstName ?? FirstName;
 		LastName = dto.LastName ?? LastName;
-		MiddleName = dto.MiddleName ?? MiddleName;
 		Login = dto.Login ?? Login;
 	}
 }

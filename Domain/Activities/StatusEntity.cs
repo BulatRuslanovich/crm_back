@@ -11,7 +11,7 @@ public class StatusEntity
 	[Column("status_id")]
 	public int StatusId { get; set; }
 
-	[Column("name")]
+	[Column("status_name")]
 	public string Name { get; set; } = string.Empty;
 
 	public virtual ICollection<ActivEntity> Activities { get; set; } = [];

@@ -1,11 +1,10 @@
 CREATE TABLE usr
 (
     usr_id        INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    first_name    VARCHAR(100),
-    middle_name   VARCHAR(100),
-    last_name     VARCHAR(100),
-    login         VARCHAR(100) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
+    usr_firstname    VARCHAR(100),
+    usr_lastname     VARCHAR(100),
+    usr_login         VARCHAR(100) NOT NULL UNIQUE,
+    usr_pass VARCHAR(255) NOT NULL,
     created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     is_deleted    BOOLEAN   DEFAULT FALSE
@@ -20,9 +19,9 @@ CREATE TABLE policy
     is_deleted  BOOLEAN   DEFAULT FALSE
 );
 
-CREATE TABLE usr_policy
+CREATE TABLE usrpolicy
 (
-    usr_policy_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    usrpolicy_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     usr_id        INT NOT NULL REFERENCES usr (usr_id),
     policy_id     INT NOT NULL REFERENCES policy (policy_id),
     created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -32,11 +31,11 @@ CREATE TABLE usr_policy
 CREATE TABLE org
 (
     org_id     INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    name       VARCHAR(255) NOT NULL,
-    inn        VARCHAR(12) UNIQUE,
-    latitude   DOUBLE PRECISION,
-    longitude  DOUBLE PRECISION,
-    address    TEXT,
+    org_name       VARCHAR(255) NOT NULL,
+    org_inn        VARCHAR(12) UNIQUE,
+    org_latitude   DOUBLE PRECISION,
+    org_longitude  DOUBLE PRECISION,
+    org_address    TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     is_deleted BOOLEAN   DEFAULT FALSE
@@ -45,7 +44,7 @@ CREATE TABLE org
 CREATE TABLE status
 (
     status_id  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    name       VARCHAR(50) NOT NULL UNIQUE,
+    status_name       VARCHAR(50) NOT NULL UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     is_deleted BOOLEAN   DEFAULT FALSE
@@ -57,10 +56,10 @@ CREATE TABLE activ
     usr_id      INT  NOT NULL REFERENCES usr (usr_id),
     org_id      INT  NOT NULL REFERENCES org (org_id),
     status_id   INT  NOT NULL REFERENCES status (status_id),
-    visit_date  DATE NOT NULL,
-    start_time  TIME,
-    end_time    TIME,
-    description TEXT,
+    activ_date  DATE NOT NULL,
+    activ_starttime  TIME,
+    activ_endtime    TIME,
+    activ_description TEXT,
     created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     is_deleted  BOOLEAN   DEFAULT FALSE
@@ -71,29 +70,29 @@ CREATE TABLE refresh
 (
     refresh_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     usr_id     INT          NOT NULL REFERENCES usr (usr_id) ON DELETE CASCADE,
-    token_hash VARCHAR(255) NOT NULL UNIQUE,
-    expires_at TIMESTAMP    NOT NULL,
+    refresh_token_hash VARCHAR(255) NOT NULL UNIQUE,
+    refresh_expires_at TIMESTAMP    NOT NULL,
     created_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
     is_deleted BOOLEAN      DEFAULT FALSE
 );
 
 
-INSERT INTO status (name)
-VALUES (1, 'Запланирован'),
-       (2, 'Открыт'),
-       (3, 'Сохранен'),
-       (4, 'Закрыт');
+INSERT INTO status (status_name)
+VALUES ('Запланирован'),
+       ('Открыт'),
+       ('Сохранен'),
+       ('Закрыт');
 
-INSERT INTO usr (first_name, middle_name, last_name, login, password_hash) VALUES
-('Булат', 'Русланович', 'Бикмухаметов', 'bulat', '$2a$11$xi3EwTpQov3A9kYsM1UsveTjr1ZScZKQzjSBMQQXOOKbgPv6R5MjC');
+INSERT INTO usr (usr_firstname, usr_lastname, usr_login, usr_pass) VALUES
+('Булат', 'Бикмухаметов', 'bulat', '$2a$11$xi3EwTpQov3A9kYsM1UsveTjr1ZScZKQzjSBMQQXOOKbgPv6R5MjC');
 
 INSERT INTO policy (policy_name) VALUES
-(1, 'Admin'),
-(2, 'Director'),
-(3, 'Manager'),
-(4, 'Representative');
+('Admin'),
+('Director'),
+('Manager'),
+('Representative');
 
-INSERT INTO usr_policy (usr_id, policy_id) VALUES
+INSERT INTO usrpolicy (usr_id, policy_id) VALUES
 (1, 1),
 (1, 2),
 (1, 3),

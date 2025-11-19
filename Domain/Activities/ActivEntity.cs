@@ -24,16 +24,16 @@ public class ActivEntity : BaseEntity
 	[Column("status_id")]
 	public int StatusId { get; set; }
 
-	[Column("visit_date", TypeName = "date")]
+	[Column("activ_date", TypeName = "date")]
 	public DateTime VisitDate { get; set; }
 
-	[Column("start_time", TypeName = "time")]
+	[Column("activ_starttime", TypeName = "time")]
 	public TimeSpan StartTime { get; set; }
 
-	[Column("end_time", TypeName = "time")]
+	[Column("activ_endtime", TypeName = "time")]
 	public TimeSpan EndTime { get; set; }
 
-	[Column("description")]
+	[Column("activ_description")]
 	public string? Description { get; set; }
 
 	[ForeignKey("UsrId")]

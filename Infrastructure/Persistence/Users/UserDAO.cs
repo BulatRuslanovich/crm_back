@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using CrmBack.Application.Activities.Dto;
 using CrmBack.Application.Common.Specifications;
 using CrmBack.Application.Users.Dto;
-using CrmBack.Core.Extensions;
 using CrmBack.Domain.Users;
 using CrmBack.Infrastructure.Data;
 using CrmBack.Infrastructure.Persistence.Common;
@@ -19,7 +18,8 @@ public class UserDAO(AppDBContext context) : BaseCrudDAO<UserEntity, ReadUserDto
 	e => e.ToReadDto(),
 	d => d.ToEntity(),
 	(e, d) => e.Update(d),
-	(q, p) => q.WhereNotDeleted().AsNoTracking().Search(p.SearchTerm).OrderByDefault().Paginate(p)
+	(q, p) => q.Where(e => !e.IsDeleted).AsNoTracking().Search(p.SearchTerm).OrderBy(u => u.LastName).ThenBy(u => u.FirstName).Skip((p.Page - 1) * p.PageSize)
+			.Take(p.PageSize)
 ), IUserDAO
 {
 
@@ -46,11 +46,11 @@ public class UserDAO(AppDBContext context) : BaseCrudDAO<UserEntity, ReadUserDto
 	public async Task<List<HumReadActivDto>> FetchHumActivs(int userId, CancellationToken ct = default)
 	{
 		var entities = await Context.Activ
-			.WhereNotDeleted()
+			.Where(e => !e.IsDeleted)
 			.Include(a => a.Organization)
 			.Include(a => a.Status)
 			.Where(a => a.UsrId == userId)
-			.OrderByDefault()
+			.OrderByDescending(a => a.VisitDate)
 			.ToListAsync(ct);
 
 		return entities.Select(a => a.ToHumReadDto()).ToList();
@@ -66,7 +66,7 @@ public class UserDAO(AppDBContext context) : BaseCrudDAO<UserEntity, ReadUserDto
 
 		if (user is null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash)) return null;
 
-		return new UserWithPoliciesDto(user.UsrId, user.FirstName, user.LastName, user.MiddleName ?? string.Empty, user.Login, [.. user.UserPolicies.Select(up => up.Policy.ToReadDto())]);
+		return new UserWithPoliciesDto(user.UsrId, user.FirstName, user.LastName, user.Login, [.. user.UserPolicies.Select(up => up.Policy.ToReadDto())]);
 	}
 
 	public async Task<UserWithPoliciesDto?> FetchByIdWithPolicies(int id, CancellationToken ct = default)
@@ -78,6 +78,6 @@ public class UserDAO(AppDBContext context) : BaseCrudDAO<UserEntity, ReadUserDto
 
 		if (user is null) return null;
 
-		return new UserWithPoliciesDto(user.UsrId, user.FirstName, user.LastName, user.MiddleName, user.Login, [.. user.UserPolicies.Select(up => up.Policy.ToReadDto())]);
+		return new UserWithPoliciesDto(user.UsrId, user.FirstName, user.LastName, user.Login, [.. user.UserPolicies.Select(up => up.Policy.ToReadDto())]);
 	}
 }
