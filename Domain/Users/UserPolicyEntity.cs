@@ -3,11 +3,11 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace CrmBack.Domain.Users;
 
-[Table("usr_policy")]
+[Table("usrpolicy")]
 public class UserPolicyEntity
 {
 	[Key]
-	[Column("usr_policy_id")]
+	[Column("usrpolicy_id")]
 	public int UsrPolicyId { get; set; }
 
 	[Column("usr_id")]

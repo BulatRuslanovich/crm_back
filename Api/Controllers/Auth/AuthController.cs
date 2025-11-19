@@ -1,5 +1,6 @@
 namespace CrmBack.Api.Controllers.Auth;
 
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using CrmBack.Api.Controllers.Base;
@@ -13,21 +14,38 @@ public class AuthController(IUserService userService) : BaseApiController
 	[AllowAnonymous]
 	[HttpPost("login")]
 	public async Task<ActionResult<LoginResponseDto>> Login([FromBody] LoginUserDto dto, CancellationToken ct = default)
-	{
-		var response = await userService.Login(dto, ct);
-		return Ok(response);
+	{	
+		if (!ModelState.IsValid)
+		{
+			return BadRequest(ModelState);
+		}
+
+		try {
+			var response = await userService.Login(dto, ct);
+			return Ok(response);
+		} 
+		catch (UnauthorizedAccessException)
+        {
+            return Unauthorized(new { message = "Неверный логин или пароль" });
+        }
 	}
 
 	[AllowAnonymous]
 	[HttpPost("register")]
 	public async Task<ActionResult<ReadUserDto>> Register([FromBody] CreateUserDto dto, CancellationToken ct = default)
 	{
-		var response = await userService.Create(dto, ct);
-		if (response is null)
-			return Conflict();
+		if (!ModelState.IsValid)
+		{
+			return BadRequest(ModelState);
+		}
 
-		var locationUri = Url.Action(nameof(Login)) ?? "/auth/login";
-		return Created(locationUri, response);
+		var response = await userService.Create(dto, ct);
+		
+		if (response is null) {
+			return Conflict(new {message = "Пользователь с таким логином уже существует"});
+		}
+		
+		return Ok(response);
 	}
 
 	[HttpPost("refresh")]

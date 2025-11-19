@@ -39,8 +39,16 @@ public abstract class BaseCrudDAO<TEntity, ReadDto, CreateDto, UpdateDto>(AppDBC
 	public virtual async Task<ReadDto?> Create(CreateDto dto, CancellationToken ct)
 	{
 		var entity = mapToEntity(dto);
-		Context.Set<TEntity>().Add(entity);
-		await Context.SaveChangesAsync(ct);
+
+		try {
+			Context.Set<TEntity>().Add(entity);
+			await Context.SaveChangesAsync(ct);
+		} 
+		catch (Exception)
+        {
+            return default;
+        }
+		
 		return mapToDto(entity);
 	}
 

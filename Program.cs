@@ -1,5 +1,4 @@
 using System;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using CrmBack.Application.Activities.Services;
 using CrmBack.Application.Auth.Services;
@@ -37,23 +36,42 @@ builder.Host.UseSerilog((context, config) =>
 		.MinimumLevel.Information()
 		.MinimumLevel.Override("CrmBack.Data", context.HostingEnvironment.IsProduction() ? Serilog.Events.LogEventLevel.Warning : Serilog.Events.LogEventLevel.Information)
 		.MinimumLevel.Override("CrmBack.Api.Middleware", Serilog.Events.LogEventLevel.Warning)
-		.MinimumLevel.Override("Microsoft.AspNetCore", Serilog.Events.LogEventLevel.Warning);
+		.MinimumLevel.Override("Microsoft.AspNetCore", Serilog.Events.LogEventLevel.Warning)
+		.MinimumLevel.Override(
+			"Microsoft.EntityFrameworkCore.Database.Command",
+			context.HostingEnvironment.IsProduction()
+				? Serilog.Events.LogEventLevel.Warning
+				: Serilog.Events.LogEventLevel.Information);
 
 	if (!context.HostingEnvironment.IsProduction())
 		config.WriteTo.Debug();
 });
 
-builder.Services.AddControllers()
-	.AddJsonOptions(options =>
-	{
-		options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
-		options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
-		options.JsonSerializerOptions.WriteIndented = false;
-	})
-	.ConfigureApiBehaviorOptions(options =>
-	{
-		options.SuppressModelStateInvalidFilter = true;
-	});
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Front", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000", "https://localhost:3000")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials(); // Важно для работы с cookies (access_token)
+    });
+});
+
+
+builder.Services.AddValidatorsFromAssemblyContaining<LoginUserDtoValidator>()
+				 .AddValidatorsFromAssemblyContaining<CreateUserDtoValidator>()
+				 .AddValidatorsFromAssemblyContaining<UpdateUserDtoValidator>()
+				 .AddValidatorsFromAssemblyContaining<PaginationDtoValidator>();
+
+
+builder.Services.AddFluentValidationAutoValidation(config =>
+{
+	config.DisableDataAnnotationsValidation = true;
+});
+
+builder.Services.AddControllers();
+
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddHttpContextAccessor();
@@ -128,18 +146,6 @@ builder.Services.AddDbContext<AppDBContext>(op =>
 });
 
 
-builder.Services.AddValidatorsFromAssemblyContaining<LoginUserDtoValidator>()
-				 .AddValidatorsFromAssemblyContaining<CreateUserDtoValidator>()
-				 .AddValidatorsFromAssemblyContaining<UpdateUserDtoValidator>()
-				 .AddValidatorsFromAssemblyContaining<PaginationDtoValidator>();
-
-
-builder.Services.AddFluentValidationAutoValidation(config =>
-{
-	config.DisableDataAnnotationsValidation = true;
-});
-
-builder.Services.AddFluentValidationClientsideAdapters();
 
 // builder.Services.AddResponseCaching();
 
@@ -168,6 +174,9 @@ if (!app.Environment.IsDevelopment())
 }
 
 // app.UseResponseCaching();
+
+app.UseCors("Front");
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
