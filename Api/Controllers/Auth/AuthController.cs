@@ -14,25 +14,26 @@ public class AuthController(IUserService userService) : BaseApiController
 	[AllowAnonymous]
 	[HttpPost("login")]
 	public async Task<ActionResult<LoginResponseDto>> Login([FromBody] LoginUserDto dto, CancellationToken ct = default)
-	{	
+	{
 		if (!ModelState.IsValid)
 		{
 			return BadRequest(ModelState);
 		}
 
-		try {
+		try
+		{
 			var response = await userService.Login(dto, ct);
 			return Ok(response);
-		} 
+		}
 		catch (UnauthorizedAccessException)
-        {
-            return Unauthorized(new { message = "Неверный логин или пароль" });
-        }
+		{
+			return Unauthorized(new { message = "Неверный логин или пароль" });
+		}
 	}
 
 	[AllowAnonymous]
 	[HttpPost("register")]
-	public async Task<ActionResult<ReadUserDto>> Register([FromBody] CreateUserDto dto, CancellationToken ct = default)
+	public async Task<ActionResult<LoginResponseDto>> Register([FromBody] CreateUserDto dto, CancellationToken ct = default)
 	{
 		if (!ModelState.IsValid)
 		{
@@ -40,12 +41,16 @@ public class AuthController(IUserService userService) : BaseApiController
 		}
 
 		var response = await userService.Create(dto, ct);
-		
-		if (response is null) {
-			return Conflict(new {message = "Пользователь с таким логином уже существует"});
+
+		if (response is null)
+		{
+			return Conflict(new { message = "Пользователь с таким логином уже существует" });
 		}
-		
-		return Ok(response);
+
+		var loginDto = new LoginUserDto(dto.Login, dto.Password);
+		var loginResponse = await userService.Login(loginDto, ct);
+
+		return Ok(loginResponse);
 	}
 
 	[HttpPost("refresh")]
@@ -55,14 +60,32 @@ public class AuthController(IUserService userService) : BaseApiController
 		return Ok(response);
 	}
 
-	// [HttpPost("logout")]
-	// public async Task<ActionResult> Logout(CancellationToken ct = default)
-	// {
-	// 	int? userId = JwtHelper.GetUserIdFromContext(HttpContext);
-	// 	if (userId is null)
-	// 		return Unauthorized();
 
-	// 	bool success = await userService.Logout(userId.Value, ct);
-	// 	return success ? Ok() : BadRequest();
-	// }
+	[Authorize]
+	[HttpGet("me")]
+	public async Task<ActionResult<ReadUserDto>> GetCurrentUser(CancellationToken ct = default)
+	{
+		var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+		if (!int.TryParse(userId, out var id))
+		{
+			return Unauthorized();
+		}
+
+		var user = await userService.GetById(id, ct);
+		return user is null ? NotFound() : Ok(user);
+	}
+
+	[Authorize]
+	[HttpPost("logout")]
+	public async Task<ActionResult> Logout(CancellationToken ct = default)
+	{
+		var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+		if (!int.TryParse(userId, out var id))
+		{
+			return Unauthorized();
+		}
+
+		bool success = await userService.Logout(id, ct);
+		return success ? Ok() : BadRequest();
+	}
 }

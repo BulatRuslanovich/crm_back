@@ -40,15 +40,16 @@ public abstract class BaseCrudDAO<TEntity, ReadDto, CreateDto, UpdateDto>(AppDBC
 	{
 		var entity = mapToEntity(dto);
 
-		try {
+		try
+		{
 			Context.Set<TEntity>().Add(entity);
 			await Context.SaveChangesAsync(ct);
-		} 
+		}
 		catch (Exception)
-        {
-            return default;
-        }
-		
+		{
+			return default;
+		}
+
 		return mapToDto(entity);
 	}
 

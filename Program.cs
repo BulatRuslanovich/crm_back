@@ -49,13 +49,13 @@ builder.Host.UseSerilog((context, config) =>
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("Front", policy =>
-    {
-        policy.WithOrigins("http://localhost:3000", "https://localhost:3000")
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials(); // Важно для работы с cookies (access_token)
-    });
+	options.AddPolicy("Front", policy =>
+	{
+		policy.WithOrigins("http://localhost:3000", "https://localhost:3000")
+			  .AllowAnyHeader()
+			  .AllowAnyMethod()
+			  .AllowCredentials(); // Важно для работы с cookies (access_token)
+	});
 });
 
 
