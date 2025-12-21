@@ -47,6 +47,7 @@ public class ActivEntity : BaseEntity
 
 	public void Update(UpdateActivDto dto)
 	{
+		OrgId = dto.OrgId ?? OrgId;
 		StatusId = dto.StatusId ?? StatusId;
 		VisitDate = dto.VisitDate ?? VisitDate;
 		StartTime = dto.StartTime ?? StartTime;

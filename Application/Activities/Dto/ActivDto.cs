@@ -38,6 +38,7 @@ public record ReadActivDto(
 
 public record UpdateActivDto(
 	int? StatusId = null,
+	int? OrgId = null,
 	DateTime? VisitDate = null,
 	TimeSpan? StartTime = null,
 	TimeSpan? EndTime = null,
